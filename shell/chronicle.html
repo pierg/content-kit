@@ -6,21 +6,56 @@
 <title>Chronicle</title>
 <link rel="stylesheet" href="/shell/lib.css">
 <style>
-/* The chronicle: the record as a timeline. Generated from content/chronicle.json by `ckit nav`;
-   every event links back into the record viewer. Nothing here is authored. */
-.chr-wrap { max-width: 760px; }
+/* The chronicle: the record as a timeline. Three views:
+     · Story (default) — only tagged headings and load-bearing events (pivots, decisions,
+       kills, lessons, missions, experiment locks, findings, claims); grouped by month;
+       summary paragraphs rendered as prose. This is the answer to "how did we get here".
+     · Timeline — every dated heading (the story plus untagged 'entry' items); dense; for
+       archaeology.
+     · Experiments — one card per pre-registration with its question, kill rule, findings.
+   Generated from content/chronicle.json by `ckit nav`; nothing here is authored. */
+
+.chr-wrap { max-width: 780px; }
 .chr-input { width: 100%; padding: 10px 14px; font: 15px/1.4 system-ui, -apple-system, sans-serif;
              background: var(--surface-1); color: var(--ink-1); border: 1.5px solid var(--baseline); border-radius: 10px; }
 .chr-input:focus { outline: 2px solid var(--judge); border-color: var(--judge); }
-.chr-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
+.chr-modes { display: flex; gap: 6px; margin: 14px 0 6px; flex-wrap: wrap; }
+.chr-modes .tbtn.active { border-color: var(--judge); color: var(--judge); }
+.chr-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 6px; }
 .fchip { font: 600 11.5px ui-monospace, Menlo, monospace; padding: 3px 10px; border-radius: 999px;
          border: 1.5px solid var(--baseline); background: var(--surface-1); color: var(--ink-2); cursor: pointer;
          letter-spacing: 0.03em; text-transform: uppercase; }
 .fchip.on { border-color: var(--judge); color: var(--judge); background: color-mix(in srgb, var(--judge) 8%, var(--surface-1)); }
-.chr-meta { color: var(--ink-3); font-size: 12px; margin: 6px 2px 14px; }
-.chr-view { display: flex; gap: 6px; margin: 0 0 12px; }
-.chr-view .tbtn.active { border-color: var(--judge); color: var(--judge); }
+.chr-meta { color: var(--ink-3); font-size: 12.5px; margin: 6px 2px 14px; }
 
+/* --- "Right now" banner: the current phase, from the first record file whose title says State --- */
+.chr-now { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px;
+           padding: 14px 18px; margin: 18px 0 4px; }
+.chr-now-label { font: 700 10.5px ui-monospace, Menlo, monospace; letter-spacing: 0.06em;
+                 text-transform: uppercase; color: var(--judge); }
+.chr-now h2 { margin: 4px 0 6px; font-size: 17px; padding: 0; border: 0; }
+.chr-now p { margin: 4px 0 0; color: var(--ink-2); font-size: 14px; }
+.chr-now .more { font: 12.5px ui-monospace, Menlo, monospace; margin-top: 8px; }
+
+/* --- Story view: month sections, prose-first events --- */
+.chr-month { font: 700 13.5px system-ui, -apple-system, sans-serif; color: var(--ink-1);
+             letter-spacing: 0.01em; margin: 34px 0 10px; padding-bottom: 6px;
+             border-bottom: 1.5px solid var(--baseline); display: flex; align-items: baseline;
+             gap: 10px; flex-wrap: wrap; }
+.chr-month .n { font: 500 11.5px ui-monospace, Menlo, monospace; color: var(--ink-3); }
+.chr-story-ev { padding: 12px 0 14px; border-top: 1px dashed var(--grid); }
+.chr-story-ev:first-of-type { border-top: 0; }
+.chr-story-ev .row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 4px; }
+.chr-story-ev time { font: 12px ui-monospace, Menlo, monospace; color: var(--ink-3); flex: 0 0 auto; }
+.chr-story-ev .t { font-size: 15.5px; font-weight: 600; line-height: 1.35; }
+.chr-story-ev .t a { color: var(--ink-1); }
+.chr-story-ev .t a:hover { color: var(--gen); text-decoration: none; }
+.chr-story-ev .s { color: var(--ink-2); font-size: 14px; line-height: 1.55; margin: 6px 0 0; }
+.chr-story-ev .l { font-size: 12px; margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: var(--ink-3); }
+.chr-story-ev .l a { color: var(--ink-3); }
+.chr-story-ev .l a:hover { color: var(--gen); }
+
+/* --- Timeline view: dense per-day rows --- */
 .chr-day { font: 700 11px ui-monospace, Menlo, monospace; color: var(--ink-3); letter-spacing: 0.05em;
            text-transform: uppercase; margin: 22px 0 6px; border-top: 1px solid var(--grid); padding-top: 8px; }
 .chr-ev { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; padding: 7px 0; }
@@ -31,12 +66,14 @@
 .chr-ev .s { color: var(--ink-2); font-size: 13px; margin: 2px 0 0; }
 .chr-ev .l { font-size: 12px; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .chr-ev .src { color: var(--ink-3); font: 11px ui-monospace, Menlo, monospace; }
+
+/* --- Kind chips: prominent for the load-bearing kinds; secondary for entry --- */
 .k { display: inline-block; font: 700 10px ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: 0.05em;
      padding: 1px 6px; border-radius: 3px; border: 1px solid; margin-right: 6px; vertical-align: 1px; }
 .k.entry { color: var(--ink-3); border-color: var(--baseline); }
-.k.pivot { color: var(--world); border-color: var(--world); }
-.k.kill { color: var(--leak); border-color: var(--leak); }
-.k.decision { color: var(--judge); border-color: var(--judge); }
+.k.pivot { color: var(--world); border-color: var(--world); background: color-mix(in srgb, var(--world) 6%, transparent); }
+.k.kill { color: var(--leak); border-color: var(--leak); background: color-mix(in srgb, var(--leak) 8%, transparent); }
+.k.decision { color: var(--judge); border-color: var(--judge); background: color-mix(in srgb, var(--judge) 6%, transparent); }
 .k.lesson { color: var(--slack); border-color: var(--slack); }
 .k.instrument { color: var(--gen); border-color: var(--gen); }
 .k.result, .k.finding { color: var(--kept-text); border-color: var(--kept); }
@@ -44,6 +81,7 @@
 .k.claim { color: var(--target); border-color: var(--target); }
 .k.mission { color: var(--reach); border-color: var(--reach); }
 
+/* --- Experiments view --- */
 .chr-ex { border: 1px solid var(--grid); border-left: 3px solid var(--cert); border-radius: 0 10px 10px 0;
           background: var(--surface-1); padding: 10px 14px; margin: 10px 0; }
 .chr-ex summary { cursor: pointer; font-weight: 700; }
@@ -52,7 +90,11 @@
 .chr-ex dt { color: var(--ink-3); font-weight: 600; }
 .chr-ex dd { margin: 0; overflow-wrap: anywhere; }
 .chr-ex .f { display: inline-block; margin: 2px 6px 2px 0; }
+
 .empty { color: var(--ink-3); padding: 40px 0; text-align: center; }
+.hint { color: var(--ink-3); padding: 10px 14px; margin: 12px 0; font-size: 13px;
+        border-left: 3px solid var(--baseline); background: var(--surface-1); border-radius: 0 6px 6px 0; }
+.hint code { font-size: 12px; }
 </style>
 <script src="/shell/lib.js" defer></script>
 </head>
@@ -60,40 +102,150 @@
 <main>
 
 <h1>Chronicle</h1>
-<p class="sub">The record as a timeline — every dated entry, pivot, decision, lesson, locked experiment and finding, each linking back to the file that is the record. Generated; nothing here is written by hand.</p>
+<p class="sub">How we got to the current direction — the pivots, the decisions, the lessons, the experiments and what each returned. Generated from the record; nothing here is written by hand.</p>
 
 <div class="chr-wrap">
   <input id="q" type="search" class="chr-input" placeholder="Filter by words…" autocomplete="off">
-  <div class="chr-filters" id="filters" role="tablist" aria-label="Filter by kind"></div>
-  <div class="chr-view" data-hbtabs data-active="timeline">
-    <button class="tbtn" data-tab="timeline">Timeline</button>
+  <div class="chr-modes" data-hbtabs data-active="story">
+    <button class="tbtn" data-tab="story">Story</button>
+    <button class="tbtn" data-tab="timeline">Timeline (every entry)</button>
     <button class="tbtn" data-tab="experiments">Experiments</button>
-    <div data-pane="timeline"></div><div data-pane="experiments"></div>
+    <div data-pane="story"></div><div data-pane="timeline"></div><div data-pane="experiments"></div>
   </div>
+  <div class="chr-filters" id="filters" role="tablist" aria-label="Filter by kind"></div>
   <div class="chr-meta" id="meta">Loading…</div>
 </div>
 
-<section id="timeline"></section>
+<section id="now" hidden></section>
+<section id="story"></section>
+<section id="timeline" hidden></section>
 <section id="experiments" hidden></section>
 
 <script>
 (function () {
   "use strict";
-  var KINDS = ["pivot", "kill", "decision", "lesson", "instrument", "result", "experiment", "finding", "claim", "mission", "entry"];
+
+  /* Story mode filters out the un-tagged headings; those live in Timeline. */
+  var STORY_KINDS = { pivot: 1, kill: 1, decision: 1, lesson: 1, instrument: 1, result: 1,
+                      experiment: 1, finding: 1, claim: 1, mission: 1 };
+  var ALL_KINDS = ["pivot", "kill", "decision", "lesson", "instrument", "result",
+                   "experiment", "finding", "claim", "mission", "entry"];
+  var MONTHS = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"];
+
   var data = { events: [], experiments: [] };
-  var state = { q: "", kinds: new Set(), view: "timeline" };
+  var state = { q: "", kinds: new Set(), view: "story" };
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function day(d) { return d.slice(0, 10); }
+  function monthKey(d) { return d.slice(0, 7); }
+  function monthLabel(k) {
+    var y = parseInt(k.slice(0, 4), 10), m = parseInt(k.slice(5, 7), 10) - 1;
+    return MONTHS[m] + " " + y;
+  }
   function clock(d) { return d.length > 10 ? d.slice(11, 16) + "Z" : ""; }
   function hit(text, q) { return !q || String(text || "").toLowerCase().indexOf(q) !== -1; }
 
-  function renderTimeline() {
+  /* Some record authors prefix their headings with "instrument lane realized locally:"
+     or suffix with "(disclosed)" / "— LIVE". A story title reads better without them;
+     the raw heading is one click away in the source. */
+  function cleanTitle(t) {
+    return String(t)
+      .replace(/^instrument lane realized locally:\s*/i, "")
+      .replace(/\s*\((?:disclosed|committed)\)\s*$/i, "")
+      .replace(/\s+—\s+LIVE(?:\s|$)/, "");
+  }
+
+  function filterEvents(events, storyOnly) {
     var q = state.q.trim().toLowerCase();
-    var evs = data.events.filter(function (e) {
-      return (state.kinds.size === 0 || state.kinds.has(e.kind)) &&
-             (hit(e.title, q) || hit(e.summary, q) || hit(e.source, q) || hit((e.links || []).map(function (l) { return l.label; }).join(" "), q));
+    return events.filter(function (e) {
+      if (storyOnly && !STORY_KINDS[e.kind]) return false;
+      if (state.kinds.size && !state.kinds.has(e.kind)) return false;
+      if (!q) return true;
+      return hit(e.title, q) || hit(e.summary, q) || hit(e.source, q) ||
+             hit((e.links || []).map(function (l) { return l.label; }).join(" "), q);
     });
+  }
+
+  /* --- "Right now": show the top of the first record file whose title says State. It is the
+     one file everyone can find, and the summary is the first paragraph after the h1. */
+  function renderNow(catalog) {
+    var candidates = (catalog && catalog.record) || [];
+    var now = candidates.filter(function (r) { return /state/i.test(r.title); })[0];
+    if (!now) return;
+    fetch("/" + now.path, { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { return r.ok ? r.text() : null; })
+      .then(function (md) {
+        if (!md) return;
+        var lines = md.split("\n");
+        var h1 = "";
+        for (var i = 0; i < lines.length; i++) {
+          var m = lines[i].match(/^#\s+(.+)$/);
+          if (m) { h1 = m[1].replace(/\s*—\s*(LIVE|DRAFT|HISTORICAL|FROZEN|PARKED|RETIRED)\s*$/i, ""); break; }
+        }
+        var buf = [], started = false;
+        for (var j = i + 1; j < lines.length && buf.length < 2; j++) {
+          var s = lines[j].trim();
+          if (!s) { if (started) break; continue; }
+          if (s.startsWith("#")) break;
+          if (s.startsWith("**Status")) continue;
+          started = true;
+          buf.push(s);
+        }
+        var text = buf.join(" ").replace(/[`*_]+/g, "").replace(/\s+/g, " ").trim();
+        if (text.length > 320) text = text.slice(0, 317) + "…";
+        var el = document.getElementById("now");
+        el.hidden = false;
+        el.innerHTML =
+          '<div class="chr-now">' +
+            '<div class="chr-now-label">Right now</div>' +
+            '<h2>' + esc(h1) + '</h2>' +
+            (text ? '<p>' + esc(text) + '</p>' : '') +
+            '<div class="more"><a href="' + esc(now.href) + '">Read ' + esc(now.path) + ' →</a></div>' +
+          '</div>';
+      })
+      .catch(function () { /* the now-banner is optional; silence is fine */ });
+  }
+
+  /* --- Story: monthly sections, prose-first events --- */
+  function renderStory() {
+    var evs = filterEvents(data.events, /*storyOnly*/ true);
+    var el = document.getElementById("story");
+    if (!evs.length) {
+      el.innerHTML =
+        '<div class="hint">Story mode shows only tagged events — pivots, kills, decisions, lessons, instruments — plus locked experiments, findings, claims and missions. This record has none yet; add tags with a heading like <code>### 2026-09-11 — [pivot] the substrate changes</code>, or open <b>Timeline (every entry)</b> to see all dated headings.</div>';
+      return;
+    }
+    var out = [], last = null;
+    evs.forEach(function (e) {
+      var mk = monthKey(e.date);
+      if (mk !== last) {
+        if (last) out.push("</div>");
+        var monthCount = evs.filter(function (x) { return monthKey(x.date) === mk; }).length;
+        out.push('<h2 class="chr-month">' + esc(monthLabel(mk)) +
+                 ' <span class="n">' + monthCount + " event" + (monthCount === 1 ? "" : "s") + "</span></h2>");
+        out.push('<div class="chr-month-body">');
+        last = mk;
+      }
+      out.push('<article class="chr-story-ev">' +
+        '<div class="row">' +
+          '<time>' + esc(day(e.date)) + (clock(e.date) ? " " + esc(clock(e.date)) : "") + "</time>" +
+          '<span class="k ' + esc(e.kind) + '">' + esc(e.kind) + "</span>" +
+          '<span class="t"><a href="' + esc(e.href) + '">' + esc(cleanTitle(e.title)) + "</a></span>" +
+        "</div>" +
+        (e.summary ? '<p class="s">' + esc(e.summary) + "</p>" : "") +
+        ((e.links || []).length
+          ? '<div class="l">' + e.links.map(function (l) { return '<a href="' + esc(l.href) + '">' + esc(l.label) + "</a>"; }).join("") + "</div>"
+          : "") +
+      "</article>");
+    });
+    if (last) out.push("</div>");
+    el.innerHTML = out.join("");
+  }
+
+  /* --- Timeline (former default): every dated event, per-day, dense --- */
+  function renderTimeline() {
+    var evs = filterEvents(data.events, /*storyOnly*/ false);
     var el = document.getElementById("timeline");
     if (!evs.length) { el.innerHTML = '<p class="empty">No events match.</p>'; return; }
     var out = [], last = null;
@@ -104,7 +256,7 @@
         "<time>" + esc(clock(e.date) || "—") + "</time>" +
         "<div>" +
           '<div class="t"><span class="k ' + esc(e.kind) + '">' + esc(e.kind) + "</span>" +
-            '<a href="' + esc(e.href) + '">' + esc(e.title) + "</a></div>" +
+            '<a href="' + esc(e.href) + '">' + esc(cleanTitle(e.title)) + "</a></div>" +
           (e.summary ? '<p class="s">' + esc(e.summary) + "</p>" : "") +
           '<div class="l">' +
             (e.links || []).map(function (l) { return '<a href="' + esc(l.href) + '">' + esc(l.label) + "</a>"; }).join("") +
@@ -118,7 +270,8 @@
   function renderExperiments() {
     var q = state.q.trim().toLowerCase();
     var exs = data.experiments.filter(function (x) {
-      return hit(x.title, q) || hit(x.question, q) || hit(x.slug, q) || hit((x.findings || []).map(function (f) { return f.id + " " + f.title; }).join(" "), q);
+      return hit(x.title, q) || hit(x.question, q) || hit(x.slug, q) ||
+             hit((x.findings || []).map(function (f) { return f.id + " " + f.title; }).join(" "), q);
     });
     var el = document.getElementById("experiments");
     if (!exs.length) { el.innerHTML = '<p class="empty">' + (data.experiments.length ? "No experiments match." : "No experiments in this record — a lab declares an extractor for its PROBEs in lab.json.") + "</p>"; return; }
@@ -142,17 +295,28 @@
 
   function render() {
     var meta = document.getElementById("meta");
-    meta.textContent = data.events.length + " events · " + data.experiments.length + " experiments";
+    var storyN = filterEvents(data.events, true).length;
+    var allN = filterEvents(data.events, false).length;
+    var msg;
+    if (state.view === "story") msg = storyN + " story event" + (storyN === 1 ? "" : "s") + " · " + (allN - storyN) + " more untagged in Timeline";
+    else if (state.view === "timeline") msg = allN + " event" + (allN === 1 ? "" : "s") + " (every dated heading)";
+    else msg = data.experiments.length + " experiment" + (data.experiments.length === 1 ? "" : "s");
+    meta.textContent = msg;
+    document.getElementById("now").hidden = state.view !== "story";
+    document.getElementById("story").hidden = state.view !== "story";
     document.getElementById("timeline").hidden = state.view !== "timeline";
     document.getElementById("experiments").hidden = state.view !== "experiments";
-    if (state.view === "timeline") renderTimeline(); else renderExperiments();
+    document.getElementById("filters").hidden = state.view === "experiments";
+    if (state.view === "story") renderStory();
+    else if (state.view === "timeline") renderTimeline();
+    else renderExperiments();
   }
 
   function initFilters() {
     var el = document.getElementById("filters");
     var present = {};
     data.events.forEach(function (e) { present[e.kind] = (present[e.kind] || 0) + 1; });
-    el.innerHTML = KINDS.filter(function (k) { return present[k]; }).map(function (k) {
+    el.innerHTML = ALL_KINDS.filter(function (k) { return present[k]; }).map(function (k) {
       return '<button class="fchip" data-kind="' + k + '">' + k + " " + present[k] + "</button>";
     }).join("");
     el.addEventListener("click", function (e) {
@@ -168,20 +332,33 @@
   document.addEventListener("DOMContentLoaded", function () {
     var input = document.getElementById("q");
     input.addEventListener("input", function () { state.q = input.value; render(); });
-    document.querySelector(".chr-view").addEventListener("click", function (e) {
+    document.querySelector(".chr-modes").addEventListener("click", function (e) {
       var b = e.target.closest("[data-tab]");
       if (!b) return;
       state.view = b.dataset.tab;
+      history.replaceState(null, "", "?view=" + state.view + (state.q ? "&q=" + encodeURIComponent(state.q) : ""));
       render();
     });
-    fetch("/content/chronicle.json", { credentials: "same-origin", cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function (d) { data = d; initFilters(); render(); })
-      .catch(function (ex) {
-        document.getElementById("meta").textContent = "No chronicle yet — declare `record` (and an extractor) in lab.json and run `ckit lint`. (" + ex.message + ")";
-      });
+    Promise.all([
+      fetch("/content/chronicle.json", { credentials: "same-origin", cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }),
+      fetch("/content/catalog.json", { credentials: "same-origin", cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; }),
+    ]).then(function (pair) {
+      data = pair[0];
+      initFilters();
+      renderNow(pair[1]);
+      render();
+    }).catch(function (ex) {
+      document.getElementById("meta").textContent = "No chronicle yet — declare `record` (and an extractor) in lab.json and run `ckit lint`. (" + ex.message + ")";
+    });
     var params = new URLSearchParams(location.search);
     if (params.get("q")) { input.value = params.get("q"); state.q = input.value; }
+    if (params.get("view") && document.querySelector('[data-tab="' + params.get("view") + '"]')) {
+      state.view = params.get("view");
+      document.querySelector('[data-hbtabs]').dataset.active = state.view;
+    }
   });
 })();
 </script>

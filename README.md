@@ -47,7 +47,7 @@ The repo records the engine version it was checked against (`"ckit"` in `lab.jso
 | `ckit up` · `down` · `status` · `serve` | the reader server on the repo's port |
 | `ckit annotations list · show · add · reply · state · check` | the session-free review loop |
 | `ckit selftest` | the engine's own gate: planted fixtures with known answers |
-| `/shell/record.html?p=<file.md>` · `/shell/chronicle.html` | the record, rendered — and the record as a timeline (`content/chronicle.json`, generated; see below) |
+| `/shell/record.html?p=<file.md>` · `/shell/chronicle.html` | the record, rendered — and the record as a **story** (default: only tagged headings and load-bearing events, grouped by month, prose-first) with a `Timeline` view for every dated heading and an `Experiments` view; `content/chronicle.json` is generated, see below |
 
 Stdlib Python ≥ 3.10; node for book verification. No build step, no dependencies, no network.
 
