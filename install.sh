@@ -98,6 +98,9 @@ SHA="$(git -C "$SRC" rev-parse HEAD 2>/dev/null || echo unknown)"
 mv "$PIN.tmp" "$PIN"
 bash "$KIT/verify.sh" --repin >/dev/null
 echo "pinned  content-kit@${SHA:0:8}"
+if command -v ckit >/dev/null 2>&1; then
+  (cd "$REPO" && ckit nav >/dev/null) && echo "indices generated (ckit nav)"
+fi
 
 echo
 echo "done. next:"

@@ -45,8 +45,9 @@ Promotion: note → entry → chapter as scope grows. **Define once, link everyw
 ## Before finishing
 
 ```bash
-make check     # content gate: version pin · shell · form · genre · annotations · books  (+ the lab's record gate)
+ckit lint      # form + genre + annotation lint; regenerates the indices (catalog, search, backlinks, nav)
+make check     # the gate: engine pin · shell · indices current · lint · books  (+ the lab's record gate)
 make docs      # read it in the browser before you call it done
 ```
 
-Fix everything the gate reports. Then commit — records lane, only the files you touched plus what lint regenerated. Never `git add -A`.
+Fix everything the gate reports. Then commit — records lane, only the files you touched plus what `ckit lint` regenerated. Never `git add -A`.

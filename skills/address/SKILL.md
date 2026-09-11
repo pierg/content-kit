@@ -28,7 +28,7 @@ A human read a page in the browser, selected passages, and left comments. They w
 
    Do not silently do a third thing. Do not partially address and mark addressed.
 
-4. **Run the gate.** `make check`. It validates every sidecar and requires that every **open** thread's quoted passage is still on its page — so if you rewrote a passage that another, still-open thread points at, the gate is red until that thread is addressed too. An addressed or declined thread's anchor is historical and not checked.
+4. **Run the gate.** `ckit lint` (regenerates the indices if the page's title or headings changed), then `make check`. The gate validates every sidecar and requires that every **open** thread's quoted passage is still on its page — so if you rewrote a passage that another, still-open thread points at, the gate is red until that thread is addressed too. An addressed or declined thread's anchor is historical and not checked.
 
 5. **Land it.** Commit the page and its sidecar together (records lane). The thread's reply is the record of what was done; the diff is the evidence.
 

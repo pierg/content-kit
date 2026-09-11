@@ -2,8 +2,10 @@
 
   1. the repo declares the engine version it was checked against, and it is this one
   2. the vendored shell is present
-  3. lint — form, genre, annotations — and the indices are regenerated
-  4. every book verifies (node), when node is available
+  3. the committed indices equal discovery — a stale catalog / search index / backlinks / nav
+     fails, it is not silently rewritten (`ckit lint` or `ckit nav` regenerates; commit the result)
+  4. lint — form, genre, annotations
+  5. every book verifies (node), when node is available
 
 Fail-loud, seconds-fast, no network. Identical locally and in CI — that is the point.
 """
@@ -15,7 +17,7 @@ import shutil
 import subprocess
 import sys
 
-from . import __version__, lint
+from . import __version__, book_nav, lint
 from .paths import PACKAGE_DIR, Repo, load_repo
 
 
@@ -41,7 +43,12 @@ def run(repo: Repo) -> int:
               file=sys.stderr)
         return 1
 
-    probs, n = lint.run(repo)
+    stale = book_nav.check(repo) if repo.content.is_dir() else []
+    if stale:
+        print("indices out of date — run `ckit nav` (or `ckit lint`) and commit the result:", file=sys.stderr)
+        print("\n".join("  " + s for s in stale), file=sys.stderr)
+        return 1
+    probs, n = lint.run(repo, nav=False)
     if probs:
         print("\n".join(probs))
         print(f"\n{len(probs)} problem(s) in {n} file(s)")

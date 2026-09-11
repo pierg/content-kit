@@ -40,8 +40,8 @@ The repo records the engine version it was checked against (`"ckit"` in `lab.jso
 
 | Command | Does |
 |---|---|
-| `ckit check` | the content gate: pin · shell present · form + genre + annotation lint · indices · books |
-| `ckit lint [paths]` | the lint alone; regenerates `nav.json` / catalog / search index / backlinks |
+| `ckit check` | the content gate: pin · shell present · committed indices equal discovery (stale fails, never rewritten) · form + genre + annotation lint · books |
+| `ckit lint [paths]` | the lint alone, at authoring time; regenerates `nav.json` / catalog / search index / backlinks (`--no-nav` to only lint) |
 | `ckit new <genre> <slug>` | scaffold from the genre's skeleton, print its voice card |
 | `ckit genres` | the genres this repo knows — core plus its `lab.json` extensions |
 | `ckit up` · `down` · `status` · `serve` | the reader server on the repo's port |

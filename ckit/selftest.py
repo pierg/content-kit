@@ -9,6 +9,7 @@ tamper the page → the anchor is reported stale.
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
 import os
@@ -92,6 +93,20 @@ def main(argv: list[str]) -> int:
             rc = check.run(repo)
         if rc != 0:
             failures.append(f"`ckit check` on a clean repo returned {rc}:\n{buf.getvalue()}")
+
+        # --- a stale committed index fails the gate; regenerating repairs it
+        catalog = repo.content / "catalog.json"
+        good = catalog.read_text(encoding="utf-8")
+        catalog.write_text(good.replace("a-note", "a-note-renamed"), encoding="utf-8")
+        err = io.StringIO()
+        with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            rc = check.run(repo)
+        if rc == 0 or "out of date" not in err.getvalue():
+            failures.append("a stale catalog.json must fail `ckit check`")
+        planted += 1
+        _lint(repo)  # regenerates
+        if catalog.read_text(encoding="utf-8") != good:
+            failures.append("regeneration did not restore the catalog")
 
         # --- annotation round-trip on a clean page
         note = repo.content / "notes" / "a-note.html"
@@ -199,7 +214,6 @@ def main(argv: list[str]) -> int:
         (repo.root / "lab.json").write_text(json.dumps(cfg))
         buf = io.StringIO()
         with redirect_stdout(buf):
-            import contextlib
             err = io.StringIO()
             with contextlib.redirect_stderr(err):
                 rc = check.run(load_repo(repo.root))

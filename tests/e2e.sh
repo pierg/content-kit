@@ -33,7 +33,8 @@ echo "--- gate on a fresh repo, then on scaffolded pages ---"
 ( cd "$REPO" && ckit new note hello --title "Hello" >/dev/null && ckit new concept thing >/dev/null \
   && ckit new book primer >/dev/null && ckit new chapter primer/01-start >/dev/null \
   && ckit new related cluster >/dev/null && ckit new paper draft >/dev/null ) || fail "ckit new failed"
-( cd "$REPO" && make check >/dev/null ) || fail "make check failed on scaffolded pages"
+( cd "$REPO" && make check >/dev/null 2>&1 ) && fail "stale indices after scaffolding passed the gate"
+( cd "$REPO" && ckit lint >/dev/null && make check >/dev/null ) || fail "make check failed on scaffolded pages after ckit lint"
 [ -f "$REPO/content/catalog.json" ] || fail "indices were not generated"
 grep -q '"related"' "$REPO/content/catalog.json" || fail "catalog lacks the related genre"
 echo "gate ok"
@@ -83,6 +84,7 @@ ID="$(cd "$REPO" && ckit annotations list --json | python3 -c 'import json,sys; 
 ( cd "$REPO" && make check >/dev/null ) || fail "gate red after addressing"
 # an OPEN thread whose passage is rewritten must turn the gate red
 ( cd "$REPO" && ckit annotations add /content/notes/hello.html --author e2e --body "again" --quote "Atomic-thought unit" >/dev/null )
+( cd "$REPO" && ckit lint >/dev/null )
 sed -i 's/Atomic-thought unit/Rewritten/' "$REPO/content/notes/hello.html"
 ( cd "$REPO" && make check >/dev/null 2>&1 ) && fail "an open thread with a stale anchor passed the gate"
 ( cd "$REPO" && make down >/dev/null )

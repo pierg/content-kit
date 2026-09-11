@@ -9,7 +9,7 @@ from . import __version__
 
 USAGE = f"""ckit {__version__} — serve, lint, navigate, scaffold and annotate a content tree
 
-  ckit check                         the content gate (version pin · shell · lint · books)
+  ckit check                         the content gate (version pin · shell · indices current · lint · books)
   ckit lint [paths] [--no-nav]       form + genre + annotation lint; regenerates the indices
   ckit nav [--check]                 regenerate nav.json / catalog / search-index / backlinks
   ckit new <genre> <slug> [--title]  scaffold a page from its skeleton
