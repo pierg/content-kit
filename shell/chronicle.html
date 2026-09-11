@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chronicle</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+/* The chronicle: the record as a timeline. Generated from content/chronicle.json by `ckit nav`;
+   every event links back into the record viewer. Nothing here is authored. */
+.chr-wrap { max-width: 760px; }
+.chr-input { width: 100%; padding: 10px 14px; font: 15px/1.4 system-ui, -apple-system, sans-serif;
+             background: var(--surface-1); color: var(--ink-1); border: 1.5px solid var(--baseline); border-radius: 10px; }
+.chr-input:focus { outline: 2px solid var(--judge); border-color: var(--judge); }
+.chr-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
+.fchip { font: 600 11.5px ui-monospace, Menlo, monospace; padding: 3px 10px; border-radius: 999px;
+         border: 1.5px solid var(--baseline); background: var(--surface-1); color: var(--ink-2); cursor: pointer;
+         letter-spacing: 0.03em; text-transform: uppercase; }
+.fchip.on { border-color: var(--judge); color: var(--judge); background: color-mix(in srgb, var(--judge) 8%, var(--surface-1)); }
+.chr-meta { color: var(--ink-3); font-size: 12px; margin: 6px 2px 14px; }
+.chr-view { display: flex; gap: 6px; margin: 0 0 12px; }
+.chr-view .tbtn.active { border-color: var(--judge); color: var(--judge); }
+
+.chr-day { font: 700 11px ui-monospace, Menlo, monospace; color: var(--ink-3); letter-spacing: 0.05em;
+           text-transform: uppercase; margin: 22px 0 6px; border-top: 1px solid var(--grid); padding-top: 8px; }
+.chr-ev { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; padding: 7px 0; }
+.chr-ev time { font: 12px ui-monospace, Menlo, monospace; color: var(--ink-3); padding-top: 2px; }
+.chr-ev .t { font-weight: 600; }
+.chr-ev .t a { color: var(--ink-1); }
+.chr-ev .t a:hover { color: var(--gen); text-decoration: none; }
+.chr-ev .s { color: var(--ink-2); font-size: 13px; margin: 2px 0 0; }
+.chr-ev .l { font-size: 12px; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.chr-ev .src { color: var(--ink-3); font: 11px ui-monospace, Menlo, monospace; }
+.k { display: inline-block; font: 700 10px ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: 0.05em;
+     padding: 1px 6px; border-radius: 3px; border: 1px solid; margin-right: 6px; vertical-align: 1px; }
+.k.entry { color: var(--ink-3); border-color: var(--baseline); }
+.k.pivot { color: var(--world); border-color: var(--world); }
+.k.kill { color: var(--leak); border-color: var(--leak); }
+.k.decision { color: var(--judge); border-color: var(--judge); }
+.k.lesson { color: var(--slack); border-color: var(--slack); }
+.k.instrument { color: var(--gen); border-color: var(--gen); }
+.k.result, .k.finding { color: var(--kept-text); border-color: var(--kept); }
+.k.experiment { color: var(--cert); border-color: var(--cert); }
+.k.claim { color: var(--target); border-color: var(--target); }
+.k.mission { color: var(--reach); border-color: var(--reach); }
+
+.chr-ex { border: 1px solid var(--grid); border-left: 3px solid var(--cert); border-radius: 0 10px 10px 0;
+          background: var(--surface-1); padding: 10px 14px; margin: 10px 0; }
+.chr-ex summary { cursor: pointer; font-weight: 700; }
+.chr-ex summary .st { margin-left: 8px; }
+.chr-ex dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 10px 0 4px; font-size: 13.5px; }
+.chr-ex dt { color: var(--ink-3); font-weight: 600; }
+.chr-ex dd { margin: 0; overflow-wrap: anywhere; }
+.chr-ex .f { display: inline-block; margin: 2px 6px 2px 0; }
+.empty { color: var(--ink-3); padding: 40px 0; text-align: center; }
+</style>
+<script src="/shell/lib.js" defer></script>
+</head>
+<body class="hb">
+<main>
+
+<h1>Chronicle</h1>
+<p class="sub">The record as a timeline — every dated entry, pivot, decision, lesson, locked experiment and finding, each linking back to the file that is the record. Generated; nothing here is written by hand.</p>
+
+<div class="chr-wrap">
+  <input id="q" type="search" class="chr-input" placeholder="Filter by words…" autocomplete="off">
+  <div class="chr-filters" id="filters" role="tablist" aria-label="Filter by kind"></div>
+  <div class="chr-view" data-hbtabs data-active="timeline">
+    <button class="tbtn" data-tab="timeline">Timeline</button>
+    <button class="tbtn" data-tab="experiments">Experiments</button>
+    <div data-pane="timeline"></div><div data-pane="experiments"></div>
+  </div>
+  <div class="chr-meta" id="meta">Loading…</div>
+</div>
+
+<section id="timeline"></section>
+<section id="experiments" hidden></section>
+
+<script>
+(function () {
+  "use strict";
+  var KINDS = ["pivot", "kill", "decision", "lesson", "instrument", "result", "experiment", "finding", "claim", "mission", "entry"];
+  var data = { events: [], experiments: [] };
+  var state = { q: "", kinds: new Set(), view: "timeline" };
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function day(d) { return d.slice(0, 10); }
+  function clock(d) { return d.length > 10 ? d.slice(11, 16) + "Z" : ""; }
+  function hit(text, q) { return !q || String(text || "").toLowerCase().indexOf(q) !== -1; }
+
+  function renderTimeline() {
+    var q = state.q.trim().toLowerCase();
+    var evs = data.events.filter(function (e) {
+      return (state.kinds.size === 0 || state.kinds.has(e.kind)) &&
+             (hit(e.title, q) || hit(e.summary, q) || hit(e.source, q) || hit((e.links || []).map(function (l) { return l.label; }).join(" "), q));
+    });
+    var el = document.getElementById("timeline");
+    if (!evs.length) { el.innerHTML = '<p class="empty">No events match.</p>'; return; }
+    var out = [], last = null;
+    evs.forEach(function (e) {
+      var d = day(e.date);
+      if (d !== last) { out.push('<div class="chr-day">' + esc(d) + "</div>"); last = d; }
+      out.push('<div class="chr-ev">' +
+        "<time>" + esc(clock(e.date) || "—") + "</time>" +
+        "<div>" +
+          '<div class="t"><span class="k ' + esc(e.kind) + '">' + esc(e.kind) + "</span>" +
+            '<a href="' + esc(e.href) + '">' + esc(e.title) + "</a></div>" +
+          (e.summary ? '<p class="s">' + esc(e.summary) + "</p>" : "") +
+          '<div class="l">' +
+            (e.links || []).map(function (l) { return '<a href="' + esc(l.href) + '">' + esc(l.label) + "</a>"; }).join("") +
+            (e.source ? '<span class="src">' + esc(e.source) + "</span>" : "") +
+          "</div>" +
+        "</div></div>");
+    });
+    el.innerHTML = out.join("");
+  }
+
+  function renderExperiments() {
+    var q = state.q.trim().toLowerCase();
+    var exs = data.experiments.filter(function (x) {
+      return hit(x.title, q) || hit(x.question, q) || hit(x.slug, q) || hit((x.findings || []).map(function (f) { return f.id + " " + f.title; }).join(" "), q);
+    });
+    var el = document.getElementById("experiments");
+    if (!exs.length) { el.innerHTML = '<p class="empty">' + (data.experiments.length ? "No experiments match." : "No experiments in this record — a lab declares an extractor for its PROBEs in lab.json.") + "</p>"; return; }
+    el.innerHTML = exs.map(function (x) {
+      var st = x.status || "";
+      return '<details class="chr-ex"><summary>' + esc(x.title) +
+        (x.locked ? ' <span class="muted">· ' + esc(day(x.locked)) + "</span>" : "") +
+        (st ? ' <span class="k experiment st">' + esc(st) + "</span>" : "") + "</summary>" +
+        "<dl>" +
+        (x.question ? "<dt>Question</dt><dd>" + esc(x.question) + "</dd>" : "") +
+        (x.kill_rule ? "<dt>Kill rule</dt><dd>" + esc(x.kill_rule) + "</dd>" : "") +
+        "<dt>Pre-registration</dt><dd><a href=\"" + esc(x.href) + '">' + esc(x.slug) + "/PROBE.md</a></dd>" +
+        (x.supersedes ? "<dt>Supersedes</dt><dd>" + esc(x.supersedes) + "</dd>" : "") +
+        (x.superseded_by ? "<dt>Superseded by</dt><dd>" + esc(x.superseded_by) + "</dd>" : "") +
+        "<dt>Findings</dt><dd>" + ((x.findings || []).length
+          ? x.findings.map(function (f) { return '<span class="f"><span class="k finding">' + esc(f.status || "finding") + '</span><a href="' + esc(f.href) + '">' + esc(f.id) + "</a> " + esc(f.title || "") + "</span>"; }).join("")
+          : '<span class="muted">none anchored in this experiment yet</span>') + "</dd>" +
+        "</dl></details>";
+    }).join("");
+  }
+
+  function render() {
+    var meta = document.getElementById("meta");
+    meta.textContent = data.events.length + " events · " + data.experiments.length + " experiments";
+    document.getElementById("timeline").hidden = state.view !== "timeline";
+    document.getElementById("experiments").hidden = state.view !== "experiments";
+    if (state.view === "timeline") renderTimeline(); else renderExperiments();
+  }
+
+  function initFilters() {
+    var el = document.getElementById("filters");
+    var present = {};
+    data.events.forEach(function (e) { present[e.kind] = (present[e.kind] || 0) + 1; });
+    el.innerHTML = KINDS.filter(function (k) { return present[k]; }).map(function (k) {
+      return '<button class="fchip" data-kind="' + k + '">' + k + " " + present[k] + "</button>";
+    }).join("");
+    el.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-kind]");
+      if (!b) return;
+      var k = b.dataset.kind;
+      if (state.kinds.has(k)) state.kinds.delete(k); else state.kinds.add(k);
+      b.classList.toggle("on");
+      render();
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var input = document.getElementById("q");
+    input.addEventListener("input", function () { state.q = input.value; render(); });
+    document.querySelector(".chr-view").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-tab]");
+      if (!b) return;
+      state.view = b.dataset.tab;
+      render();
+    });
+    fetch("/content/chronicle.json", { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (d) { data = d; initFilters(); render(); })
+      .catch(function (ex) {
+        document.getElementById("meta").textContent = "No chronicle yet — declare `record` (and an extractor) in lab.json and run `ckit lint`. (" + ex.message + ")";
+      });
+    var params = new URLSearchParams(location.search);
+    if (params.get("q")) { input.value = params.get("q"); state.q = input.value; }
+  });
+})();
+</script>
+
+</main>
+</body>
+</html>

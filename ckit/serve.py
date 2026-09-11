@@ -31,6 +31,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from . import __version__, annotations
+from . import chronicle
 from .book_nav import CATALOG_GROUPS, _books, _title
 from .paths import Repo, load_repo
 
@@ -71,6 +72,11 @@ def _landing(repo: Repo) -> bytes:
     question = _esc(str(repo.cfg.get("question", "")))
     lede = f'<p class="sub">{question}</p>' if question else ""
     c = repo.content_name
+    chron = ' <a class="search-cta" href="/shell/chronicle.html">Chronicle &rarr;</a>' if chronicle.enabled(repo) else ""
+    rec = chronicle.record_catalog(repo) if chronicle.enabled(repo) else []
+    record = ("<h2>Record</h2>\n<ul class=\"catalog\">\n" + "\n".join(
+        f'<li><a href="{_esc(r["href"])}">{_esc(r["title"])}</a><div class="path">{_esc(r["path"])}</div></li>' for r in rec)
+        + "\n</ul>") if rec else ""
     groups = "\n".join(
         _list_group(repo, folder.capitalize(), _group_items(repo, folder, layout),
                     f"No {folder} yet — `ckit new {kind} <slug>`")
@@ -103,10 +109,11 @@ def _landing(repo: Repo) -> bytes:
 {lede}
 
 <div class="home-lede">
-Looking for something? <a class="search-cta" href="/shell/search.html">Search everything &rarr;</a>
+Looking for something? <a class="search-cta" href="/shell/search.html">Search everything &rarr;</a>{chron}
 </div>
 
 {groups}
+{record}
 </main>
 </body>
 </html>

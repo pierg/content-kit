@@ -39,6 +39,23 @@ echo "--- gate on a fresh repo, then on scaffolded pages ---"
 grep -q '"related"' "$REPO/content/catalog.json" || fail "catalog lacks the related genre"
 echo "gate ok"
 
+echo "--- the record and its chronicle ---"
+mkdir -p "$REPO/record"
+printf '# Log — LIVE\n\n### 2026-09-01 — [pivot] direction changed\n\nBecause.\n' > "$REPO/record/log.md"
+python3 - "$REPO/lab.json" <<'PY'
+import json, sys
+from pathlib import Path
+p = Path(sys.argv[1]); c = json.loads(p.read_text()); c["record"] = ["record/"]; p.write_text(json.dumps(c, indent=2) + "\n")
+PY
+( cd "$REPO" && ckit lint >/dev/null && make check >/dev/null ) || fail "gate red with a record declared"
+grep -q '"pivot"' "$REPO/content/chronicle.json" || fail "chronicle.json lacks the pivot"
+grep -q 'record/log.md' "$REPO/content/catalog.json" || fail "catalog lacks the record"
+printf '### 2026-09-02 — [bogus] x\n' >> "$REPO/record/log.md"
+( cd "$REPO" && ckit lint >/dev/null 2>&1 ) && fail "an unknown chronicle tag passed"
+sed -i '$ d' "$REPO/record/log.md"
+( cd "$REPO" && ckit lint >/dev/null )
+echo "chronicle ok"
+
 echo "--- kit drift is detected, and re-sync repairs it ---"
 echo "# tampered" >> "$REPO/kit/shell/COMPONENTS.md"
 ( cd "$REPO" && make kit-verify >/dev/null 2>&1 ) && fail "tampering with kit/ was NOT detected"
@@ -66,6 +83,11 @@ B="http://127.0.0.1:$PORT"
 curl -fsS "$B/" | grep -q "Scratch Repo" || fail "landing page did not render"
 curl -fsS "$B/shell/lib.css" >/dev/null || fail "/shell/ mount not served"
 curl -fsS "$B/shell/search.html" | grep -q "search-index" || fail "search page not served from the shell"
+curl -fsS "$B/shell/record.html?p=record/log.md" | grep -q "marked.umd.js" || fail "record viewer not served"
+curl -fsS "$B/shell/vendor/marked/marked.umd.js" >/dev/null || fail "marked not served"
+curl -fsS "$B/shell/chronicle.html" >/dev/null || fail "chronicle page not served"
+curl -fsS "$B/content/chronicle.json" | grep -q "direction changed" || fail "chronicle.json not served"
+curl -fsS "$B/" | grep -q "Chronicle" || fail "landing lacks the chronicle link"
 curl -fsS "$B/content/notes/hello.html" | grep -q "Status: LIVE" || fail "scaffolded page lacks its status line"
 curl -fsS "$B/__annotations/ping" | grep -q '"ok": true' || fail "annotation ping failed"
 curl -fsS -X POST -H 'Content-Type: application/json' "$B/__annotations" \

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Record</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+/* The record viewer: renders one markdown file of the record in the shell. The file is the
+   artifact; this page is a view of it. Nothing here is authored. */
+.rec-banner { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline;
+              font: 12.5px ui-monospace, Menlo, monospace; color: var(--ink-3);
+              border-bottom: 1px dashed var(--grid); padding: 8px 0 10px; margin: 8px 0 18px; }
+.rec-banner code { font-size: 12px; }
+.rec-banner a { color: var(--ink-2); }
+.rec-status { font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.rec-status.live { color: var(--kept-text); } .rec-status.historical, .rec-status.frozen { color: var(--ink-2); }
+.rec-status.parked, .rec-status.retired { color: var(--ink-3); } .rec-status.draft { color: var(--slack); }
+.rec-toc { font-size: 12.5px; color: var(--ink-3); margin: 0 0 18px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.rec-toc a { color: var(--ink-3); }
+.rec-toc a:hover { color: var(--gen); }
+#rec h1 { font-size: 24px; }
+#rec h2 { margin-top: 44px; }
+#rec h3 { margin-top: 26px; }
+#rec h4 { margin-top: 18px; }
+#rec blockquote { border-left: 3px solid var(--baseline); color: var(--ink-2); margin: 10px 0; padding: 2px 14px; }
+#rec table { display: block; overflow-x: auto; }
+#rec img { max-width: 100%; }
+#rec pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+#rec :target { background: color-mix(in srgb, var(--slack) 18%, transparent); border-radius: 4px; }
+.rec-err { color: var(--rejected); }
+</style>
+<script src="/shell/vendor/marked/marked.umd.js"></script>
+<script src="/shell/lib.js" defer></script>
+</head>
+<body class="hb">
+<main>
+<div class="rec-banner" id="banner"><span class="muted">Loading…</span></div>
+<nav class="rec-toc" id="toc" aria-label="On this page" hidden></nav>
+<article id="rec"></article>
+</main>
+<script>
+(function () {
+  "use strict";
+  var STATUS = /\b(LIVE|HISTORICAL|PARKED|RETIRED|FROZEN|DRAFT)\b/;
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function slugify(t) { return String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
+
+  var params = new URLSearchParams(location.search);
+  var p = params.get("p") || "";
+  var banner = document.getElementById("banner");
+  var art = document.getElementById("rec");
+
+  if (!p || p.indexOf("..") !== -1 || p.charAt(0) === "/" || !/\.md$/i.test(p)) {
+    banner.innerHTML = '<span class="rec-err">Give the viewer a record file: <code>/shell/record.html?p=record/logbook/lab.md</code></span>';
+    return;
+  }
+  document.title = p.split("/").pop() + " — record";
+  var dir = p.indexOf("/") >= 0 ? p.slice(0, p.lastIndexOf("/") + 1) : "";
+
+  function resolve(href) {
+    // Keep record-to-record links inside the viewer; leave content, anchors and the web alone.
+    if (!href || /^(#|[a-z]+:|\/\/)/i.test(href)) return href;
+    var base = href.charAt(0) === "/" ? href.slice(1) : dir + href;
+    var parts = [];
+    base.split("/").forEach(function (seg) {
+      if (seg === "..") parts.pop(); else if (seg && seg !== ".") parts.push(seg);
+    });
+    var path = parts.join("/");
+    var hash = "";
+    var i = path.indexOf("#");
+    if (i >= 0) { hash = path.slice(i); path = path.slice(0, i); }
+    if (/\.md$/i.test(path)) return "/shell/record.html?p=" + path + hash;
+    return "/" + path + hash;
+  }
+
+  fetch("/" + p, { credentials: "same-origin", cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+    .then(function (md) {
+      var head = md.split("\n").slice(0, 8).join(" ");
+      var st = (head.match(STATUS) || [])[1];
+      banner.innerHTML =
+        'Rendered from <code>' + esc(p) + '</code> — the file is the record · ' +
+        '<a href="/' + esc(p) + '">raw</a>' +
+        (st ? ' · <span class="rec-status ' + st.toLowerCase() + '">' + st + '</span>' : '') +
+        ' · <a href="/shell/chronicle.html">chronicle</a>';
+      marked.setOptions({ gfm: true, breaks: false });
+      art.innerHTML = marked.parse(md);
+
+      var seen = {};
+      var toc = [];
+      art.querySelectorAll("h1, h2, h3, h4").forEach(function (h) {
+        var id = slugify(h.textContent);
+        if (!id) return;
+        var n = 1, base = id;
+        while (seen[id]) { n += 1; id = base + "-" + n; }
+        seen[id] = true;
+        h.id = id;
+        if (h.tagName === "H2" || h.tagName === "H3") toc.push({ id: id, text: h.textContent, lvl: h.tagName });
+      });
+      art.querySelectorAll("a[href]").forEach(function (a) { a.setAttribute("href", resolve(a.getAttribute("href"))); });
+      art.querySelectorAll("img[src]").forEach(function (im) { var s = im.getAttribute("src"); if (!/^(\/|[a-z]+:)/i.test(s)) im.setAttribute("src", "/" + dir + s); });
+
+      if (toc.length > 1) {
+        var el = document.getElementById("toc");
+        el.hidden = false;
+        el.innerHTML = '<span class="muted">On this page</span> ' + toc.map(function (t) {
+          return '<a href="#' + esc(t.id) + '"' + (t.lvl === "H3" ? ' style="opacity:.75"' : '') + '>' + esc(t.text) + '</a>';
+        }).join(" ");
+      }
+      if (location.hash) {
+        var target = document.getElementById(location.hash.slice(1));
+        if (target) target.scrollIntoView({ block: "start" });
+      }
+    })
+    .catch(function (ex) {
+      banner.innerHTML = '<span class="rec-err">Could not load <code>' + esc(p) + '</code>: ' + esc(ex.message) + '</span>';
+    });
+})();
+</script>
+</body>
+</html>

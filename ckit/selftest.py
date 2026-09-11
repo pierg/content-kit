@@ -108,6 +108,42 @@ def main(argv: list[str]) -> int:
         if catalog.read_text(encoding="utf-8") != good:
             failures.append("regeneration did not restore the catalog")
 
+        # --- the chronicle: dated headings + a plugin → content/chronicle.json, checked current
+        (repo.root / "record").mkdir()
+        (repo.root / "record" / "lab.md").write_text(
+            "# Lab logbook — LIVE\n\n### 2026-09-01 — [pivot] the substrate changes\n\nWhy it changed, in one paragraph.\n\n"
+            "### 2026-09-02T10:00Z — an untagged entry\n\nPlain.\n\n### 2026-09-03 — [lesson] what bit us\n", encoding="utf-8")
+        (repo.root / "ext.py").write_text(
+            "def extract(root, cfg):\n"
+            "    return {'events': [{'date': '2026-09-04', 'kind': 'experiment', 'title': 'E1 locked', 'href': '/shell/record.html?p=e1.md'}],\n"
+            "            'experiments': [{'slug': 'e1', 'title': 'E1', 'href': '/shell/record.html?p=e1.md', 'locked': '2026-09-04', 'findings': []}]}\n", encoding="utf-8")
+        cfg = json.loads((repo.root / "lab.json").read_text())
+        cfg["record"] = ["record/"]; cfg["chronicle"] = {"extractors": ["ext.py"]}
+        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        repo = load_repo(repo.root)
+        _lint(repo)
+        chron = json.loads((repo.content / "chronicle.json").read_text())
+        kinds = [e["kind"] for e in chron["events"]]
+        if kinds != ["experiment", "lesson", "entry", "pivot"]:
+            failures.append(f"chronicle events wrong or unsorted: {kinds}")
+        if not chron["experiments"] or chron["experiments"][0]["slug"] != "e1":
+            failures.append("plugin experiment not merged into the chronicle")
+        if not any(e["summary"].startswith("Why it changed") for e in chron["events"]):
+            failures.append("event summary not taken from the paragraph under the heading")
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        if not cat.get("record") or cat["record"][0]["href"] != "/shell/record.html?p=record/lab.md":
+            failures.append(f"record not in the catalog: {cat.get('record')}")
+        planted += 1
+        (repo.root / "record" / "bad.md").write_text("### 2026-09-05 — [bogus] tag\n", encoding="utf-8")
+        try:
+            _lint(repo)
+            failures.append("an unknown chronicle tag must fail loud")
+        except SystemExit:
+            pass
+        (repo.root / "record" / "bad.md").unlink()
+        planted += 1
+        _lint(repo)
+
         # --- annotation round-trip on a clean page
         note = repo.content / "notes" / "a-note.html"
         t = ann.add(repo, "/content/notes/a-note.html", "tighten this",

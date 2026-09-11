@@ -11,7 +11,7 @@ USAGE = f"""ckit {__version__} — serve, lint, navigate, scaffold and annotate 
 
   ckit check                         the content gate (version pin · shell · indices current · lint · books)
   ckit lint [paths] [--no-nav]       form + genre + annotation lint; regenerates the indices
-  ckit nav [--check]                 regenerate nav.json / catalog / search-index / backlinks
+  ckit nav [--check]                 regenerate nav.json / catalog / search-index / backlinks / chronicle
   ckit new <genre> <slug> [--title]  scaffold a page from its skeleton
   ckit genres                        list the genres this repo knows (core + its extensions)
   ckit serve [--host --port]         foreground server

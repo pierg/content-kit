@@ -327,6 +327,7 @@
       '<div class="hb-side-section">' +
         '<a class="hb-side-lib" href="/">Library</a> ' +
         '<a class="hb-side-search" href="/shell/search.html" title="Search all content">Search</a>' +
+        ((catalog.record && catalog.record.length) ? ' <a class="hb-side-search" href="/shell/chronicle.html" title="The record as a timeline">Chronicle</a>' : '') +
       '</div>'
     ];
 
@@ -369,6 +370,9 @@
     });
     list("Concepts", catalog.concepts, function (c) {
       return location.pathname === c.href;
+    });
+    list("Record", catalog.record, function (r) {
+      return location.pathname === "/shell/record.html" && location.search === "?p=" + r.path;
     });
 
     return bits.join("");

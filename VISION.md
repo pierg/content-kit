@@ -89,6 +89,7 @@ Session-free by construction, which is the whole point of not using an existing 
 | Review | `shell/annotate.js` + `ckit annotations` + a write endpoint in `ckit serve`; sidecars beside pages, W3C `TextQuoteSelector` anchors |
 | Gate | `ckit check`; the engine version is pinned per repo in `lab.json` |
 | Packaging | hybrid, as decided: `kit/` vendored and pinned per repo; the engine installed once as a shim over this checkout |
+| Record (added 2026-09-11) | `content/` shows now; the arc is the append-only record, rendered by `/shell/record.html` and indexed as a generated timeline (`content/chronicle.json`, `/shell/chronicle.html`) — dated headings with kind tags, plus lab-kit's extractor for PROBEs, findings, claims, missions; checked current by `ckit check`, never authored |
 
 The questions the draft left open were settled while building:
 

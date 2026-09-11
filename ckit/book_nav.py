@@ -26,6 +26,7 @@ import json
 import re
 from pathlib import Path
 
+from . import chronicle
 from .genres import EXEMPT_PARTS
 from .paths import Repo
 from .text import (
@@ -182,6 +183,7 @@ def build_catalog(repo: Repo) -> dict:
                     items.append({"slug": p.stem, "title": _title(p),
                                   "href": f"/{c}/{folder}/{p.stem}.html"})
         out[folder] = items
+    out["record"] = chronicle.record_catalog(repo) if chronicle.enabled(repo) else []
     return out
 
 
@@ -279,6 +281,8 @@ def expected_files(repo: Repo) -> dict[Path, object]:
     expected[repo.content / "catalog.json"] = build_catalog(repo)
     expected[repo.content / "search-index.json"] = build_search_index(repo)
     expected[repo.content / "backlinks.json"] = build_backlinks(repo)
+    if chronicle.enabled(repo):
+        expected[repo.content / "chronicle.json"] = chronicle.build(repo)
     return expected
 
 

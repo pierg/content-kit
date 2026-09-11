@@ -168,6 +168,10 @@ Where a page lives is its genre, and the genre carries a **voice** — register,
 
 When a page is served by the engine, an **✎ Annotate** toggle appears bottom-right. Select prose and comment, or add a page-level note; threads are written to `<page>.annotations.json` beside the page and committed. Nothing needs to be running for a note to survive: an agent later runs `ckit annotations list` and the `/address` skill. Quotes are anchored by text, not by CSS path, and `ckit check` fails if a quoted passage is no longer on its page. The chrome classes (`hb-ann-*`) are injected — never author them, and never hand-edit a sidecar.
 
+## Record and chronicle (engine chrome)
+
+`/shell/record.html?p=<path.md>` renders one file of the repo's declared record (`lab.json` `record`) in the shell — the markdown stays the artifact; the banner names it. `/shell/chronicle.html` renders `content/chronicle.json`, the generated timeline (dated headings with `[pivot]`-style tags, plus whatever extractor the repo declares). Both are chrome like the search page: never authored, never copied into `content/`.
+
 ## Craft
 
 How to lay out a comparison, a diagram, a table, a timeline, a code listing or a figure in this vocabulary: `kit/craft/`. One playbook each; read the matching one before writing the block.

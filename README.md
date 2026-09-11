@@ -47,6 +47,7 @@ The repo records the engine version it was checked against (`"ckit"` in `lab.jso
 | `ckit up` · `down` · `status` · `serve` | the reader server on the repo's port |
 | `ckit annotations list · show · add · reply · state · check` | the session-free review loop |
 | `ckit selftest` | the engine's own gate: planted fixtures with known answers |
+| `/shell/record.html?p=<file.md>` · `/shell/chronicle.html` | the record, rendered — and the record as a timeline (`content/chronicle.json`, generated; see below) |
 
 Stdlib Python ≥ 3.10; node for book verification. No build step, no dependencies, no network.
 
@@ -61,6 +62,11 @@ Stdlib Python ≥ 3.10; node for book verification. No build step, no dependenci
 | **Indices** — catalog, search, backlinks | generated | lint regenerates; a committed index is never hand-edited |
 | **Review** — annotate, then address, asynchronously | `shell/annotate.js` · `ckit annotations` | lint: sidecars validate; an open thread's quote is still on its page |
 | **Pin** — which kit, which engine | `kit/PIN` · `lab.json` | `make kit-verify` · `ckit check` |
+| **Record** — how the current direction was reached | the repo's own markdown record, declared in `lab.json` `record`; rendered by the viewer, never copied | `ckit check`: the chronicle index is current |
+
+## The record and the chronicle
+
+`content/` shows only the current direction. How it got there is the repo's append-only markdown record — a logbook, decisions, pre-registrations — and the kit renders it rather than re-authoring it: `lab.json` declares `"record": ["HISTORY.md", "record/", "ops/", "experiments/*/PROBE.md"]`, the sidebar lists it, and `/shell/record.html?p=<file>` renders any of it in the shell (client-side, `marked`, vendored). The **chronicle** is a generated timeline over that record: every dated heading (`### 2026-09-11 — [pivot] …`, tags `pivot · kill · decision · lesson · instrument · result`, untagged = entry) becomes an event linking back to its file; a repo with its own vocabulary declares an extractor (`"chronicle": {"extractors": ["kit/tools/chronicle_lab.py"]}` — lab-kit's adds PROBE locks, findings anchored per experiment, claims, missions). `ckit lint` regenerates `content/chronicle.json`; `ckit check` fails if it is stale; nobody edits it.
 
 ## Develop
 
