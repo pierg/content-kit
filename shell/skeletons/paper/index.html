@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper title</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="paper, topic-a">
+</head>
+<body class="hb">
+<main>
+
+<h1>Paper title</h1>
+<p class="sub"><b>Status: DRAFT</b> — venue and submission state, and what the PDF gives the reader that this page does not.</p>
+
+<h2 id="abstract">Abstract</h2>
+<p>The abstract, verbatim from <code>main.tex</code>. This page frames the paper; the PDF is the paper.</p>
+
+<h2 id="artifact">The artifact</h2>
+<table>
+<tr><th>What</th><th>Where</th></tr>
+<tr><td>Source</td><td><code>main.tex</code> beside this page; the shared preamble and bibliography live in <code>assets/paper/</code></td></tr>
+<tr><td>Figures</td><td>SVG sources and their generators in <code>assets/figures/</code> — the same sources the pages embed</td></tr>
+<tr><td>PDF</td><td>built with <code>make</code>; a derived artifact, tracked only if this repo says so</td></tr>
+</table>
+
+<h2 id="rests-on">What it rests on</h2>
+<p>Every number in the paper cites a finding id. The load-bearing ones are listed here so a reader can check them without opening the PDF.</p>
+<ul>
+<li><span class="own">F-n</span> — what it establishes, in one line.</li>
+</ul>
+
+<h2 id="backlinks">Cited by</h2>
+<ul data-backlinks><li class="muted">Auto-populated by lint.</li></ul>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ckit"
+version = "0.1.0"
+description = "content-kit engine: serve, lint, navigate, scaffold and annotate an HTML content tree"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[project.scripts]
+ckit = "ckit.cli:main"
+
+[tool.setuptools]
+packages = ["ckit"]
+
+[tool.setuptools.package-data]
+ckit = ["genres.json", "verify_book.mjs"]

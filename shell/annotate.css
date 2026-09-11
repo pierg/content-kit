@@ -1,0 +1,70 @@
+/* ============================================================================
+   annotate.css — chrome for the annotation layer (loaded by shell/annotate.js).
+   Tokens come from lib.css. Every class here is injected, never authored.
+   ========================================================================== */
+
+.hb-ann-toggle { position: fixed; right: 16px; bottom: 16px; z-index: 60;
+  font: 700 12.5px/1 system-ui, -apple-system, sans-serif; padding: 9px 14px; border-radius: 999px;
+  border: 1.5px solid var(--baseline); background: var(--surface-1); color: var(--ink-2);
+  cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.hb-ann-toggle:hover, .hb-ann-toggle.on { border-color: var(--judge); color: var(--judge); }
+
+.hb-ann-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 360px; max-width: 92vw; z-index: 55;
+  overflow: auto; background: var(--surface-1); border-left: 1px solid var(--grid);
+  padding: 14px 14px 80px; font: 13px/1.45 system-ui, -apple-system, sans-serif; color: var(--ink-1);
+  box-shadow: -8px 0 24px rgba(0,0,0,0.08); box-sizing: border-box; }
+body.hb-ann-on .hb-stage { padding-right: 376px; }
+body.hb-ann-on:not(.hb-has-shell) { padding-right: 376px; }
+@media (max-width: 859px) {
+  body.hb-ann-on .hb-stage, body.hb-ann-on:not(.hb-has-shell) { padding-right: 16px; }
+}
+
+.hb-ann-head { display: flex; align-items: center; gap: 8px; justify-content: space-between;
+  flex-wrap: wrap; margin: 0 0 10px; }
+.hb-ann-head b { font-size: 14px; }
+.hb-ann-head .hb-ann-meta { flex-basis: 100%; }
+
+.hb-ann-btn { font: 700 11.5px ui-monospace, Menlo, monospace; padding: 4px 9px; border-radius: 6px;
+  border: 1.5px solid var(--baseline); background: var(--page); color: var(--ink-2); cursor: pointer; }
+.hb-ann-btn:hover, .hb-ann-btn.primary { border-color: var(--judge); color: var(--judge); }
+.hb-ann-btn:disabled { opacity: 0.5; cursor: default; }
+
+.hb-ann-bubble { position: absolute; z-index: 58; font: 700 12px system-ui, sans-serif; padding: 6px 10px;
+  border-radius: 999px; border: 1.5px solid var(--judge); background: var(--surface-1); color: var(--judge);
+  cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.14); }
+
+mark.hb-ann { background: color-mix(in srgb, var(--slack) 26%, transparent); color: inherit;
+  border-bottom: 2px solid var(--slack); border-radius: 2px; cursor: pointer; }
+mark.hb-ann-addressed { background: color-mix(in srgb, var(--kept) 16%, transparent); border-bottom-color: var(--kept); }
+mark.hb-ann-declined  { background: color-mix(in srgb, var(--rejected) 12%, transparent); border-bottom-color: var(--rejected); }
+mark.hb-ann.focus { outline: 2px solid var(--judge); outline-offset: 1px; }
+
+.hb-ann-item { border: 1px solid var(--grid); border-left: 3px solid var(--slack); border-radius: 0 8px 8px 0;
+  padding: 8px 10px; margin: 0 0 10px; background: var(--page); }
+.hb-ann-item.hb-ann-addressed { border-left-color: var(--kept); }
+.hb-ann-item.hb-ann-declined  { border-left-color: var(--rejected); }
+.hb-ann-item.hb-ann-withdrawn { border-left-color: var(--baseline); opacity: 0.6; }
+.hb-ann-item.focus { box-shadow: 0 0 0 2px var(--judge); }
+
+.hb-ann-chip { display: inline-block; font: 700 10px ui-monospace, Menlo, monospace; text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 1px 6px; border-radius: 3px; border: 1px solid; margin-right: 6px; vertical-align: 1px; }
+.hb-ann-chip.open      { color: var(--slack); border-color: var(--slack); }
+.hb-ann-chip.addressed { color: var(--kept-text); border-color: var(--kept); }
+.hb-ann-chip.declined  { color: var(--rejected); border-color: var(--rejected); }
+.hb-ann-chip.withdrawn, .hb-ann-chip.stale { color: var(--ink-3); border-color: var(--baseline); }
+
+.hb-ann-quote { color: var(--ink-2); font-style: italic; font-size: 12.5px; border-left: 2px solid var(--baseline);
+  padding: 1px 8px; margin: 6px 0; cursor: pointer; }
+.hb-ann-quote:hover { border-left-color: var(--judge); }
+.hb-ann-body { margin: 6px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.hb-ann-meta { color: var(--ink-3); font-size: 11.5px; }
+.hb-ann-reply { border-top: 1px dashed var(--grid); margin-top: 6px; padding-top: 6px; }
+.hb-ann-actions { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+.hb-ann-form { border: 1.5px solid var(--judge); border-radius: 8px; padding: 8px 10px; margin: 0 0 12px; background: var(--page); }
+.hb-ann-form textarea, .hb-ann-form input { width: 100%; box-sizing: border-box; font: 13px/1.4 system-ui, sans-serif;
+  background: var(--surface-1); color: var(--ink-1); border: 1.5px solid var(--baseline); border-radius: 8px; padding: 8px; margin: 4px 0; }
+.hb-ann-form textarea { min-height: 84px; resize: vertical; }
+.hb-ann-form textarea:focus, .hb-ann-form input:focus { outline: 2px solid var(--judge); border-color: var(--judge); }
+.hb-ann-err { color: var(--rejected); font-size: 12px; margin: 4px 0; }
+.hb-ann-empty { color: var(--ink-3); padding: 16px 0; }

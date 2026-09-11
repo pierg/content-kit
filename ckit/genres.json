@@ -1,0 +1,86 @@
+{
+  "_": "The core genre set. Human-readable voice lives in genres/GENRES.md; this file is what the engine checks. A repo extends or overrides it under `genres` in lab.json — same shape, deep-merged per genre.",
+  "genres": {
+    "note": {
+      "dir": "notes",
+      "layout": "flat",
+      "skeleton": "note.html",
+      "register": "assertive, unhedged, one claim",
+      "reader": "knows the domain",
+      "forbidden": "sections, scaffolding, growing past a few paragraphs — promote to an entry",
+      "checks": { "status": true, "max_words": 400, "no_h2": true }
+    },
+    "concept": {
+      "dir": "concepts",
+      "layout": "folder",
+      "skeleton": "concept/index.html",
+      "register": "impersonal, present tense, timeless",
+      "reader": "has met the term and wants it pinned down",
+      "forbidden": "a definition that depends on a running result — the defn must survive findings changing",
+      "checks": { "status": true, "max_words": 1500, "require_defn": true, "defn_no_findings": true }
+    },
+    "entry": {
+      "dir": "entries",
+      "layout": "folder",
+      "skeleton": "entry/index.html",
+      "register": "analytical, takes a position, cites findings by id",
+      "reader": "interested, not expert in this artifact",
+      "forbidden": "unattributed claims; a wall of prose with no sections to navigate",
+      "checks": { "status": true }
+    },
+    "book": {
+      "dir": "books",
+      "layout": "book-index",
+      "skeleton": "book/index.html",
+      "register": "the map of a sequence: what the chapters build, in what order, and why",
+      "reader": "deciding whether and where to start",
+      "forbidden": "teaching — the index orients, the chapters teach",
+      "checks": { "status": true }
+    },
+    "chapter": {
+      "dir": "books",
+      "layout": "book-page",
+      "skeleton": "chapter.html",
+      "register": "pedagogical, second person allowed, one idea at a time",
+      "reader": "has read the prior chapters and nothing else",
+      "forbidden": "forward references — a link to a later chapter must carry data-fwd to say it is deliberate",
+      "checks": { "status": true, "no_forward_refs": true }
+    },
+    "hub": {
+      "dir": "hubs",
+      "layout": "flat",
+      "skeleton": "hub.html",
+      "register": "map-like, opinionated, high link density",
+      "reader": "arriving cold, needs orientation",
+      "forbidden": "long prose — a hub that explains is an entry wearing a hub's hat",
+      "checks": { "status": true, "max_words": 1500 }
+    },
+    "project": {
+      "dir": "projects",
+      "layout": "folder",
+      "skeleton": "project/index.html",
+      "register": "operational, dated, present tense",
+      "reader": "wants to know what is true now",
+      "forbidden": "undated status — the page is explicitly perishable",
+      "checks": { "status": true, "require_meta_status": true }
+    },
+    "paper": {
+      "dir": "papers",
+      "layout": "folder",
+      "skeleton": "paper/index.html",
+      "register": "the landing page of a venue artifact: abstract, status, what it cites, where the source is",
+      "reader": "a reviewer or a reader deciding whether to open the PDF",
+      "forbidden": "restating the paper — the page frames it, the PDF is the paper",
+      "checks": { "status": true }
+    },
+    "related": {
+      "dir": "related",
+      "layout": "flat",
+      "skeleton": "related.html",
+      "register": "neutral summary of others' work with the stance kept separate",
+      "reader": "wants to know what others did and why it matters here",
+      "forbidden": "conflating their claim with our reading of it; unverified identifiers",
+      "checks": { "status": true }
+    }
+  }
+}

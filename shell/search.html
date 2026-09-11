@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+.search-wrap { max-width: 720px; margin: 12px 0 20px; }
+.search-input { width: 100%; padding: 12px 14px; font: 16px/1.4 system-ui, -apple-system, sans-serif;
+                background: var(--surface-1); color: var(--ink-1);
+                border: 1.5px solid var(--baseline); border-radius: 10px; }
+.search-input:focus { outline: 2px solid var(--judge); border-color: var(--judge); }
+.search-meta { color: var(--ink-3); font-size: 12px; margin: 8px 2px 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; }
+.fchip { font: 600 12px ui-monospace, Menlo, monospace; padding: 3px 10px;
+         border-radius: 999px; border: 1.5px solid var(--baseline);
+         background: var(--surface-1); color: var(--ink-2); cursor: pointer;
+         letter-spacing: 0.03em; text-transform: uppercase; }
+.fchip.on { border-color: var(--judge); color: var(--judge); background: color-mix(in srgb, var(--judge) 8%, var(--surface-1)); }
+.hits { list-style: none; padding: 0; margin: 0; }
+.hit  { padding: 12px 0; border-bottom: 1px solid var(--grid); }
+.hit .title { font-weight: 700; font-size: 15px; }
+.hit .title a { color: var(--ink-1); }
+.hit .title a:hover { color: var(--gen); text-decoration: none; }
+.hit .kind { font: 700 10.5px ui-monospace, Menlo, monospace; text-transform: uppercase;
+             letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px;
+             margin-right: 8px; }
+.hit .kind.book    { color: var(--reach);  border: 1px solid var(--reach); }
+.hit .kind.entry   { color: var(--gen);    border: 1px solid var(--gen); }
+.hit .kind.concept { color: var(--judge);  border: 1px solid var(--judge); }
+.hit .kind.hub     { color: var(--world);  border: 1px solid var(--world); }
+.hit .kind.note    { color: var(--ink-2);  border: 1px solid var(--baseline); }
+.hit .kind.project { color: var(--cert);   border: 1px solid var(--cert); }
+.hit .kind.page    { color: var(--ink-3);  border: 1px solid var(--baseline); }
+.hit .kind.paper   { color: var(--target); border: 1px solid var(--target); }
+.hit .kind.related { color: var(--slack);  border: 1px solid var(--slack); }
+.hit .sub  { color: var(--ink-2); font-size: 13px; margin: 4px 0; }
+.hit .snip { color: var(--ink-3); font-size: 12.5px; font-family: ui-monospace, Menlo, monospace; margin: 4px 0; }
+.hit .snip mark { background: color-mix(in srgb, var(--judge) 22%, transparent); color: var(--ink-1); border-radius: 2px; padding: 0 2px; }
+.hit .href { color: var(--ink-3); font: 11.5px ui-monospace, Menlo, monospace; }
+.hit .tags { display: inline-flex; gap: 4px; margin-left: 8px; }
+.hit .tag  { font: 10.5px ui-monospace, Menlo, monospace; color: var(--ink-3);
+             border: 1px dashed var(--baseline); border-radius: 4px; padding: 0 5px; }
+.empty { color: var(--ink-3); padding: 40px 0; text-align: center; font-size: 14px; }
+</style>
+<script src="/shell/lib.js" defer></script>
+</head>
+<body class="hb">
+<main>
+
+<h1>Search</h1>
+<p class="sub">Client-side, prebuilt index. Searches titles, subheadings, definition blockquotes, and tags across every page.</p>
+
+<div class="search-wrap">
+  <input id="q" type="search" class="search-input" placeholder="Type to filter…"
+         autofocus autocomplete="off">
+  <div class="filters" id="filters" role="tablist" aria-label="Filter by kind"></div>
+  <div class="search-meta" id="meta">Loading index…</div>
+</div>
+
+<ul class="hits" id="hits" aria-live="polite"></ul>
+
+<script>
+(function () {
+  "use strict";
+  var KINDS = ["paper", "book", "project", "hub", "related", "entry", "note", "concept", "page"];
+  var state = { q: "", kinds: new Set() };
+  var idx = [];
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function highlight(text, q) {
+    if (!q) return esc(text);
+    var re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig");
+    return esc(text).replace(re, function (m) { return "<mark>" + m + "</mark>"; });
+  }
+
+  function score(rec, q) {
+    if (!q) return 1;
+    var ql = q.toLowerCase();
+    var t = (rec.title || "").toLowerCase();
+    var s = (rec.sub   || "").toLowerCase();
+    var d = (rec.defn  || "").toLowerCase();
+    var h = (rec.headings || []).join(" ").toLowerCase();
+    var g = (rec.tags || []).join(" ").toLowerCase();
+    var sc = 0;
+    if (t.indexOf(ql) !== -1) sc += 8;
+    if (t.split(/\s+/).some(function (w) { return w === ql; })) sc += 3;
+    if (s.indexOf(ql) !== -1) sc += 3;
+    if (d.indexOf(ql) !== -1) sc += 2;
+    if (h.indexOf(ql) !== -1) sc += 2;
+    if (g.indexOf(ql) !== -1) sc += 4;
+    return sc;
+  }
+
+  function bestSnippet(rec, q) {
+    var pool = [rec.defn, rec.sub, (rec.headings || []).join(" · ")].filter(Boolean);
+    if (!q) return pool[0] || "";
+    var ql = q.toLowerCase();
+    for (var i = 0; i < pool.length; i++) {
+      var t = pool[i], ix = t.toLowerCase().indexOf(ql);
+      if (ix < 0) continue;
+      var start = Math.max(0, ix - 40);
+      var end = Math.min(t.length, ix + q.length + 100);
+      return (start > 0 ? "…" : "") + t.slice(start, end) + (end < t.length ? "…" : "");
+    }
+    return pool[0] || "";
+  }
+
+  function render() {
+    var q = state.q.trim();
+    var hits = idx
+      .filter(function (r) { return state.kinds.size === 0 || state.kinds.has(r.kind); })
+      .map(function (r) { return { r: r, s: score(r, q) }; })
+      .filter(function (x) { return x.s > 0; })
+      .sort(function (a, b) { return b.s - a.s; });
+
+    var meta = document.getElementById("meta");
+    meta.textContent = q
+      ? hits.length + " hit" + (hits.length === 1 ? "" : "s") + " for \"" + q + "\""
+      : idx.length + " pages indexed";
+
+    var hitsEl = document.getElementById("hits");
+    if (hits.length === 0) {
+      hitsEl.innerHTML = '<li class="empty">No hits. Try a different word or clear the filters.</li>';
+      return;
+    }
+    hitsEl.innerHTML = hits.slice(0, 50).map(function (h) {
+      var r = h.r;
+      var snip = bestSnippet(r, q);
+      return '<li class="hit">' +
+        '<div>' +
+          '<span class="kind ' + r.kind + '">' + r.kind + '</span>' +
+          '<span class="title"><a href="' + r.href + '">' + highlight(r.title, q) + '</a></span>' +
+          (r.tags && r.tags.length
+            ? '<span class="tags">' + r.tags.map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('') + '</span>'
+            : '') +
+        '</div>' +
+        (r.sub ? '<div class="sub">' + highlight(r.sub, q) + '</div>' : '') +
+        (snip && snip !== r.sub ? '<div class="snip">' + highlight(snip, q) + '</div>' : '') +
+        '<div class="href">' + esc(r.href) + '</div>' +
+      '</li>';
+    }).join("");
+  }
+
+  function initFilters() {
+    var el = document.getElementById("filters");
+    el.innerHTML = KINDS.map(function (k) {
+      return '<button class="fchip" data-kind="' + k + '">' + k + '</button>';
+    }).join("");
+    el.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-kind]");
+      if (!b) return;
+      var k = b.dataset.kind;
+      if (state.kinds.has(k)) state.kinds.delete(k);
+      else state.kinds.add(k);
+      b.classList.toggle("on");
+      render();
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initFilters();
+    var input = document.getElementById("q");
+    input.addEventListener("input", function () { state.q = input.value; render(); });
+    fetch("/content/search-index.json", { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { idx = data; render(); })
+      .catch(function () {
+        document.getElementById("meta").textContent = "Failed to load index.";
+      });
+    // Support ?q= in URL for shareable searches
+    var params = new URLSearchParams(location.search);
+    if (params.get("q")) { input.value = params.get("q"); state.q = input.value; }
+  });
+})();
+</script>
+
+</main>
+</body>
+</html>

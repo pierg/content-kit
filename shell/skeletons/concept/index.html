@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TERM — full display name</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+/* chapter-local widget CSS for this concept only (worked example, custom grids).
+   No design tokens; use --reach/--target/--slack/--leak/--gen/--judge/--world. */
+.formula { margin: 12px 0; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<!-- Opt-in KaTeX loader — omit for concept pages with no math. -->
+<script src="/shell/math.js" defer></script>
+</head>
+<body class="hb">
+<main>
+
+<h1>Term — full display name</h1>
+<p class="sub"><b>Status: LIVE</b> — definition of record. One-line orientation: what this concept is and where it earns its keep.</p>
+
+<!-- Rich concept pages open with one figure that carries the phenomenon.
+     Use inline SVG with the SET/ROLE color registers so the visual vocabulary
+     matches the rest of the library. -->
+<figure aria-label="…">
+<svg viewBox="0 0 640 200" role="img" xmlns="http://www.w3.org/2000/svg">
+  <!-- example: use var(--reach), var(--target), var(--slack), var(--leak) -->
+</svg>
+<figcaption><b>The phenomenon in one picture.</b> One or two sentences.</figcaption>
+</figure>
+
+<blockquote class="defn" id="SLUG">
+<span class="defn-name">TERM — definition of record</span><br>
+Self-contained: every symbol either named in the sentence or wrapped in
+<code>defn-link</code>. LaTeX math renders inline: $H(s) \wedge \neg H(s')$.
+This blockquote is the payload the popover pops on hover.
+</blockquote>
+
+<h3>The formal query / math notation</h3>
+
+<p>Prose introducing the equation. Symbols carry over from the defn above.</p>
+
+<p class="formula">$$ \text{claim} \iff \exists s.\; H(s) \wedge T(s, s') \wedge \neg H(s') $$</p>
+
+<h3>Worked example</h3>
+
+<p>Concrete small instance. Prefer a grid or short state diagram over prose.
+Use <code>&lt;code&gt;</code> for identifiers you want to stay monospace
+(they are in KaTeX's <code>ignoredTags</code> and will not be math-rendered).</p>
+
+<h3>Common trap</h3>
+
+<div class="note note-warn">
+<b>The trap that snares almost everyone.</b> Name the misreading precisely.
+Prefer <em>naming</em> the mistake over hedging around it.
+</div>
+
+<h3>Related concepts</h3>
+
+<p>How this concept sits next to
+<a class="defn-link" href="/content/concepts/OTHER/">others</a>.</p>
+
+<h3>Source of record</h3>
+
+<p>The long form — with staged phenomena, worked examples, and the
+misconceptions it disarms — lives in
+<a href="/content/books/BOOK/CHAPTER.html#ANCHOR">that chapter</a>. Change the
+long-form treatment there; keep the concept page's <code>defn</code> in sync.</p>
+
+<h3>Used in</h3>
+<ul data-backlinks><li class="muted">Populated by lint (backlinks — Phase 4).</li></ul>
+
+</main>
+</body>
+</html>

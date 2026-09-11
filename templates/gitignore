@@ -1,0 +1,10 @@
+# Server scratch
+.serve.pid
+.serve.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Throwaway review artifacts from other tools never land beside content/
+.lavish/
