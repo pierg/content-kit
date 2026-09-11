@@ -97,6 +97,12 @@ The questions the draft left open were settled while building:
 - **Resolved threads are retained.** Nothing is deleted; a human withdraws, an agent addresses or declines with a reason. Only an *open* thread's anchor is load-bearing for the gate — an addressed thread's passage may well have changed, because that is what acting on it looks like.
 - **Extensions declare their voice in `lab.json`** under `genres`, same shape as the core, deep-merged per genre, so an override of a core check is one visible line.
 
+## Known gap — the paper is content the kit does not yet govern (recorded 2026-09-11, not fixed)
+
+The vision says each content type has its own language and that assets are shared across forms; the realization drew the engine's boundary at HTML, so the `paper` genre covers only the landing page (`index.html`) and the `.tex` itself is untouched by `ckit`. In proof-harness-lab the sharing already happens by convention — 28 SVG sources with generators in `assets/figures/`, 13 embedded by pages as SVG and 7 included by the paper as PDF derivatives of the same stems, one `references.bib` with 45 entries — but nothing checks it. Unchecked today, each checkable in seconds without a TeX toolchain: the `.tex` declares its status in its opening lines (the ladder lint checks `main.md`, not `main.tex`); every `\includegraphics{X.pdf}` derives from `assets/figures/X.svg` with a generator (one home, cross-format); every `\cite{key}` resolves in the shared bibliography; the landing page's abstract equals the `.tex` abstract; `\input`/`\include` resolve. Also missing: the `.tex` register in `GENRES.md` (formal, linear, every number cites a finding id in a comment), a `craft/paper.md`, and the paper machinery (`assets/paper/` preamble and bibliography, `assets/figures/` skeleton) as content-kit skeletons so a non-lab repo can carry a paper at all — today that machinery is lab-kit's.
+
+The shape of the fix is a `paper` genre v2: the genre declares the `index.html` + `main.tex` pair (a declared pair like an entry's `source.json`, not a twin); `ckit check` gains the five checks; the asset conventions become kit skeletons; building the PDF stays out-of-band. The operator chose on 2026-09-11 to record this rather than build it now.
+
 ## What is not decided
 
 - Whether the annotation UI ships as part of the served page (a shell affordance, always available) or as a separate mode. Affects whether readers can annotate accidentally.
