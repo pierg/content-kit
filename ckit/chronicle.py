@@ -15,7 +15,15 @@ The tag names the kind — pivot · kill · decision · lesson · instrument · 
 untagged heading is a plain `entry`. A repo declares its record in lab.json:
 
     "record": ["HISTORY.md", "QUESTIONS.md", "ops/", "record/", "experiments/*/PROBE.md"],
-    "chronicle": { "extractors": ["kit/tools/chronicle_lab.py"] }
+    "chronicle": {
+      "sources":    ["HISTORY.md", "ops/", "record/", "experiments/*/PROBE.md"],
+      "extractors": ["kit/tools/chronicle_lab.py"]
+    }
+
+`record` names the files a reader browses in the sidebar (files only; a directory or a
+glob there is ignored for the sidebar — the scanner sweeps `chronicle.sources` instead).
+When `chronicle.sources` is absent the scanner falls back to `record`, so a small repo
+gets away with declaring one thing.
 
 Extractors are plugins for a vocabulary the engine does not know (a lab's PROBEs, F-<n>
 findings, missions). Each is a Python file exposing
@@ -58,10 +66,10 @@ def viewer_href(rel: str, anchor: str | None = None) -> str:
     return f"/shell/record.html?p={rel}" + (f"#{anchor}" if anchor else "")
 
 
-def record_files(repo: Repo) -> list[Path]:
-    """The declared record, expanded: files, directories (all .md beneath), and globs."""
+def _expand(repo: Repo, items: list, key: str) -> list[Path]:
+    """Files, directories (all .md beneath), and globs → a de-duped list of .md files."""
     out: list[Path] = []
-    for item in repo.cfg.get("record") or []:
+    for item in items:
         if "*" in item:
             out.extend(p for p in sorted(repo.root.glob(item)) if p.is_file() and p.suffix == ".md")
             continue
@@ -71,7 +79,7 @@ def record_files(repo: Repo) -> list[Path]:
         elif p.is_file():
             out.append(p)
         else:
-            raise SystemExit(f"lab.json record: {item!r} does not exist")
+            raise SystemExit(f"lab.json {key}: {item!r} does not exist")
     seen: set[Path] = set()
     uniq = []
     for p in out:
@@ -79,6 +87,14 @@ def record_files(repo: Repo) -> list[Path]:
             seen.add(p)
             uniq.append(p)
     return uniq
+
+
+def record_files(repo: Repo) -> list[Path]:
+    """What the generic scanner sweeps: chronicle.sources, else record."""
+    sources = (repo.cfg.get("chronicle") or {}).get("sources")
+    if sources is not None:
+        return _expand(repo, sources, "chronicle.sources")
+    return _expand(repo, repo.cfg.get("record") or [], "record")
 
 
 def md_title(text: str, fallback: str) -> str:
@@ -176,13 +192,25 @@ def build(repo: Repo) -> dict:
 
 
 def enabled(repo: Repo) -> bool:
-    return bool(repo.cfg.get("record")) or bool((repo.cfg.get("chronicle") or {}).get("extractors"))
+    cfg = repo.cfg.get("chronicle") or {}
+    return bool(repo.cfg.get("record")) or bool(cfg.get("sources")) or bool(cfg.get("extractors"))
 
 
 def record_catalog(repo: Repo) -> list[dict]:
-    """The declared record as sidebar entries: title from the first h1, href into the viewer."""
+    """Sidebar entries — files declared in `record` only (a dir/glob there is scanner-only).
+
+    The sidebar is a curated front door: a repo lists the ledger and the standing surfaces
+    a reader wants to browse, not the whole tree the scanner sweeps for dated headings.
+    """
     out = []
-    for p in record_files(repo):
+    for item in repo.cfg.get("record") or []:
+        if "*" in item:
+            continue  # a glob is a scanner sweep, not a sidebar item
+        p = repo.root / item
+        if p.is_dir() or p.suffix != ".md":
+            continue
+        if not p.is_file():
+            raise SystemExit(f"lab.json record: {item!r} does not exist")
         rel = p.relative_to(repo.root).as_posix()
         out.append({"title": md_title(p.read_text(encoding="utf-8", errors="replace"), p.stem),
                     "path": rel, "href": viewer_href(rel)})

@@ -45,7 +45,10 @@ printf '# Log — LIVE\n\n### 2026-09-01 — [pivot] direction changed\n\nBecaus
 python3 - "$REPO/lab.json" <<'PY'
 import json, sys
 from pathlib import Path
-p = Path(sys.argv[1]); c = json.loads(p.read_text()); c["record"] = ["record/"]; p.write_text(json.dumps(c, indent=2) + "\n")
+p = Path(sys.argv[1]); c = json.loads(p.read_text())
+c["record"] = ["record/log.md"]
+c["chronicle"] = {"sources": ["record/"]}
+p.write_text(json.dumps(c, indent=2) + "\n")
 PY
 ( cd "$REPO" && ckit lint >/dev/null && make check >/dev/null ) || fail "gate red with a record declared"
 grep -q '"pivot"' "$REPO/content/chronicle.json" || fail "chronicle.json lacks the pivot"

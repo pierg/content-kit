@@ -118,7 +118,8 @@ def main(argv: list[str]) -> int:
             "    return {'events': [{'date': '2026-09-04', 'kind': 'experiment', 'title': 'E1 locked', 'href': '/shell/record.html?p=e1.md'}],\n"
             "            'experiments': [{'slug': 'e1', 'title': 'E1', 'href': '/shell/record.html?p=e1.md', 'locked': '2026-09-04', 'findings': []}]}\n", encoding="utf-8")
         cfg = json.loads((repo.root / "lab.json").read_text())
-        cfg["record"] = ["record/"]; cfg["chronicle"] = {"extractors": ["ext.py"]}
+        cfg["record"] = ["record/lab.md"]
+        cfg["chronicle"] = {"sources": ["record/"], "extractors": ["ext.py"]}
         (repo.root / "lab.json").write_text(json.dumps(cfg))
         repo = load_repo(repo.root)
         _lint(repo)
@@ -133,6 +134,25 @@ def main(argv: list[str]) -> int:
         cat = json.loads((repo.content / "catalog.json").read_text())
         if not cat.get("record") or cat["record"][0]["href"] != "/shell/record.html?p=record/lab.md":
             failures.append(f"record not in the catalog: {cat.get('record')}")
+        planted += 1
+
+        # split: `record` lists files (sidebar); `chronicle.sources` sweeps dirs (scanner)
+        (repo.root / "record" / "log.md").write_text(
+            "# Log — LIVE\n\n### 2026-09-05 — [decision] the split lands\n\nBecause.\n", encoding="utf-8")
+        cfg = json.loads((repo.root / "lab.json").read_text())
+        cfg["record"] = ["record/lab.md", "record/log.md", "record/"]  # a dir here is scanner-only, not sidebar
+        cfg["chronicle"] = {"sources": ["record/"], "extractors": ["ext.py"]}
+        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        repo2 = load_repo(repo.root)
+        _lint(repo2)
+        cat2 = json.loads((repo2.content / "catalog.json").read_text())
+        paths = [r["path"] for r in cat2.get("record") or []]
+        if paths != ["record/lab.md", "record/log.md"]:
+            failures.append(f"sidebar must list only file entries in record: {paths}")
+        chron2 = json.loads((repo2.content / "chronicle.json").read_text())
+        dec = next((e for e in chron2["events"] if e["kind"] == "decision"), None)
+        if not dec or dec.get("source") != "record/log.md":
+            failures.append(f"chronicle.sources did not sweep record/log.md: {dec}")
         planted += 1
         (repo.root / "record" / "bad.md").write_text("### 2026-09-05 — [bogus] tag\n", encoding="utf-8")
         try:
