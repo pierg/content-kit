@@ -199,6 +199,59 @@
     });
   }
 
+  /* Record id links: F-<n> and C-<n> in the content become links into the record
+     viewer (findings.md / claims.md at their stable ids). Inline <code> is linked;
+     <pre> blocks, existing links, headings, and pinned <lab>:F-n are left alone.
+     Idempotent — a second pass skips ids already inside an <a>. Called here for
+     content pages, and by record.html after it injects a rendered record file. */
+  var REC_ID = /\b(F-\d+(?:\.\d+)?|C-\d+)\b/g;
+  var REC_SKIP = { A: 1, PRE: 1, SCRIPT: 1, STYLE: 1, H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1 };
+
+  function recIdHref(id) {
+    var file = id.charAt(0) === "C" ? "record/claims.md" : "record/findings.md";
+    return "/shell/record.html?p=" + file + "#" + id;
+  }
+
+  function linkRecordIds(root) {
+    if (!root || typeof document.createTreeWalker !== "function") return;
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        var v = node.nodeValue;
+        if (!v || v.indexOf("-") === -1) return NodeFilter.FILTER_REJECT;
+        for (var p = node.parentNode; p && p !== root; p = p.parentNode) {
+          if (p.nodeType === 1 && REC_SKIP[p.tagName]) return NodeFilter.FILTER_REJECT;
+        }
+        REC_ID.lastIndex = 0;
+        return REC_ID.test(v) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    var targets = [];
+    var node;
+    while ((node = walker.nextNode())) targets.push(node);
+    targets.forEach(function (t) {
+      var text = t.nodeValue;
+      var frag = document.createDocumentFragment();
+      var last = 0, m;
+      REC_ID.lastIndex = 0;
+      while ((m = REC_ID.exec(text))) {
+        var idx = m.index;
+        if (idx > 0 && text.charAt(idx - 1) === ":") continue; /* pinned <lab>:F-n */
+        if (idx > last) frag.appendChild(document.createTextNode(text.slice(last, idx)));
+        var a = document.createElement("a");
+        a.className = "rec-ref";
+        a.setAttribute("href", recIdHref(m[1]));
+        a.textContent = m[1];
+        frag.appendChild(a);
+        last = idx + m[1].length;
+      }
+      if (last === 0) return;
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      t.parentNode.replaceChild(frag, t);
+    });
+  }
+
+  window.hbLinkRecordIds = linkRecordIds;
+
   /* Generic stepper: hbStepper({el, count, render}) wires ⟲/◀/▶ buttons marked
      data-step="reset|prev|next" inside el, calls render(i) on every change. */
   window.hbStepper = function (cfg) {
@@ -473,6 +526,7 @@
       initDefnLinks();
       initBacklinks();
       initAnnotate();
+      linkRecordIds(document.querySelector("main"));
     });
   });
 })();

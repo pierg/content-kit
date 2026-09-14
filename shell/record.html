@@ -91,7 +91,10 @@
       var seen = {};
       var toc = [];
       art.querySelectorAll("h1, h2, h3, h4").forEach(function (h) {
-        var id = slugify(h.textContent);
+        /* A finding or claim heading ("F-32 · …", "C-1 · …") gets its id as a stable
+           anchor so #F-32 resolves and survives title edits; everything else slugifies. */
+        var idm = h.textContent.match(/^\s*(F-\d+(?:\.\d+)?|C-\d+)\b/);
+        var id = idm ? idm[1] : slugify(h.textContent);
         if (!id) return;
         var n = 1, base = id;
         while (seen[id]) { n += 1; id = base + "-" + n; }
@@ -101,6 +104,8 @@
       });
       art.querySelectorAll("a[href]").forEach(function (a) { a.setAttribute("href", resolve(a.getAttribute("href"))); });
       art.querySelectorAll("img[src]").forEach(function (im) { var s = im.getAttribute("src"); if (!/^(\/|[a-z]+:)/i.test(s)) im.setAttribute("src", "/" + dir + s); });
+      /* Cross-link F-/C- ids within the record too (after resolve, so these absolute hrefs are left alone). */
+      if (window.hbLinkRecordIds) window.hbLinkRecordIds(art);
 
       if (toc.length > 1) {
         var el = document.getElementById("toc");
