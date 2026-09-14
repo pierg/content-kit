@@ -23,6 +23,12 @@
 #rec h2 { margin-top: 44px; }
 #rec h3 { margin-top: 26px; }
 #rec h4 { margin-top: 18px; }
+/* Record prose is dense and field-heavy; give it room to breathe and let long inline
+   code (paths, re-derive commands) wrap instead of forcing the line wide. */
+#rec p { line-height: 1.7; margin: 13px 0; max-width: 78ch; }
+#rec li { line-height: 1.6; }
+#rec code { overflow-wrap: anywhere; }
+#rec strong { color: var(--ink-strong, var(--ink-1)); }
 #rec blockquote { border-left: 3px solid var(--baseline); color: var(--ink-2); margin: 10px 0; padding: 2px 14px; }
 #rec table { display: block; overflow-x: auto; }
 #rec img { max-width: 100%; }
@@ -85,6 +91,12 @@
         '<a href="/' + esc(p) + '">raw</a>' +
         (st ? ' · <span class="rec-status ' + st.toLowerCase() + '">' + st + '</span>' : '') +
         ' · <a href="/shell/chronicle.html">chronicle</a>';
+      /* De-blob dense field rows (a finding's "**Status:** … / **Anchor:** …" lines) by
+         forcing a break only before a bold-label line — a source line starting with **…:
+         — NOT globally. breaks stays false, so hard-wrapped prose (the frozen history
+         logbooks, README, CLAUDE.md) still reflows to the browser width instead of
+         breaking raggedly at its old ~100-column wrap points. */
+      md = md.replace(/([^\n])\n(?=\*\*[^\n*]*:)/g, "$1  \n");
       marked.setOptions({ gfm: true, breaks: false });
       art.innerHTML = marked.parse(md);
 
