@@ -37,6 +37,7 @@
 .db-panel > h2 .c { font: 500 11.5px ui-monospace, Menlo, monospace; color: var(--ink-3); margin-left: auto; }
 .db-panel > h2 a.more { font: 500 11.5px ui-monospace, Menlo, monospace; }
 .db-empty { color: var(--ink-3); font-size: 13px; padding: 10px 0; }
+.db-note { color: var(--ink-3); font-size: 12px; line-height: 1.5; margin: 8px 0 2px; font-style: italic; }
 
 .db-row { padding: 8px 0; border-top: 1px dashed var(--grid); font-size: 13.5px; line-height: 1.45; }
 .db-row:first-of-type { border-top: 0; }
@@ -125,14 +126,15 @@
     function add(label, n) { if (n) bits.push('<span class="n"><b>' + n + "</b> " + esc(label) + "</span>"); }
     add("findings", (d.findings || []).length);
     add("experiments", (d.experiments || []).length);
-    add("open questions", (d.questions || []).filter(function (q) { return stClass(q.status) === "open"; }).length);
+    add("questions", (d.questions || []).length);
     add("claims", (d.claims || []).length);
     document.getElementById("tally").innerHTML = bits.join("");
   }
 
   function questionsPanel(qs) {
     if (!qs.length) return "";
-    var body = qs.map(function (q) {
+    var note = '<p class="db-note">Status is as first declared in QUESTIONS.md; a question later settled by an annotation may still read at its opening status here — open the file for the live reading.</p>';
+    var body = note + qs.map(function (q) {
       return '<div class="db-row"><div class="top"><span class="t"><a href="' + esc(q.href) + '">' +
         esc(q.id) + " · " + esc(q.title) + "</a></span>" + stChip(q.status) + "</div>" +
         (q.kill ? '<p class="meta"><b>Kill:</b> ' + esc(q.kill) + "</p>" : "") + "</div>";
