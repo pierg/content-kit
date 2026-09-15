@@ -378,6 +378,7 @@
     if (!catalog) return "";
     var bits = [
       '<div class="hb-side-section">' +
+        (catalog.dashboard ? '<a class="hb-side-lib" href="/shell/dashboard.html" title="The record as a status board">Dashboard</a> ' : '') +
         '<a class="hb-side-lib" href="/">Library</a> ' +
         '<a class="hb-side-search" href="/shell/search.html" title="Search all content">Search</a>' +
         ((catalog.record && catalog.record.length) ? ' <a class="hb-side-search" href="/shell/chronicle.html" title="The record as a timeline">Chronicle</a>' : '') +

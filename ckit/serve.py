@@ -31,7 +31,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from . import __version__, annotations
-from . import chronicle
+from . import chronicle, ladder
 from .book_nav import CATALOG_GROUPS, _books, _title
 from .paths import Repo, load_repo
 
@@ -212,6 +212,10 @@ def make_handler(repo: Repo):
         def _serve(self, *, body: bool) -> None:
             path = unquote(urlparse(self.path).path)
             if path in ("", "/"):
+                dash = repo.shell / "dashboard.html"
+                if repo.cfg.get("home") == "dashboard" and ladder.enabled(repo) and dash.is_file():
+                    self._send(200, dash.read_bytes(), "text/html; charset=utf-8", body)
+                    return
                 self._send(200, _landing(repo), "text/html; charset=utf-8", body)
                 return
             if path == "/__annotations/ping":

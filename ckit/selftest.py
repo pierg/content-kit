@@ -164,6 +164,76 @@ def main(argv: list[str]) -> int:
         planted += 1
         _lint(repo)
 
+        # --- the dashboard: opt-in ladder.json, generated + drift-checked like the chronicle,
+        #     merging an extractor's ladder() vocabulary with the generic now / decisions.
+        (repo.root / "record" / "state.md").write_text(
+            "# State — LIVE\n\nThe planted current phase, in a sentence.\n", encoding="utf-8")
+        (repo.root / "ext.py").write_text(
+            "def extract(root, cfg):\n"
+            "    return {'events': [{'date': '2026-09-04', 'kind': 'experiment', 'title': 'E1 locked', 'href': '/shell/record.html?p=e1.md'},\n"
+            "                       {'date': '2026-09-06', 'kind': 'decision', 'title': 'the planted decision', 'summary': 'why', 'href': '/shell/record.html?p=d.md'}],\n"
+            "            'experiments': [{'slug': 'e1', 'title': 'E1', 'href': '/shell/record.html?p=e1.md', 'locked': '2026-09-04', 'status': 'LOCKED', 'findings': []}]}\n"
+            "def ladder(root, cfg):\n"
+            "    return {'questions': [{'id': 'Q1', 'title': 'the planted question', 'status': 'OPEN', 'kill': 'k', 'href': '/x#q1'}],\n"
+            "            'findings': [{'id': 'F-1', 'title': 'the planted finding', 'status': 'BANKED', 'href': '/x#f-1'}],\n"
+            "            'claims': [{'id': 'C-1', 'title': 'the planted claim', 'rests_on': ['F-1'], 'href': '/x#c-1'}]}\n",
+            encoding="utf-8")
+        cfg = json.loads((repo.root / "lab.json").read_text())
+        cfg["record"] = ["record/state.md", "record/lab.md", "record/log.md", "record/"]
+        cfg["chronicle"] = {"sources": ["record/"], "extractors": ["ext.py"]}
+        cfg["home"] = "dashboard"
+        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        repo = load_repo(repo.root)
+        _lint(repo)
+        lad_path = repo.content / "ladder.json"
+        if not lad_path.is_file():
+            failures.append("ladder.json not generated when home=dashboard")
+        else:
+            lad = json.loads(lad_path.read_text())
+            if [q["id"] for q in lad.get("questions") or []] != ["Q1"]:
+                failures.append(f"ladder questions not merged from the extractor: {lad.get('questions')}")
+            if [f["id"] for f in lad.get("findings") or []] != ["F-1"]:
+                failures.append(f"ladder findings not merged: {lad.get('findings')}")
+            if not lad.get("claims") or lad["claims"][0]["rests_on"] != ["F-1"]:
+                failures.append(f"ladder claims not merged: {lad.get('claims')}")
+            if not lad.get("now") or "planted current phase" not in (lad["now"].get("summary") or ""):
+                failures.append(f"ladder 'now' not scraped from the State file: {lad.get('now')}")
+            if not any(d["kind"] == "decision" for d in lad.get("decisions") or []):
+                failures.append(f"ladder decisions not taken from the chronicle: {lad.get('decisions')}")
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        if cat.get("dashboard") is not True:
+            failures.append("catalog.json missing the dashboard flag when opted in")
+        if not (KIT_SRC / "shell" / "dashboard.html").is_file():
+            failures.append("the dashboard shell page is missing")
+        planted += 1
+        # a stale ladder.json fails the gate, exactly like any other committed index
+        good_lad = lad_path.read_text(encoding="utf-8")
+        lad_path.write_text(good_lad.replace("planted finding", "tampered"), encoding="utf-8")
+        err = io.StringIO()
+        with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            rc = check.run(repo)
+        if rc == 0 or "out of date" not in err.getvalue():
+            failures.append("a stale ladder.json must fail `ckit check`")
+        _lint(repo)  # regenerates / restores
+        planted += 1
+        # opting out is inert: catalog carries no dashboard flag and no ladder.json is expected
+        lad_path.unlink()
+        cfg = json.loads((repo.root / "lab.json").read_text())
+        del cfg["home"]
+        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        repo = load_repo(repo.root)
+        _lint(repo)
+        if lad_path.is_file():
+            failures.append("ladder.json must not be regenerated once the repo opts out")
+        if "dashboard" in json.loads((repo.content / "catalog.json").read_text()):
+            failures.append("catalog.json must drop the dashboard flag when opted out")
+        planted += 1
+        # re-enable so the remaining fixtures run against a consistent, dashboard-on repo
+        cfg["home"] = "dashboard"
+        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        repo = load_repo(repo.root)
+        _lint(repo)
+
         # --- annotation round-trip on a clean page
         note = repo.content / "notes" / "a-note.html"
         t = ann.add(repo, "/content/notes/a-note.html", "tighten this",

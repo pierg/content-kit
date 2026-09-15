@@ -26,7 +26,7 @@ import json
 import re
 from pathlib import Path
 
-from . import chronicle
+from . import chronicle, ladder
 from .genres import EXEMPT_PARTS
 from .paths import Repo
 from .text import (
@@ -184,6 +184,8 @@ def build_catalog(repo: Repo) -> dict:
                                   "href": f"/{c}/{folder}/{p.stem}.html"})
         out[folder] = items
     out["record"] = chronicle.record_catalog(repo) if chronicle.enabled(repo) else []
+    if ladder.enabled(repo):
+        out["dashboard"] = True  # opt-in only — omitted otherwise, so a non-adopting repo's catalog.json is unchanged
     return out
 
 
@@ -282,7 +284,10 @@ def expected_files(repo: Repo) -> dict[Path, object]:
     expected[repo.content / "search-index.json"] = build_search_index(repo)
     expected[repo.content / "backlinks.json"] = build_backlinks(repo)
     if chronicle.enabled(repo):
-        expected[repo.content / "chronicle.json"] = chronicle.build(repo)
+        chron = chronicle.build(repo)
+        expected[repo.content / "chronicle.json"] = chron
+        if ladder.enabled(repo):
+            expected[repo.content / "ladder.json"] = ladder.build(repo, chron)
     return expected
 
 
