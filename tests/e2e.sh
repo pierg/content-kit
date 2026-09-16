@@ -92,6 +92,31 @@ curl -fsS "$B/shell/chronicle.html" >/dev/null || fail "chronicle page not serve
 curl -fsS "$B/content/chronicle.json" | grep -q "direction changed" || fail "chronicle.json not served"
 curl -fsS "$B/" | grep -q "Chronicle" || fail "landing lacks the chronicle link"
 curl -fsS "$B/content/notes/hello.html" | grep -q "Status: LIVE" || fail "scaffolded page lacks its status line"
+
+echo "--- a home written to lab.json on disk reaches the handler through load_repo ---"
+python3 - "$REPO/lab.json" <<'PY'
+import json, sys
+from pathlib import Path
+p = Path(sys.argv[1]); c = json.loads(p.read_text())
+c["home"] = "content/concepts/thing"
+c["dashboard"] = True
+p.write_text(json.dumps(c, indent=2) + "\n")
+PY
+( cd "$REPO" && ckit down >/dev/null && ckit up >/dev/null )
+sleep 0.5
+curl -sI "$B/" | grep -q '302' || fail "a content-page home on disk did not redirect through load_repo"
+curl -sI "$B/" | grep -q '^Location: /content/concepts/thing/' || fail "content-page home redirected to the wrong canonical URL"
+python3 - "$REPO/lab.json" <<'PY'
+import json, sys
+from pathlib import Path
+p = Path(sys.argv[1]); c = json.loads(p.read_text())
+del c["home"]; del c["dashboard"]  # later steps' `make check` needs the pre-existing (ladder-off) state back
+p.write_text(json.dumps(c, indent=2) + "\n")
+PY
+( cd "$REPO" && ckit down >/dev/null && ckit up >/dev/null )
+sleep 0.5
+echo "home ok"
+
 curl -fsS "$B/__annotations/ping" | grep -q '"ok": true' || fail "annotation ping failed"
 curl -fsS -X POST -H 'Content-Type: application/json' "$B/__annotations" \
   -d '{"op":"add","page":"/content/notes/hello.html","author":"e2e","body":"tighten this","target":{"type":"TextQuoteSelector","exact":"Atomic-thought unit"}}' \

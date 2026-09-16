@@ -15,10 +15,13 @@ import json
 import os
 import shutil
 import tempfile
+import threading
 from contextlib import redirect_stdout
+from http.client import HTTPConnection
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 
-from . import __version__, annotations as ann, check, lint, new
+from . import __version__, annotations as ann, check, lint, new, serve
 from .paths import KIT_SRC, Repo, load_repo
 
 CLEAN = {
@@ -69,6 +72,17 @@ def _lint(repo: Repo) -> list[str]:
     with redirect_stdout(buf):
         probs, _ = lint.run(repo, nav=True)
     return probs
+
+
+def _request(port: int, path: str) -> tuple[int, str | None, bytes]:
+    """One GET against a live selftest server — status, Location (if any), and the body."""
+    conn = HTTPConnection("127.0.0.1", port, timeout=5)
+    try:
+        conn.request("GET", path)
+        resp = conn.getresponse()
+        return resp.status, resp.getheader("Location"), resp.read()
+    finally:
+        conn.close()
 
 
 def _expect(probs: list[str], rel: str, needle: str, failures: list[str]) -> None:
@@ -233,6 +247,54 @@ def main(argv: list[str]) -> int:
         (repo.root / "lab.json").write_text(json.dumps(cfg))
         repo = load_repo(repo.root)
         _lint(repo)
+
+        # --- `home` as a content page: `/` 302s to its canonical URL; a dangling one fails
+        #     `ckit check` and 404s at serve time; `"home": "dashboard"` keeps serving the
+        #     dashboard exactly as before — exercised through a live instance of the handler
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), serve.make_handler(repo))
+        server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+        server_thread.start()
+        port = httpd.server_address[1]
+        try:
+            status, _, dash_body = _request(port, "/")
+            if status != 200 or b"<title>Dashboard</title>" not in dash_body:
+                failures.append(f'"home": "dashboard" should still serve the dashboard at /, got {status}')
+            planted += 1
+
+            repo.cfg["home"] = "content/projects/a-project"  # a real page from the CLEAN fixtures
+            status, location, _ = _request(port, "/")
+            if status != 302 or location != "/content/projects/a-project/":
+                failures.append(
+                    f"a content-page home should 302 / to its canonical URL; got {status} {location!r}")
+            planted += 1
+
+            repo.cfg["home"] = "content/projects/does-not-exist"
+            status, _, _ = _request(port, "/")
+            if status != 404:
+                failures.append(f"a dangling home should 404 at serve time, not fall back silently; got {status}")
+            err = io.StringIO()
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc = check.run(repo)
+            if rc == 0 or "does not resolve to a page" not in err.getvalue():
+                failures.append("a dangling home must fail `ckit check` with the new message")
+            planted += 1
+
+            # a non-string home (the likely slip beside "dashboard": true) is dangling, not a crash
+            repo.cfg["home"] = True
+            status, _, _ = _request(port, "/")
+            if status != 404:
+                failures.append(f'"home": true should 404 at serve time like any other dangling home, got {status}')
+            err = io.StringIO()
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc = check.run(repo)
+            if rc == 0 or "does not resolve to a page" not in err.getvalue():
+                failures.append('"home": true must fail `ckit check` with the dangling-home message, not raise')
+            planted += 1
+        finally:
+            repo.cfg["home"] = "dashboard"  # leave the fixture consistent for what follows
+            httpd.shutdown()
+            httpd.server_close()
+            server_thread.join(timeout=2)
 
         # --- annotation round-trip on a clean page
         note = repo.content / "notes" / "a-note.html"
