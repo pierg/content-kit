@@ -37,10 +37,14 @@ NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
 HREF_RE = re.compile(r'href="(/content/[^"#?]*)(?:[#?][^"]*)?"', re.I)
 
 # Sidebar / landing order. Folder genres list <dir>/<slug>/index.html; flat ones <dir>/<slug>.html.
+# Every core genre's `dir` is a group here and every group is a genre dir — the selftest asserts
+# it, because a genre missing from this tuple still lints and is still searched, but silently
+# never appears in the sidebar and is badged "page".
 CATALOG_GROUPS = (
     ("papers", "paper", "folder"),
     ("books", "book", "folder"),
     ("projects", "project", "folder"),
+    ("stories", "story", "folder"),
     ("hubs", "hub", "flat"),
     ("related", "related", "flat"),
     ("entries", "entry", "folder"),

@@ -410,6 +410,9 @@
     list("Projects", catalog.projects, function (p) {
       return location.pathname === p.href;
     });
+    list("Stories", catalog.stories, function (s) {
+      return location.pathname === s.href;
+    });
     list("Hubs", catalog.hubs, function (h) {
       return location.pathname === h.href;
     });

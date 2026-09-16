@@ -21,13 +21,14 @@ from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
-from . import __version__, annotations as ann, check, lint, new, serve
+from . import __version__, annotations as ann, book_nav, check, genres, lint, new, serve
 from .paths import KIT_SRC, Repo, load_repo
 
 CLEAN = {
     "note": "a-note",
     "concept": "a-concept",
     "entry": "an-entry",
+    "story": "a-story",
     "hub": "a-hub",
     "project": "a-project",
     "paper": "a-paper",
@@ -45,6 +46,15 @@ PAGE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>{tit
 def _page(title: str, body: str = "<p>Body.</p>", *, sub: str = "<b>Status: LIVE</b> — fixture.",
           head: str = "") -> str:
     return PAGE.format(title=title, sub=sub, body=body, head=head)
+
+
+STORY_SECTIONS = ("question", "why", "did", "happened", "learned", "not", "deeper", "backlinks")
+SEALED = "<b>Status: LIVE</b> — a sealed story of one result against <code>F-1</code>."
+
+
+def _story(title: str, *, sections: tuple[str, ...] = STORY_SECTIONS, sub: str = SEALED) -> str:
+    """A story: the fixed sections in their fixed order, sealed to a row in its opening line."""
+    return _page(title, "".join(f'<h2 id="{s}">{s}</h2><p>x</p>' for s in sections), sub=sub)
 
 
 def _write(repo: Repo, rel: str, text: str) -> Path:
@@ -107,6 +117,24 @@ def main(argv: list[str]) -> int:
             rc = check.run(repo)
         if rc != 0:
             failures.append(f"`ckit check` on a clean repo returned {rc}:\n{buf.getvalue()}")
+
+        # --- the genre set and the catalog are one registry: a genre dir missing from
+        #     CATALOG_GROUPS lints and is searched, but never reaches the sidebar and is
+        #     badged "page" — silent, so it is asserted rather than remembered
+        dirs = {g["dir"] for g in genres.core_spec().values()}
+        groups = {folder for folder, _kind, _layout in book_nav.CATALOG_GROUPS}
+        if dirs != groups:
+            failures.append("genres.json dirs and CATALOG_GROUPS disagree — only in genres.json: "
+                            f"{sorted(dirs - groups)}; only in the catalog: {sorted(groups - dirs)}")
+        planted += 1
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        if [s["slug"] for s in cat.get("stories") or []] != ["a-story"]:
+            failures.append(f"the scaffolded story is not a catalog group: {cat.get('stories')}")
+        si = json.loads((repo.content / "search-index.json").read_text())
+        story_kinds = {r["kind"] for r in si if "/stories/" in r["href"]}
+        if story_kinds != {"story"}:
+            failures.append(f"a story must be badged 'story', not 'page': {story_kinds}")
+        planted += 1
 
         # --- a stale committed index fails the gate; regenerating repairs it
         catalog = repo.content / "catalog.json"
@@ -356,6 +384,33 @@ def main(argv: list[str]) -> int:
         plant("projects/badmeta/index.html",
               _page("Bad meta", head='<meta name="status" content="whatever">'), "not active|shipped|paused")
         plant("hubs/long.html", _page("Long hub", "<p>" + "word " * 1600 + "</p>"), "over the 1500")
+        # a story's shape is fixed and its opening line is sealed to the rows it tells: the
+        # compliant ones are silent, each mutation is reported by the id it broke
+        _write(repo, "stories/sealed/index.html", _story("Sealed"))
+        _write(repo, "stories/cross-lab/index.html",
+               _story("Cross lab", sub="<b>Status: LIVE</b> — sealed to <code>dsl:F-3</code>, "
+                                       "another lab's pinned row."))
+        plant("stories/missing/index.html",
+              _story("Missing", sections=tuple(s for s in STORY_SECTIONS if s != "not")),
+              'no <h2 id="not"> section')
+        # commented-out markup renders as nothing: without stripping comments first, a story
+        # could delete its bounds section, comment it back in where it belonged, and pass
+        commented = _story("Commented", sections=tuple(s for s in STORY_SECTIONS if s != "not"))
+        plant("stories/commented/index.html",
+              commented.replace('<h2 id="deeper">',
+                                '<!-- <h2 id="not">what it does not show</h2> --><h2 id="deeper">'),
+              'no <h2 id="not"> section')
+        plant("stories/hidden-id/index.html",
+              _story("Hidden id", sub="<b>Status: LIVE</b> — a story whose row is commented "
+                                      "out <!-- <code>F-1</code> -->."),
+              "names no finding")
+        plant("stories/misordered/index.html",
+              _story("Misordered", sections=("question", "why", "did", "happened", "not",
+                                             "learned", "deeper", "backlinks")),
+              '<h2 id="not"> is out of order')
+        plant("stories/unbound/index.html",
+              _story("Unbound", sub="<b>Status: LIVE</b> — a story that names no row."),
+              "names no finding")
         # a chapter that links forward without declaring it, and one that declares it
         _write(repo, "books/fwd/index.html", _page("Fwd book"))
         _write(repo, "books/fwd/02-later.html", _page("Later"))
@@ -379,6 +434,11 @@ def main(argv: list[str]) -> int:
         if any("03-fine.html" in p for p in probs):
             failures.append("a declared (data-fwd) forward reference must not be reported")
         planted += 1
+        for quiet in ("stories/sealed", "stories/cross-lab"):
+            if any(quiet in p for p in probs):
+                failures.append(f"a compliant story ({quiet}) was reported: "
+                                + " | ".join(p for p in probs if quiet in p))
+            planted += 1
 
         # --- per-repo genre extension: a new genre dir is recognised and its checks apply
         cfg = json.loads((repo.root / "lab.json").read_text())

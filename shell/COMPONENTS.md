@@ -14,7 +14,7 @@ chapter's HTML (`<style>`). Book chapter order is discovered into `nav.json`
 ```
 
 Chrome (`lib.js`):
-- **Side** — library catalog from `/content/catalog.json` (papers / books / projects / hubs / related / entries / notes / concepts)
+- **Side** — library catalog from `/content/catalog.json` (papers / books / projects / stories / hubs / related / entries / notes / concepts)
 - **Top** — chapter strip + on-this-page TOC from the book's `nav.json`
 - **Footer** — prev/next chapter
 

@@ -28,6 +28,19 @@
       "forbidden": "unattributed claims; a wall of prose with no sections to navigate",
       "checks": { "status": true }
     },
+    "story": {
+      "dir": "stories",
+      "layout": "folder",
+      "skeleton": "story/index.html",
+      "register": "plain, sealed to its findings: the question in words, why it was expected to help, what was done, what happened, what was learned, what it does not show, where to go deeper",
+      "reader": "a sharp outsider who has never seen the lab",
+      "forbidden": "a rolling narrative; a lab code as the subject of a sentence; a number without its row id; a caveat the rows bind that is missing from what-it-does-not-show",
+      "checks": {
+        "status": true,
+        "require_sections": ["question", "why", "did", "happened", "learned", "not", "deeper", "backlinks"],
+        "bound_ids": true
+      }
+    },
     "book": {
       "dir": "books",
       "layout": "book-index",
@@ -59,9 +72,9 @@
       "dir": "projects",
       "layout": "folder",
       "skeleton": "project/index.html",
-      "register": "operational, dated, present tense",
-      "reader": "wants to know what is true now",
-      "forbidden": "undated status — the page is explicitly perishable",
+      "register": "the front door: plain sentences and links — what is being asked, what has been learned with each sentence carrying its rows, the top-level bounds, and dated state",
+      "reader": "arriving cold, deciding what to read next",
+      "forbidden": "undated state — the page is explicitly perishable; re-explaining what a story or a concept page owns; a bound that belongs to one result",
       "checks": { "status": true, "require_meta_status": true }
     },
     "paper": {

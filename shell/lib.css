@@ -239,6 +239,7 @@ html:has(body.hb) { margin: 0; }
                border: 1px solid; margin-right: 6px; vertical-align: 1px; }
 .hb .hb-kind-book    { color: var(--reach);  border-color: var(--reach); }
 .hb .hb-kind-entry   { color: var(--gen);    border-color: var(--gen); }
+.hb .hb-kind-story   { color: var(--gen);    border-color: var(--gen); }
 .hb .hb-kind-concept { color: var(--judge);  border-color: var(--judge); }
 .hb .hb-kind-hub     { color: var(--world);  border-color: var(--world); }
 .hb .hb-kind-note    { color: var(--ink-2);  border-color: var(--baseline); }

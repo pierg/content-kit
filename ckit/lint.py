@@ -14,7 +14,8 @@ Genre (by position in the tree — see genres.json and genres/GENRES.md):
   5. every page belongs to a genre; a page outside any genre is an error, not a default
   6. status — the first <p class="sub"> declares LIVE · HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT
   7. per-genre proxies for voice: word bounds, no <h2> in a note, a defn in a concept that cites
-     no finding, no undeclared forward reference in a chapter, a lifecycle meta on a project
+     no finding, no undeclared forward reference in a chapter, a lifecycle meta on a project,
+     the fixed sections of a story in order and the rows its status line is sealed to
 
 Annotations:
   8. every *.annotations.json validates and every quote it anchors is still on its page
@@ -40,7 +41,12 @@ SHELL_LINK = re.compile(r'href="/shell/lib\.css"')
 BOOK_JS = re.compile(r'src=["\']book\.js["\']')
 BOOK_CSS = re.compile(r"book\.css")
 H2 = re.compile(r"<h2\b", re.I)
+H2_ID = re.compile(r'<h2\b[^>]*\sid="([^"]+)"', re.I)
 FINDING = re.compile(r"\bF-\d+(?:\.\d+)*\b")
+# A row id as a page cites it: `F-12`, `F-22.1`, or another lab's pinned row, `dsl:F-3`.
+BOUND_ID = re.compile(r"<code\b[^>]*>\s*(?:[a-z][a-z0-9_-]*:)?F-\d+(?:\.\d+)*\s*</code>", re.I)
+COMMENT = re.compile(r"<!--.*?-->", re.S)
+BURIED = re.compile(r"<(script|style|noscript|template)\b[^>]*>.*?</\1>", re.S | re.I)
 ANCHOR = re.compile(r"<a\b([^>]*)>", re.I)
 HREF = re.compile(r'href="([^"#?]+)', re.I)
 NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
@@ -81,7 +87,7 @@ ALLOWED = {
     "hb-side-label", "hb-side-list", "hb-toc", "hb-toc-label",
     "hb-kind", "hb-kind-book", "hb-kind-entry", "hb-kind-concept",
     "hb-kind-hub", "hb-kind-note", "hb-kind-project", "hb-kind-page",
-    "hb-kind-paper", "hb-kind-related",
+    "hb-kind-paper", "hb-kind-related", "hb-kind-story",
 }
 
 
@@ -101,6 +107,12 @@ def _form(rel: str, text: str) -> list[str]:
             if SHELLISH.match(cls) and cls not in ALLOWED:
                 probs.append(f"{rel}: unknown shell class '{cls}'")
     return probs
+
+
+def _served(text: str) -> str:
+    """The markup a reader is actually served. A structural check that reads raw text can be
+    satisfied by a page that renders without the thing it promised — a section commented out."""
+    return BURIED.sub(" ", COMMENT.sub(" ", text))
 
 
 def _status_word(text: str) -> str | None:
@@ -182,6 +194,34 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
             probs.append(f'{rel}: {g.name} needs <meta name="status" content="active|shipped|paused">')
         elif m.group(1) not in ("active", "shipped", "paused"):
             probs.append(f"{rel}: meta status {m.group(1)!r} is not active|shipped|paused")
+    if c.get("require_sections"):
+        # Extra sections are a page's business; the declared ones must all be there, in this
+        # relative order — a genre whose shape is fixed reads the same page to page.
+        want = c["require_sections"]
+        if not isinstance(want, list) or not all(isinstance(s, str) for s in want):
+            raise SystemExit(f"genre {g.name!r}: require_sections is a list of <h2> ids, got {want!r}")
+        seen: dict[str, int] = {}
+        for i, sec in enumerate(H2_ID.findall(_served(text))):
+            seen.setdefault(sec, i)
+        at = -1
+        for sec in want:
+            here = seen.get(sec)
+            if here is None:
+                probs.append(f'{rel}: no <h2 id="{sec}"> section — a {g.name} carries '
+                             + " → ".join(want))
+                break
+            if here < at:
+                probs.append(f'{rel}: <h2 id="{sec}"> is out of order — a {g.name} carries '
+                             + " → ".join(want))
+                break
+            at = here
+    if c.get("bound_ids"):
+        sub = SUB_RE.search(_served(text))
+        if not BOUND_ID.search(sub.group(1) if sub else ""):
+            probs.append(
+                f'{rel}: the opening line names no finding — a {g.name} is sealed to the rows it '
+                'tells, so its first <p class="sub"> carries at least one <code>F-<n></code>'
+            )
     if c.get("no_findings"):
         ids = sorted(set(FINDING.findall(text)))
         if ids:

@@ -31,7 +31,7 @@ The repo records the engine version it was checked against (`"ckit"` in `lab.jso
     skills/address         act on a reader's annotations   → symlinked at .claude/skills/address
     verify.sh · tools/kit_hash.py
   content/
-    notes/ concepts/ entries/ books/ hubs/ projects/ papers/ related/
+    notes/ concepts/ entries/ stories/ books/ hubs/ projects/ papers/ related/
     catalog.json · search-index.json · backlinks.json          generated — never hand-edited
     <page>.annotations.json                                   a reader's threads, committed
 ```
@@ -57,7 +57,7 @@ Stdlib Python ≥ 3.10; node for book verification. No build step, no dependenci
 |---|---|---|
 | **Form** — tokens, components | `shell/` | lint: shell link, no hex, known classes |
 | **Structure** — where each genre lives | `ckit/genres.json` | lint: a page outside any genre is an error |
-| **Voice** — how each genre reads | `genres/GENRES.md` | lint proxies: status line, word bounds, no `<h2>` in a note, citation-free `defn`, declared forward refs, project lifecycle meta |
+| **Voice** — how each genre reads | `genres/GENRES.md` | lint proxies: status line, word bounds, no `<h2>` in a note, citation-free `defn`, declared forward refs, project lifecycle meta, a story's fixed sections and the rows it is sealed to |
 | **Craft** — how a block is built | `craft/` | a reviewer; lint checks only that the vocabulary is the shell's |
 | **Indices** — catalog, search, backlinks | generated | lint regenerates; a committed index is never hand-edited |
 | **Review** — annotate, then address, asynchronously | `shell/annotate.js` · `ckit annotations` | lint: sidecars validate; an open thread's quote is still on its page |
@@ -73,7 +73,7 @@ The **dashboard** (`/shell/dashboard.html`) is the same record as a *status boar
 ## Develop
 
 ```bash
-make check      # selftest (20 planted cases, 9 clean genres) + e2e (install · gate · serve · annotate · drift · pin)
+make check      # selftest (41 planted cases, 10 clean genres) + e2e (install · gate · serve · annotate · drift · pin)
 ```
 
 A change to a check ships with a fixture designed to break it, or it is not a check. Instrument changes land through a PR; the two labs and the library that vendor this kit re-sync deliberately (`make kit-sync`) and re-pin.

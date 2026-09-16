@@ -207,7 +207,7 @@
                  '<a href="/shell/search.html">Search</a>',
                  '<a href="/shell/chronicle.html">Chronicle (timeline)</a>'];
     // Deep-link straight to each populated library group; the sidebar carries the full browse.
-    [["Papers", "papers"], ["Books", "books"], ["Projects", "projects"],
+    [["Papers", "papers"], ["Books", "books"], ["Projects", "projects"], ["Stories", "stories"],
      ["Entries", "entries"], ["Concepts", "concepts"], ["Notes", "notes"]].forEach(function (g) {
       var items = (catalog && catalog[g[1]]) || [];
       if (items.length) links.push('<a href="' + esc(items[0].href) + '">' + esc(g[0]) + " (" + items.length + ")</a>");
