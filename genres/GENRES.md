@@ -46,7 +46,7 @@ Every rule below names what checks it. A rule nothing checks is a suggestion, an
 
 **Reader.** A sharp outsider who has never seen the lab. So no code, path or internal name is ever the subject of a sentence: ids ride beside the number they license, as links.
 
-**Shape.** Eight fixed `<h2>` sections in one order — `question`, `why`, `did`, `happened`, `learned`, `not`, `deeper`, `backlinks` — so two stories read alike and a reader who has read one can skim the next. The opening line carries the date it was written and the rows it is sealed to. *Checked: `require_sections`, `bound_ids`.*
+**Shape.** Eight fixed `<h2>` sections in one order — `question`, `why`, `did`, `happened`, `learned`, `not`, `deeper`, `backlinks` — so two stories read alike and a reader who has read one can skim the next. The opening line carries the date it was written and the rows it is sealed to; a pinned cross-lab row (`dsl:F-3`) counts as one of them. A story is **one page**: assets may sit beside it in the folder, but a second page there is a story too and is held to the whole contract — an arc over several results takes its own slug instead. *Checked: `require_sections` (every id present, in that order) and `bound_ids` (the opening line names a row) — the date is not checked, and neither is what the prose does with either; a reviewer reads those.*
 
 **Forbidden.** A rolling narrative — a page that keeps being updated is live state wearing a story's hat. A number without its row id. A bound the rows carry that is missing from what-it-does-not-show. *Checked: none of these — the two checks hold the shape, and what the prose owes its rows is the reviewer's.*
 
@@ -118,4 +118,6 @@ A repo whose topic needs a shape the core lacks declares it in `lab.json`:
 The first adds a genre; the second overrides one check on a core genre, visibly, in the one file a reader would look. Layouts are `flat` (`<dir>/<slug>.html`), `folder` (`<dir>/<slug>/index.html`, sub-pages share the genre), `book-index` and `book-page`. The same checks are available to every genre: `status`, `max_words`, `no_h2`, `require_defn`, `defn_no_findings`, `no_forward_refs`, `require_meta_status`, `no_findings`, and the two a fixed-shape genre uses —
 
 - `require_sections`: a list of `<h2>` ids the page must carry, in that order. Extra sections are the page's business; a declared one that is absent, or that appears after a later one, is reported by its id.
-- `bound_ids`: the first `<p class="sub">` must name at least one finding as `<code>F-<n></code>` — the rows the page is sealed to, so a reader and the reviewer both know what changing would change it.
+- `bound_ids`: the first `<p class="sub">` must name at least one finding as `<code>F-<n></code>` — the rows the page is sealed to, so a reader and the reviewer both know what changing would change it. A pinned cross-lab row, `<code>dsl:F-3</code>`, counts.
+
+Both read the markup a reader is *served*: a section or an id that only exists inside an HTML comment (or a `<script>` / `<style>` body) does not count, because the page renders without it.

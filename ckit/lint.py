@@ -43,7 +43,10 @@ BOOK_CSS = re.compile(r"book\.css")
 H2 = re.compile(r"<h2\b", re.I)
 H2_ID = re.compile(r'<h2\b[^>]*\sid="([^"]+)"', re.I)
 FINDING = re.compile(r"\bF-\d+(?:\.\d+)*\b")
-BOUND_ID = re.compile(r"<code\b[^>]*>\s*F-\d+(?:\.\d+)*\s*</code>", re.I)
+# A row id as a page cites it: `F-12`, `F-22.1`, or another lab's pinned row, `dsl:F-3`.
+BOUND_ID = re.compile(r"<code\b[^>]*>\s*(?:[a-z][a-z0-9_-]*:)?F-\d+(?:\.\d+)*\s*</code>", re.I)
+COMMENT = re.compile(r"<!--.*?-->", re.S)
+BURIED = re.compile(r"<(script|style|noscript|template)\b[^>]*>.*?</\1>", re.S | re.I)
 ANCHOR = re.compile(r"<a\b([^>]*)>", re.I)
 HREF = re.compile(r'href="([^"#?]+)', re.I)
 NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
@@ -84,7 +87,7 @@ ALLOWED = {
     "hb-side-label", "hb-side-list", "hb-toc", "hb-toc-label",
     "hb-kind", "hb-kind-book", "hb-kind-entry", "hb-kind-concept",
     "hb-kind-hub", "hb-kind-note", "hb-kind-project", "hb-kind-page",
-    "hb-kind-paper", "hb-kind-related",
+    "hb-kind-paper", "hb-kind-related", "hb-kind-story",
 }
 
 
@@ -104,6 +107,12 @@ def _form(rel: str, text: str) -> list[str]:
             if SHELLISH.match(cls) and cls not in ALLOWED:
                 probs.append(f"{rel}: unknown shell class '{cls}'")
     return probs
+
+
+def _served(text: str) -> str:
+    """The markup a reader is actually served. A structural check that reads raw text can be
+    satisfied by a page that renders without the thing it promised — a section commented out."""
+    return BURIED.sub(" ", COMMENT.sub(" ", text))
 
 
 def _status_word(text: str) -> str | None:
@@ -192,7 +201,7 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
         if not isinstance(want, list) or not all(isinstance(s, str) for s in want):
             raise SystemExit(f"genre {g.name!r}: require_sections is a list of <h2> ids, got {want!r}")
         seen: dict[str, int] = {}
-        for i, sec in enumerate(H2_ID.findall(text)):
+        for i, sec in enumerate(H2_ID.findall(_served(text))):
             seen.setdefault(sec, i)
         at = -1
         for sec in want:
@@ -207,7 +216,7 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
                 break
             at = here
     if c.get("bound_ids"):
-        sub = SUB_RE.search(text)
+        sub = SUB_RE.search(_served(text))
         if not BOUND_ID.search(sub.group(1) if sub else ""):
             probs.append(
                 f'{rel}: the opening line names no finding — a {g.name} is sealed to the rows it '

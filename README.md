@@ -73,7 +73,7 @@ The **dashboard** (`/shell/dashboard.html`) is the same record as a *status boar
 ## Develop
 
 ```bash
-make check      # selftest (36 planted cases, 10 clean genres) + e2e (install · gate · serve · annotate · drift · pin)
+make check      # selftest (41 planted cases, 10 clean genres) + e2e (install · gate · serve · annotate · drift · pin)
 ```
 
 A change to a check ships with a fixture designed to break it, or it is not a check. Instrument changes land through a PR; the two labs and the library that vendor this kit re-sync deliberately (`make kit-sync`) and re-pin.
