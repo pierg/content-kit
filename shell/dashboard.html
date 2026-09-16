@@ -241,7 +241,7 @@
       renderExplore(catalog);
     }).catch(function (ex) {
       document.getElementById("meta").textContent =
-        "No dashboard yet — set \"home\": \"dashboard\" in lab.json and run `ckit lint`. (" + ex.message + ")";
+        "No dashboard yet — set \"home\": \"dashboard\" (or \"dashboard\": true, to keep a different home) in lab.json and run `ckit lint`. (" + ex.message + ")";
     });
   });
 })();

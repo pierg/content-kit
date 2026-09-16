@@ -278,6 +278,18 @@ def main(argv: list[str]) -> int:
             if rc == 0 or "does not resolve to a page" not in err.getvalue():
                 failures.append("a dangling home must fail `ckit check` with the new message")
             planted += 1
+
+            # a non-string home (the likely slip beside "dashboard": true) is dangling, not a crash
+            repo.cfg["home"] = True
+            status, _, _ = _request(port, "/")
+            if status != 404:
+                failures.append(f'"home": true should 404 at serve time like any other dangling home, got {status}')
+            err = io.StringIO()
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc = check.run(repo)
+            if rc == 0 or "does not resolve to a page" not in err.getvalue():
+                failures.append('"home": true must fail `ckit check` with the dangling-home message, not raise')
+            planted += 1
         finally:
             repo.cfg["home"] = "dashboard"  # leave the fixture consistent for what follows
             httpd.shutdown()

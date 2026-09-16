@@ -64,12 +64,14 @@ def home_page(repo: Repo) -> Path | None:
     """The page `lab.json`'s `home` names, when it names one rather than `"dashboard"`.
 
     A file resolves to itself; a directory resolves to its `index.html`. None when `home` is
-    unset/empty, is `"dashboard"`, or the resolved target is not an existing file under the
-    content directory — callers already hold `home` itself to tell "nothing asked for" apart
-    from "asked for and dangling" (`ckit check` fails the gate on the latter; `ckit serve` 404s).
+    not a string, is unset/empty, is `"dashboard"`, or the resolved target is not an existing
+    file under the content directory — callers already hold `home` itself to tell "nothing
+    asked for" apart from "asked for and dangling" (`ckit check` fails the gate on the latter;
+    `ckit serve` 404s). A non-string `home` (e.g. `true`, the likely slip beside `"dashboard":
+    true`) is dangling, not a crash — `Path / home` is never reached.
     """
     home = repo.cfg.get("home")
-    if not home or home == "dashboard":
+    if not isinstance(home, str) or not home or home == "dashboard":
         return None
     target = (repo.root / home).resolve()
     if target.is_dir():
