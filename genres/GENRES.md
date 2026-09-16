@@ -40,6 +40,18 @@ Every rule below names what checks it. A rule nothing checks is a suggestion, an
 
 **Forbidden.** Unattributed claims; a wall with no sections. *Checked: `status` only — the voice here is judged, not linted.*
 
+## story — `content/stories/<slug>/index.html`
+
+**Register.** Plain, and sealed to its findings. One result told once, in the order a stranger needs it: the question in words, why it was expected to help, what was done, what happened, what was learned, what it does not show, where to go deeper. It is written after the result is scored and then it stops moving — if one of its rows changes status the story is revised deliberately; nothing else touches it.
+
+**Reader.** A sharp outsider who has never seen the lab. So no code, path or internal name is ever the subject of a sentence: ids ride beside the number they license, as links.
+
+**Shape.** Eight fixed `<h2>` sections in one order — `question`, `why`, `did`, `happened`, `learned`, `not`, `deeper`, `backlinks` — so two stories read alike and a reader who has read one can skim the next. The opening line carries the date it was written and the rows it is sealed to. *Checked: `require_sections`, `bound_ids`.*
+
+**Forbidden.** A rolling narrative — a page that keeps being updated is live state wearing a story's hat. A number without its row id. A bound the rows carry that is missing from what-it-does-not-show. *Checked: none of these — the two checks hold the shape, and what the prose owes its rows is the reviewer's.*
+
+**Promotion.** An arc over several results is not a ninth section: it is its own story, with the same eight, and the front door links both.
+
 ## chapter — `content/books/<slug>/NN-name.html`
 
 **Register.** Pedagogical. Second person is allowed. One idea at a time, staged before it is named, and a check-yourself at the end of every section so the reader can tell whether it landed.
@@ -68,13 +80,13 @@ Every rule below names what checks it. A rule nothing checks is a suggestion, an
 
 ## project — `content/projects/<slug>/index.html` (and pages beside it)
 
-**Register.** Operational, dated, present tense: what is true now, what is next, what is blocked. Explicitly perishable, and it says when it was last true.
+**Register.** The front door. Plain sentences and links: what is being asked, what has been learned — one sentence per result, each ending in the rows it rests on and a link to its story — the top-level bounds, where things stand today, and why the work turned when it did. It points; the book teaches, the stories argue, the ledger proves. Explicitly perishable, and it says when it was last true.
 
-**Reader.** Wants the state of the work, not the ideas behind it.
+**Reader.** Arriving cold and deciding what to read next, not yet inside the vocabulary.
 
-**Shape.** `<meta name="status" content="active|shipped|paused">` for the catalog; a dated status line; owned artifacts; open threads; milestones with evidence chips. Sub-pages under the project folder (an ops board, a plan) share the genre.
+**Shape.** `<meta name="status" content="active|shipped|paused">` for the catalog; a dated opening line; then asking · frame · learned · not · now · path · screens · glossary · evidence. The `now` section is dated and is **the one place in the content library where state lives** — everything else that moves is a link to the generated board. Sub-pages under the project folder (an ops board, a plan) share the genre.
 
-**Forbidden.** An undated status. *Checked: `require_meta_status`.*
+**Forbidden.** Undated state. Re-explaining what a concept page or a story already owns. Carrying one result's conditions instead of the scope they all share. *Checked: `require_meta_status`; the section list is the skeleton's and the reviewer's, not the lint's — a front door may legitimately drop a section it has nothing to put in.*
 
 ## paper — `content/papers/<slug>/index.html`
 
@@ -103,4 +115,7 @@ A repo whose topic needs a shape the core lacks declares it in `lab.json`:
       "concept": { "checks": { "max_words": 3000 } }
     }
 
-The first adds a genre; the second overrides one check on a core genre, visibly, in the one file a reader would look. Layouts are `flat` (`<dir>/<slug>.html`), `folder` (`<dir>/<slug>/index.html`, sub-pages share the genre), `book-index` and `book-page`. The same checks are available to every genre: `status`, `max_words`, `no_h2`, `require_defn`, `defn_no_findings`, `no_forward_refs`, `require_meta_status`, `no_findings`.
+The first adds a genre; the second overrides one check on a core genre, visibly, in the one file a reader would look. Layouts are `flat` (`<dir>/<slug>.html`), `folder` (`<dir>/<slug>/index.html`, sub-pages share the genre), `book-index` and `book-page`. The same checks are available to every genre: `status`, `max_words`, `no_h2`, `require_defn`, `defn_no_findings`, `no_forward_refs`, `require_meta_status`, `no_findings`, and the two a fixed-shape genre uses —
+
+- `require_sections`: a list of `<h2>` ids the page must carry, in that order. Extra sections are the page's business; a declared one that is absent, or that appears after a later one, is reported by its id.
+- `bound_ids`: the first `<p class="sub">` must name at least one finding as `<code>F-<n></code>` — the rows the page is sealed to, so a reader and the reviewer both know what changing would change it.

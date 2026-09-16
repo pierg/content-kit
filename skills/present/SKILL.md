@@ -1,6 +1,6 @@
 ---
 name: present
-description: Author a reader-facing HTML page (note, concept, entry, chapter, book, hub, project, paper landing, related-works) or a LaTeX paper in this repo's shared shell. Use when a session's output is a document rather than a chat answer. Enforces the presentation contract — the repo copy is the source of truth, one format per document, the page's genre fixes its structure and its voice, every number in a lab cites a finding id, the shell vocabulary only, and `make check` green before it lands.
+description: Author a reader-facing HTML page (note, concept, entry, story, chapter, book, hub, project front door, paper landing, related-works) or a LaTeX paper in this repo's shared shell. Use when a session's output is a document rather than a chat answer. Enforces the presentation contract — the repo copy is the source of truth, one format per document, the page's genre fixes its structure and its voice, every number in a lab cites a finding id, the shell vocabulary only, and `make check` green before it lands.
 ---
 
 # /present — author a reader-facing artifact
@@ -16,6 +16,24 @@ You are producing a **document**, not a chat reply. Chat gets the TL;DR and the 
 5. **One paragraph per line.** Never hard-wrap prose to a column.
 6. **Address before you edit.** If the page has open annotations (`ckit annotations list`), run `/address` first — an open thread whose quoted passage you rewrite fails the gate.
 
+## Layered content
+
+A library has four classes of page, told apart by how fast they change. A sentence in the wrong class goes stale where nothing checks it.
+
+- **Foundations** — the book, the concepts, the field page. They move per era, not per result: they cite only settled rows and carry no state.
+- **Stories** — one sealed page per result, bound to the rows it tells, in the genre's fixed sections. Written once the result is scored, and revised only when one of those rows changes status.
+- **Live state** — the generated dashboard and the rendered record. Never authored, never transcribed into a page.
+- **Views** — the front door. Plain sentences and links over all of the above, and the only place in `content/` where dated state lives, with the date on it.
+
+Four rules cut across all four:
+
+- **Codes are links, not content.** A finding id, a mission code, a path or a hash rides beside the sentence it licenses and is never the subject of one. A reader must get the result without resolving a single code.
+- **Every number carries its row id**, and is re-derived from that row — never quoted forward from another page, a summary or memory.
+- **Plain is not vague.** "It didn't help" is simple and vague; "19 of 29, against the step before's 21 — inside the run-to-run swing" is simple and precise.
+- **Nulls at equal prominence.** A void, a drop, a fired kill rule is stated as plainly as a win, in the same place and the same voice. Equal prominence, not equal length.
+
+One rule separates the two authored classes: **a story carries every bound its rows carry; the front door carries only the top-level ones** — the scope they all share, the tier they sit at — and says outright that each story holds the rest.
+
 ## Authoring an HTML page
 
 **Scaffold it:** `ckit new <genre> <slug> [--title "…"]` copies the skeleton to where the genre lives and prints the voice card. Chapters are `<book>/<NN-name>`; `ckit new book <slug>` first if the book is new.
@@ -25,10 +43,11 @@ You are producing a **document**, not a chat reply. Chat gets the TL;DR and the 
 | **note** | one atomic claim, a few paragraphs, no sections | `content/notes/<slug>.html` |
 | **concept** | definition of record for a reused term | `content/concepts/<slug>/index.html` |
 | **entry** | dense one-page read: a deep dive, a paper reading | `content/entries/<slug>/index.html` |
+| **story** | one result, sealed to its rows, eight fixed sections | `content/stories/<slug>/index.html` |
 | **chapter** | ordered teaching step inside a book | `content/books/<slug>/NN-name.html` |
 | **book** | the map of a chapter sequence | `content/books/<slug>/index.html` |
 | **hub** | orientation and stance over a cluster | `content/hubs/<slug>.html` |
-| **project** | active work: dated status, owned artifacts | `content/projects/<slug>/index.html` |
+| **project** | the front door: what is asked, learned, true today | `content/projects/<slug>/index.html` |
 | **paper** | landing page of a venue artifact | `content/papers/<slug>/index.html` |
 | **related** | others' work, neutrally, with our reading kept separate | `content/related/<slug>.html` |
 
@@ -41,6 +60,16 @@ Promotion: note → entry → chapter as scope grows. **Define once, link everyw
 ## Authoring a paper
 
 `content/papers/<slug>/main.tex`, with `figures/` beside it and a `paper` landing page (`ckit new paper <slug>`). Shared machinery — preamble, bibliography — lives in `assets/paper/`; figure sources and generators in `assets/figures/`, the same SVGs the pages embed. Built PDFs are derived. Every number in the prose cites a finding id in a comment or footnote so the record gate can see it. The paper is frozen at submission; the page stays living. Their prose is written independently — they share ids, figures and bibliography, never sentences.
+
+## Delegated drafting
+
+A long page is drafted in passes, and the passes are kept separate on purpose:
+
+1. **Draft from the rows and their defenses** — not from another page, a chat summary or memory. A number quoted forward from a summary is a rumour with a decimal point.
+2. **Verify against the rows with a second model**, given only the page and the rows it cites, reporting every number, id, verdict word and bound that does not match.
+3. **Repair what verification found, then re-verify.** The draft is not the artifact until that pass is clean.
+4. **Reader-test the front door** on someone who has never seen the work. If they cannot say what was found and what it does not show, it is not plain yet.
+5. **Independent review before it lands** — fresh context, no write tools, reading the page against the rows rather than the story about them. The author never self-certifies.
 
 ## Before finishing
 

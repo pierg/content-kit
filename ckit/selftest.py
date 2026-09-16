@@ -28,6 +28,7 @@ CLEAN = {
     "note": "a-note",
     "concept": "a-concept",
     "entry": "an-entry",
+    "story": "a-story",
     "hub": "a-hub",
     "project": "a-project",
     "paper": "a-paper",
@@ -45,6 +46,15 @@ PAGE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>{tit
 def _page(title: str, body: str = "<p>Body.</p>", *, sub: str = "<b>Status: LIVE</b> — fixture.",
           head: str = "") -> str:
     return PAGE.format(title=title, sub=sub, body=body, head=head)
+
+
+STORY_SECTIONS = ("question", "why", "did", "happened", "learned", "not", "deeper", "backlinks")
+SEALED = "<b>Status: LIVE</b> — a sealed story of one result against <code>F-1</code>."
+
+
+def _story(title: str, *, sections: tuple[str, ...] = STORY_SECTIONS, sub: str = SEALED) -> str:
+    """A story: the fixed sections in their fixed order, sealed to a row in its opening line."""
+    return _page(title, "".join(f'<h2 id="{s}">{s}</h2><p>x</p>' for s in sections), sub=sub)
 
 
 def _write(repo: Repo, rel: str, text: str) -> Path:
@@ -356,6 +366,19 @@ def main(argv: list[str]) -> int:
         plant("projects/badmeta/index.html",
               _page("Bad meta", head='<meta name="status" content="whatever">'), "not active|shipped|paused")
         plant("hubs/long.html", _page("Long hub", "<p>" + "word " * 1600 + "</p>"), "over the 1500")
+        # a story's shape is fixed and its opening line is sealed to the rows it tells: the
+        # compliant one is silent, each mutation is reported by the id it broke
+        _write(repo, "stories/sealed/index.html", _story("Sealed"))
+        plant("stories/missing/index.html",
+              _story("Missing", sections=tuple(s for s in STORY_SECTIONS if s != "not")),
+              'no <h2 id="not"> section')
+        plant("stories/misordered/index.html",
+              _story("Misordered", sections=("question", "why", "did", "happened", "not",
+                                             "learned", "deeper", "backlinks")),
+              '<h2 id="not"> is out of order')
+        plant("stories/unbound/index.html",
+              _story("Unbound", sub="<b>Status: LIVE</b> — a story that names no row."),
+              "names no finding")
         # a chapter that links forward without declaring it, and one that declares it
         _write(repo, "books/fwd/index.html", _page("Fwd book"))
         _write(repo, "books/fwd/02-later.html", _page("Later"))
@@ -378,6 +401,10 @@ def main(argv: list[str]) -> int:
             planted += 1
         if any("03-fine.html" in p for p in probs):
             failures.append("a declared (data-fwd) forward reference must not be reported")
+        planted += 1
+        if any("stories/sealed" in p for p in probs):
+            failures.append("a compliant story was reported: "
+                            + " | ".join(p for p in probs if "stories/sealed" in p))
         planted += 1
 
         # --- per-repo genre extension: a new genre dir is recognised and its checks apply

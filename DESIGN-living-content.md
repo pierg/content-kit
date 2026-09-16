@@ -99,6 +99,8 @@ Frozen siblings — the paper, a post — are vintage-stamped and freeze-time-ve
 2. **The record export, reference slots and stamps** — the engine slice that kills copied-value and state staleness.
 3. **The Pages panel and generated experiment/finding pages** — visible debt and author-free pages.
 
+**2026-09-16 — step 1 landed** in proof-harness-lab: the layered rows with their defense files, a plain-language front door, one sealed story per result, the frame (the book and the concepts) rewritten for a reader who has never seen the lab, and figures generated from the record whose `--check` runs in the gate. This kit change encodes what that pass had to invent as convention — the `story` genre with its fixed sections and its bound rows, the front-door shape of the project skeleton, the two generic checks (`require_sections`, `bound_ids`), and the layered-content, delegated-drafting and generated-figure rules in the authoring skill and the craft notes — so the second lab to do this inherits it instead of re-deriving it. Step 2, the freshness slice, is next: it is what turns "the author cited the row" into "the value cannot be stale".
+
 ## What is not decided
 
 - Whether the defense file lives under `record/findings/` (chosen for now: it is record content, and rows that anchor several experiments have no single folder home) or beside each experiment's evidence.
