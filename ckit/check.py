@@ -2,10 +2,11 @@
 
   1. the repo declares the engine version it was checked against, and it is this one
   2. the vendored shell is present
-  3. the committed indices equal discovery — a stale catalog / search index / backlinks / nav
+  3. `home`, if set, is either `"dashboard"` or an existing page under the content directory
+  4. the committed indices equal discovery — a stale catalog / search index / backlinks / nav
      fails, it is not silently rewritten (`ckit lint` or `ckit nav` regenerates; commit the result)
-  4. lint — form, genre, annotations
-  5. every book verifies (node), when node is available
+  5. lint — form, genre, annotations
+  6. every book verifies (node), when node is available
 
 Fail-loud, seconds-fast, no network. Identical locally and in CI — that is the point.
 """
@@ -18,7 +19,7 @@ import subprocess
 import sys
 
 from . import __version__, book_nav, lint
-from .paths import PACKAGE_DIR, Repo, load_repo
+from .paths import PACKAGE_DIR, Repo, home_page, load_repo
 
 
 def run(repo: Repo) -> int:
@@ -41,6 +42,15 @@ def run(repo: Repo) -> int:
     if not (repo.shell / "lib.css").is_file():
         print(f"no vendored shell at {repo.rel(repo.shell)} — run content-kit's install.sh here",
               file=sys.stderr)
+        return 1
+
+    home = repo.cfg.get("home")
+    if home and home != "dashboard" and home_page(repo) is None:
+        print(
+            f'lab.json "home" ({home!r}) does not resolve to a page under {repo.rel(repo.content)} — '
+            'point it at an existing file, or a directory with an index.html, or set "home": "dashboard".',
+            file=sys.stderr,
+        )
         return 1
 
     stale = book_nav.check(repo) if repo.content.is_dir() else []

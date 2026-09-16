@@ -32,8 +32,8 @@ from urllib.parse import unquote, urlparse
 
 from . import __version__, annotations
 from . import chronicle, ladder
-from .book_nav import CATALOG_GROUPS, _books, _title
-from .paths import Repo, load_repo
+from .book_nav import CATALOG_GROUPS, _books, _href_of, _title
+from .paths import Repo, home_page, load_repo
 
 
 def _esc(text: str) -> str:
@@ -212,8 +212,21 @@ def make_handler(repo: Repo):
         def _serve(self, *, body: bool) -> None:
             path = unquote(urlparse(self.path).path)
             if path in ("", "/"):
+                home = repo.cfg.get("home")
+                if home and home != "dashboard":
+                    # a content page is the front door — redirect to its canonical URL so its
+                    # own relative links and the backlinks index (keyed on canonical hrefs) hold
+                    page = home_page(repo)
+                    if page is None:
+                        self.send_error(404, f'lab.json "home" ({home!r}) does not resolve to a page')
+                        return
+                    self.send_response(302)
+                    self.send_header("Location", _href_of(repo, page))
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
                 dash = repo.shell / "dashboard.html"
-                if repo.cfg.get("home") == "dashboard" and ladder.enabled(repo) and dash.is_file():
+                if home == "dashboard" and ladder.enabled(repo) and dash.is_file():
                     self._send(200, dash.read_bytes(), "text/html; charset=utf-8", body)
                     return
                 self._send(200, _landing(repo), "text/html; charset=utf-8", body)

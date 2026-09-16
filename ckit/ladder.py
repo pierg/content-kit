@@ -17,6 +17,10 @@ Opt-in, per repo. A repo turns the dashboard on in lab.json:
 When it is off, no manifest is generated and every existing repo's `ckit check` is byte-for-byte
 unchanged — the feature is inert until a repo asks for it.
 
+`home` may instead name an authored content page (see `paths.home_page`), making that page the
+front door while the dashboard stays a click away — such a repo sets `"dashboard": true`
+alongside its page `home` to keep `ladder.json` (and the dashboard it feeds) generated.
+
 What is generic (any repo) vs. extractor-supplied:
 
   now         generic — the top of the first record file whose title says "State"

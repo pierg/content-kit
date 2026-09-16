@@ -60,6 +60,27 @@ class Repo:
             return str(path)
 
 
+def home_page(repo: Repo) -> Path | None:
+    """The page `lab.json`'s `home` names, when it names one rather than `"dashboard"`.
+
+    A file resolves to itself; a directory resolves to its `index.html`. None when `home` is
+    unset/empty, is `"dashboard"`, or the resolved target is not an existing file under the
+    content directory — callers already hold `home` itself to tell "nothing asked for" apart
+    from "asked for and dangling" (`ckit check` fails the gate on the latter; `ckit serve` 404s).
+    """
+    home = repo.cfg.get("home")
+    if not home or home == "dashboard":
+        return None
+    target = (repo.root / home).resolve()
+    if target.is_dir():
+        target = target / "index.html"
+    try:
+        target.relative_to(repo.content.resolve())
+    except ValueError:
+        return None
+    return target if target.is_file() else None
+
+
 def find_root(start: Path | str | None = None) -> Path:
     env = os.environ.get("LAB_ROOT")
     if env:
