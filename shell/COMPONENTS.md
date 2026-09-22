@@ -51,7 +51,7 @@ A repo whose pages speak a domain's vocabulary maps it onto the hues in a styles
 .hb .sw-glacier { color: var(--glacier); font-weight: 700; }
 ```
 
-Class names the theme adds under a shell prefix (`sw-`, `lane-`, `v-`, `ev-`, `st-`, `hb-`) are registered in kit.json `"classes"` so the lint accepts them. Widgets that only one body of pages uses live in its theme too. `ckit/fixtures/theme-fv.css` is a worked example: the formal-verification vocabulary this shell carried before 0.4, and the widgets that left with it.
+Class names the theme adds under a shell prefix (`sw-`, `lane-`, `v-`, `ev-`, `st-`, `hb-`) are registered in kit.json `"classes"` so the lint accepts them. Widgets that only one body of pages uses live in its theme too. `templates/theme-fv.css` (in `ckit where`) is a worked example: the formal-verification vocabulary this shell carried before 0.4, and the widgets that left with it.
 
 ## Definition of record
 

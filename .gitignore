@@ -3,3 +3,5 @@ __pycache__/
 .serve.pid
 .serve.log
 .venv/
+_site/
+dist/

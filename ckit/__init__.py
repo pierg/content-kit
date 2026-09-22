@@ -5,4 +5,4 @@ kit's shell. The repo declares which engine version it was checked against in `k
 (`"ckit": "<version>"`); `ckit check` fails loud on a mismatch.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

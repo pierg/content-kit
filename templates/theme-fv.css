@@ -1,8 +1,9 @@
 /* theme-fv.css — the pre-0.4 formal-verification vocabulary as a theme.
 
    content-kit 0.4 names its hues for what they are (teal, indigo, …) and keeps only generic
-   widgets. A repo whose pages use the old domain names keeps rendering identically by serving
-   this file as its theme (kit.json "theme") and registering the class names below under
+   widgets. A repo whose pages use the old domain names keeps rendering identically by copying
+   this file into the repo (cp "$(ckit where)/templates/theme-fv.css" assets/theme.css),
+   declaring it as its theme (kit.json "theme") and registering the class names below under
    kit.json "classes":
 
      sw-reach sw-cert sw-target sw-slack sw-leak sw-gen sw-judge sw-world

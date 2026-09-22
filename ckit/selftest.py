@@ -624,7 +624,7 @@ def main(argv: list[str]) -> int:
         repo = load_repo(tmp / "repo")
 
         # --- the hues are neutral; a repo's own names live in its theme. The pre-0.4 formal-
-        #     verification vocabulary, served as a theme (ckit/fixtures/theme-fv.css) with its
+        #     verification vocabulary, served as a theme (templates/theme-fv.css) with its
         #     class names registered, makes a page written in it lint clean; without it, each
         #     old name is reported. No skeleton or craft page may use a domain token.
         old = ("reach", "cert", "target", "slack", "leak", "gen", "judge", "world")
@@ -640,7 +640,7 @@ def main(argv: list[str]) -> int:
             _expect(probs5, "notes/fv.html", needle, failures)
             planted += 1
         (xrepo.root / "assets").mkdir()
-        shutil.copy(PACKAGE_DIR / "fixtures" / "theme-fv.css", xrepo.root / "assets" / "theme.css")
+        shutil.copy(KIT_SRC / "templates" / "theme-fv.css", xrepo.root / "assets" / "theme.css")
         xcfg = json.loads((xrepo.root / "kit.json").read_text())
         xcfg["theme"] = "assets/theme.css"
         xcfg["classes"] = [f"{kind}-{o}" for kind in ("sw", "lane") for o in old]
