@@ -2,6 +2,9 @@
 .serve.pid
 .serve.log
 
+# ckit export output
+dist/
+
 # Python
 __pycache__/
 *.pyc

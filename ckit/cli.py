@@ -9,6 +9,7 @@ from . import __version__
 
 USAGE = f"""ckit {__version__} — serve, lint, navigate, scaffold and annotate a content tree
 
+  ckit init [repo] [--name --port]   vendor the kit into a repo and scaffold what it lacks
   ckit check                         the content gate (version pin · shell · indices current · lint · books)
   ckit lint [paths] [--no-nav]       form + genre + annotation lint; regenerates the indices
   ckit nav [--check]                 regenerate nav.json / catalog / search-index / backlinks / chronicle / generators
@@ -16,8 +17,10 @@ USAGE = f"""ckit {__version__} — serve, lint, navigate, scaffold and annotate 
   ckit genres                        list the genres this repo knows (core + its extensions)
   ckit serve [--host --port]         foreground server
   ckit up | down | status            background server
+  ckit export [--out dist] [--base /] the site as static files (--base /<repo>/ for a project site)
   ckit annotations <verb> …          list · show · add · reply · state · check
   ckit selftest                      the engine's own planted-fixture gate
+  ckit where                         the kit source this engine vendors from (for layer installers)
   ckit version
 """
 
@@ -119,6 +122,16 @@ def main(argv: list[str] | None = None) -> int:
     if cmd in ("version", "--version"):
         print(__version__)
         return 0
+    if cmd == "where":
+        from .paths import KIT_SRC
+        print(KIT_SRC)
+        return 0
+    if cmd == "init":
+        from . import init
+        return init.main(rest)
+    if cmd == "export":
+        from . import export
+        return export.main(rest)
     if cmd == "check":
         from . import check
         return check.main(rest)

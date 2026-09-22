@@ -1,6 +1,6 @@
 # Content repo Makefile — the kit's targets; add whatever is local below.
 .DEFAULT_GOAL := help
-.PHONY: help check docs serve down status kit-verify kit-sync
+.PHONY: help check docs serve down status site kit-verify kit-sync
 
 HOST ?=
 PORT ?=
@@ -11,6 +11,7 @@ help:
 	@echo "  docs        Serve the pages on this repo's port (background); ✎ Annotate appears bottom-right"
 	@echo "  down        Stop the server"
 	@echo "  status      Is the server up?"
+	@echo "  site        Write the pages as a static site to dist/ (BASE=/repo/ for a project site)"
 	@echo "  kit-verify  Confirm the vendored kit/ matches its pin"
 	@echo "  kit-sync    Re-vendor kit/ from its pinned sources (deliberate)"
 	@echo
@@ -29,6 +30,10 @@ down:
 
 status:
 	@ckit status || true
+
+BASE ?= /
+site:
+	@ckit export --out dist --base $(BASE)
 
 kit-verify:
 	@bash kit/verify.sh

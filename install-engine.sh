@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Put `ckit` on PATH, once. Re-running is harmless; `git pull` in this checkout is the upgrade,
-# and each repo's lab.json pin decides whether that upgrade is accepted.
+# Put this checkout's `ckit` on PATH — for working on the kit itself. Users install a release:
+#
+#   uv tool install git+https://github.com/pierg/content-kit@v0.4.0
+#
+# Here, `git pull` in this checkout is the upgrade, and each repo's kit.json pin decides whether
+# that upgrade is accepted (`ckit check` fails loud on a mismatch).
 #
 #   bash install-engine.sh [bin-dir]      # default: ~/.local/bin
 #
 # No packaging step: bin/ckit runs the package straight from this checkout (stdlib only,
-# Python ≥ 3.10; node for book verification). `pip install -e .` also works where pip exists.
+# Python ≥ 3.10; node for book verification).
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")" && pwd)"
 BIN="${1:-$HOME/.local/bin}"

@@ -1,19 +1,45 @@
 [build-system]
-requires = ["setuptools>=64"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
 
 [project]
 name = "ckit"
-version = "0.3.2"
-description = "content-kit engine: serve, lint, navigate, scaffold and annotate an HTML content tree"
+version = "0.4.0"
+description = "content-kit: a page contract for agent-written knowledge — genres with a checked voice, a gate, and a session-free review loop"
+readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "pierg" }]
+keywords = ["docs-as-code", "agents", "static-site", "knowledge-base", "lint"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Environment :: Console",
+  "Topic :: Documentation",
+  "Topic :: Text Processing :: Markup :: HTML",
+]
+
+[project.urls]
+Homepage = "https://github.com/pierg/content-kit"
+Documentation = "https://pierg.github.io/content-kit/"
+Changelog = "https://github.com/pierg/content-kit/blob/main/CHANGELOG.md"
 
 [project.scripts]
 ckit = "ckit.cli:main"
 
-[tool.setuptools]
+[tool.hatch.build.targets.wheel]
 packages = ["ckit"]
 
-[tool.setuptools.package-data]
-ckit = ["genres.json", "verify_book.mjs"]
+# The vendorable parts travel inside the wheel, so an installed engine can `ckit init` a repo
+# with no checkout anywhere: `ckit where` points at ckit/_data.
+[tool.hatch.build.targets.wheel.force-include]
+"shell" = "ckit/_data/shell"
+"genres" = "ckit/_data/genres"
+"craft" = "ckit/_data/craft"
+"skills" = "ckit/_data/skills"
+"templates" = "ckit/_data/templates"
+"tools" = "ckit/_data/tools"
+"verify.sh" = "ckit/_data/verify.sh"
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/.github", "/content", "/tests"]
