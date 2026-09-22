@@ -134,7 +134,7 @@ to any page to make it findable by tag.
 
 ## References
 
-Ids a repo declares in kit.json `"refs"` (`{"pattern": "Q-\\d+", "href": "/shell/record.html?p=QUESTIONS.md#{id}"}`) become links wherever they appear in a page's text — inline `<code>` included; `<pre>`, links, headings, and a qualified id (`other:Q-3`) left alone — and a heading in the record that opens with one gets it as a stable anchor.
+Ids a repo declares in kit.json `"refs"` (`{"pattern": "Q-\\d+", "href": "/shell/record.html?p=QUESTIONS.md#{id}"}`) become links wherever they appear in a page's text — inline `<code>` included; `<pre>`, links, headings, anything inside an element marked `data-norefs`, and a qualified id (`other:Q-3`) left alone — and a heading in the record that opens with one gets it as a stable anchor.
 
 ## Check-yourself / flashcards
 

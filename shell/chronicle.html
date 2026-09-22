@@ -117,10 +117,12 @@
   <div class="chr-meta" id="meta">Loading…</div>
 </div>
 
-<section id="now" hidden></section>
-<section id="story"></section>
-<section id="timeline" hidden></section>
-<section id="cards" hidden></section>
+<!-- data-norefs: these are rendered after load, so whether lib.js would reach them is a race;
+     every event already links into the record, so its ids are left as text, deterministically -->
+<section id="now" hidden data-norefs></section>
+<section id="story" data-norefs></section>
+<section id="timeline" hidden data-norefs></section>
+<section id="cards" hidden data-norefs></section>
 
 <script>
 (function () {

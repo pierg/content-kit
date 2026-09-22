@@ -229,7 +229,8 @@
   /* Reference links: ids matching a kit.json `refs` pattern become links, e.g.
        "refs": [{"pattern": "Q-\\d+", "href": "/shell/record.html?p=QUESTIONS.md#{id}"}]
      Text inside inline <code> is linked; <pre> blocks, existing links, headings, scripts
-     and styles are left alone, and so is a qualified id (`other:Q-3`, another repo's).
+     and styles are left alone, and so is a qualified id (`other:Q-3`, another repo's), and
+     anything inside an element marked data-norefs (a shell page's own rendered lists).
      Idempotent — a second pass skips ids already inside an <a>. Runs on content pages, and
      through hbLinkRefs() on anything a shell page renders later (the record viewer). */
   var REF_SKIP = { A: 1, PRE: 1, SCRIPT: 1, STYLE: 1, H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1 };
@@ -258,7 +259,7 @@
         var v = node.nodeValue;
         if (!v) return NodeFilter.FILTER_REJECT;
         for (var p = node.parentNode; p && p !== root; p = p.parentNode) {
-          if (p.nodeType === 1 && REF_SKIP[p.tagName]) return NodeFilter.FILTER_REJECT;
+          if (p.nodeType === 1 && (REF_SKIP[p.tagName] || p.hasAttribute("data-norefs"))) return NodeFilter.FILTER_REJECT;
         }
         any.lastIndex = 0;
         return any.test(v) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
