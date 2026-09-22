@@ -482,6 +482,87 @@ def main(argv: list[str]) -> int:
         _expect(probs2, "recipes/long.html", "over the 50", failures)
         planted += 2
 
+        # --- check plugins: a module under kit.json `checks` provides a page check a genre names
+        #     and a repo check that always runs; each fires by name on a planted page, a clean
+        #     page stays silent, and a genre naming a check nobody provides fails loud
+        (repo.root / "plug").mkdir(exist_ok=True)
+        (repo.root / "plug" / "checks_fx.py").write_text(
+            "def shouts(ctx):\n"
+            "    return [f'{ctx.rel}: shouts — {ctx.arg}'] if 'SHOUTING' in ctx.served else []\n"
+            "def forbidden(repo):\n"
+            "    return [f'{repo.rel(p)}: forbidden page name' for p in repo.content.rglob('forbidden.html')]\n"
+            "CHECKS = {'shouts': shouts}\n"
+            "REPO_CHECKS = {'forbidden_names': forbidden}\n", encoding="utf-8")
+        cfg = json.loads((repo.root / "kit.json").read_text())
+        cfg.pop("genres", None)
+        cfg["checks"] = ["plug/checks_fx.py"]
+        cfg["genres"] = {"note": {"checks": {"shouts": "no shouting in a note"}}}
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
+        repo3 = load_repo(repo.root)
+        _write(repo3, "notes/loud.html", _page("Loud", "<p>SHOUTING here.</p>"))
+        _write(repo3, "notes/quiet-shout.html", _page("Quiet", "<!-- SHOUTING -->"))
+        _write(repo3, "notes/forbidden.html", _page("Forbidden"))
+        with redirect_stdout(io.StringIO()):
+            probs3, _ = lint.run(repo3, nav=False)
+        _expect(probs3, "notes/loud.html", "shouts — no shouting in a note", failures)
+        _expect(probs3, "notes/forbidden.html", "forbidden page name", failures)
+        if any("quiet-shout" in p for p in probs3):
+            failures.append("a plugin check must see the served text — a commented-out word is not served")
+        planted += 3
+        cfg["genres"]["note"]["checks"]["no_such_check"] = True
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
+        try:
+            with redirect_stdout(io.StringIO()):
+                lint.run(load_repo(repo.root), nav=False)
+            failures.append("a genre naming a check nobody provides must fail the gate")
+        except SystemExit as exc:
+            if "no_such_check" not in str(exc):
+                failures.append(f"the unprovided-check error must name the check, got: {exc}")
+        planted += 1
+        for rel in ("notes/loud.html", "notes/quiet-shout.html", "notes/forbidden.html"):
+            (repo3.content / rel).unlink()
+
+        # --- generators: a module under kit.json `generators` adds a file to the indices; lint
+        #     writes it, a tampered copy fails `ckit check`, and claiming an engine index is refused
+        (repo.root / "plug" / "gen_fx.py").write_text(
+            "def generate(repo):\n"
+            "    notes = sorted(p.stem for p in (repo.content / 'notes').glob('*.html'))\n"
+            "    return {'content/fixture-index.json': {'notes': notes}}\n", encoding="utf-8")
+        cfg["genres"] = {}
+        cfg["checks"] = []
+        cfg["generators"] = ["plug/gen_fx.py"]
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
+        repo3 = load_repo(repo.root)
+        _lint(repo3)
+        gen_out = repo3.content / "fixture-index.json"
+        if not gen_out.is_file() or "a-note" not in gen_out.read_text():
+            failures.append("a generator's file was not written by `ckit lint`")
+        else:
+            gen_out.write_text(gen_out.read_text().replace("a-note", "tampered"))
+            err = io.StringIO()
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc = check.run(repo3)
+            if rc == 0 or "content/fixture-index.json" not in err.getvalue():
+                failures.append("a stale generated file must fail `ckit check` by name")
+        planted += 2
+        (repo.root / "plug" / "gen_bad.py").write_text(
+            "def generate(repo):\n    return {'content/catalog.json': {}}\n", encoding="utf-8")
+        cfg["generators"] = ["plug/gen_fx.py", "plug/gen_bad.py"]
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
+        try:
+            with redirect_stdout(io.StringIO()):
+                _lint(load_repo(repo.root))
+            failures.append("a generator claiming an engine index must be refused")
+        except SystemExit as exc:
+            if "catalog.json" not in str(exc):
+                failures.append(f"the claimed-index error must name the file, got: {exc}")
+        planted += 1
+        cfg["generators"] = []
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
+        gen_out.unlink(missing_ok=True)
+        repo = load_repo(repo.root)
+        _lint(repo)
+
         # --- the version pin is load-bearing
         cfg["ckit"] = "0.0.0"
         (repo.root / "kit.json").write_text(json.dumps(cfg))

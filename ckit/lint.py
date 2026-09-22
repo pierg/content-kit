@@ -30,7 +30,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from . import annotations, book_nav
+from . import annotations, book_nav, plugins
 from .genres import Genre, classify, is_exempt, load_genres
 from .paths import DOC_STATUS, Repo
 from .text import DEFN_RE, STATUS_META_RE, SUB_RE, strip_tags, word_count
@@ -147,6 +147,42 @@ def _forward_refs(page: Path, text: str) -> list[str]:
     return sorted(set(out))
 
 
+# The checks the engine implements. A genre may name any other check a module under kit.json
+# `checks` provides; a name nobody provides fails the gate (see `plugin_checks`).
+CORE_CHECKS = ("status", "max_words", "no_h2", "require_defn", "defn_no_findings",
+               "no_forward_refs", "require_meta_status", "require_sections", "bound_ids",
+               "no_findings")
+
+
+def plugin_checks(repo: Repo, genres: dict[str, Genre]) -> tuple[dict, dict]:
+    """(page checks, repo checks) from kit.json `checks`, after proving every check a genre names
+    is provided by the core or a plugin — an unprovided name is a configuration error."""
+    page, whole = plugins.checks(repo)
+    for g in genres.values():
+        for name, arg in g.checks.items():
+            if arg and name not in CORE_CHECKS and name not in page:
+                raise SystemExit(
+                    f"genre {g.name!r} names check {name!r}, which is not a core check and no module "
+                    "in kit.json `checks` provides — register the module that implements it, or drop "
+                    "the check from the genre")
+    return page, whole
+
+
+def _plugin(repo: Repo, rel: str, page: Path, text: str, g: Genre, provided: dict) -> list[str]:
+    probs: list[str] = []
+    served = _served(text)
+    for name, arg in g.checks.items():
+        if not arg or name in CORE_CHECKS:
+            continue
+        ctx = plugins.CheckContext(repo=repo, page=page, rel=rel, text=text, served=served,
+                                   genre=g, arg=arg, cfg=repo.cfg)
+        got = provided[name](ctx) or []
+        if not isinstance(got, list):
+            raise SystemExit(f"check {name!r} must return a list of problems, got {type(got).__name__}")
+        probs.extend(str(x) for x in got)
+    return probs
+
+
 def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
     probs: list[str] = []
     c = g.checks
@@ -229,7 +265,8 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
     return probs
 
 
-def lint_file(repo: Repo, path: Path, genres: dict[str, Genre]) -> list[str]:
+def lint_file(repo: Repo, path: Path, genres: dict[str, Genre],
+              provided: dict | None = None) -> list[str]:
     rel = repo.rel(path)
     text = path.read_text(encoding="utf-8", errors="replace")
     probs = _form(rel, text)
@@ -239,6 +276,7 @@ def lint_file(repo: Repo, path: Path, genres: dict[str, Genre]) -> list[str]:
         probs.append(f"{rel}: outside any genre — pages live under {repo.content_name}/{{{known}}}")
     else:
         probs.extend(_genre(rel, path, text, g))
+        probs.extend(_plugin(repo, rel, path, text, g, provided or {}))
     return probs
 
 
@@ -257,10 +295,16 @@ def iter_pages(repo: Repo, paths: list[Path] | None = None) -> list[Path]:
 def run(repo: Repo, paths: list[Path] | None = None, *, nav: bool = True) -> tuple[list[str], int]:
     """(problems, files linted). Regenerates the indices unless nav=False."""
     genres = load_genres(repo)
+    page_checks, repo_checks = plugin_checks(repo, genres)
     files = iter_pages(repo, paths)
     probs: list[str] = []
     for f in files:
-        probs.extend(lint_file(repo, f, genres))
+        probs.extend(lint_file(repo, f, genres, page_checks))
+    for name, fn in repo_checks.items():
+        got = fn(repo) or []
+        if not isinstance(got, list):
+            raise SystemExit(f"repo check {name!r} must return a list of problems, got {type(got).__name__}")
+        probs.extend(str(x) for x in got)
     books = repo.content / "books"
     if books.is_dir():
         for d in sorted(books.iterdir()):

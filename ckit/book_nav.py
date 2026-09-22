@@ -26,7 +26,7 @@ import json
 import re
 from pathlib import Path
 
-from . import chronicle, ladder
+from . import chronicle, ladder, plugins
 from .genres import EXEMPT_PARTS
 from .paths import Repo
 from .text import (
@@ -277,6 +277,8 @@ def build_backlinks(repo: Repo) -> dict[str, list[dict]]:
 
 
 def _dump(data: object) -> str:
+    if isinstance(data, str):
+        return data
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
 
 
@@ -292,6 +294,11 @@ def expected_files(repo: Repo) -> dict[Path, object]:
         expected[repo.content / "chronicle.json"] = chron
         if ladder.enabled(repo):
             expected[repo.content / "ladder.json"] = ladder.build(repo, chron)
+    core = {p.resolve() for p in expected}
+    for path, data in plugins.generated_files(repo).items():
+        if path in core:
+            raise SystemExit(f"a generator claims {repo.rel(path)}, which the engine generates itself")
+        expected[path] = data
     return expected
 
 
