@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The placement rule</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="placement rule, layers, mechanisms, conventions, extension points">
+</head>
+<body class="hb">
+<main>
+
+<h1>The placement rule</h1>
+<p class="sub"><b>Status: LIVE</b> — mechanisms below, conventions above: if it makes sense in a code repository's docs, it belongs in content-kit; if it only makes sense in a lab or a personal library, it belongs in a layer.</p>
+
+<p class="law">Mechanisms below, conventions above.</p>
+
+<p>content-kit is mechanism: a genre table, a <a class="defn-link" href="/content/concepts/gate/">gate</a>, a shell, generated indices, the <a class="defn-link" href="/content/concepts/annotation/">annotation</a> loop, ten <a class="defn-link" href="/content/concepts/extension-point/">extension points</a>. A layer is convention: what a research lab's record must contain, what a personal library's topics are. The test for which side a feature falls on is concrete. Would it make sense in the docs folder of an ordinary code repository? A status line on every page, a definition of record, indices that must be current, a reader's note on a rendered page: yes, so they are in the engine. A rule that every number cite a row of a lab's record, flashcard revision over a personal library: no, so they live in a layer and reach the engine through <code>kit.json</code>.</p>
+
+<p>The rule protects every library from every other. An engine that learns one layer's vocabulary imposes it on all the rest, as defaults nobody asked for and checks that fire on pages they were never meant for. Version 0.4 applied the rule to the engine itself: a genre, record checks, and domain colour names and widgets that only one kind of library used left the engine for the layers and a theme, and came back through the extension points. The engine now knows neither of the two layers that exist, <a href="https://github.com/pierg/lab-kit">lab-kit</a> and <a href="https://github.com/pierg/folio">folio</a>.</p>
+
+<p>It also says where a new idea goes. A mechanism every library could use goes upstream, into content-kit, with a fixture that breaks it (<a href="/content/notes/the-design-law.html">the design law</a>). A rule only your library needs goes in your <code>kit.json</code>. A convention several libraries of one kind share is a layer.</p>
+
+<p class="anchors">Sources / related: <a href="/content/hubs/content-kit.html">content-kit</a> · <a href="/content/books/running-a-library/05-extending.html">Extending the kit</a> · the kit's <code>CONTRIBUTING.md</code> and <code>CHANGELOG.md</code> (0.4.0).</p>
+
+</main>
+</body>
+</html>

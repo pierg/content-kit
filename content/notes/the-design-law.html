@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The design law</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="design law, checks, fixtures, gate">
+</head>
+<body class="hb">
+<main>
+
+<h1>The design law</h1>
+<p class="sub"><b>Status: LIVE</b> — a layer without a mechanical check is a suggestion; every check ships with a fixture designed to break it.</p>
+
+<p class="law">A rule nothing checks is a suggestion, and suggestions drift.</p>
+
+<p>Not through bad faith. A rule written in prose is read once and applied from memory, and it is lost the first time an agent is in a hurry or a new author never read it. A rule in the <a class="defn-link" href="/content/concepts/gate/">gate</a> is applied on every commit by something that does not forget. So every layer of content-kit answers the question <i>what checks it?</i> The status line is linted. A <a class="defn-link" href="/content/concepts/genre/">genre</a>'s shape is checked through its proxies: a word bound, a ban on sections, a required definition. The shell's vocabulary is checked token by token and class by class. The indices are compared with the content, never rewritten. An open <a class="defn-link" href="/content/concepts/annotation/">annotation</a> is held to its passage. Where a layer cannot be checked, as with a genre's register, it says so outright and leaves it to a reader, instead of dressing judgment up as a rule.</p>
+
+<p>The second half keeps the first honest. A check that has never been seen to fail may not work at all: a pattern that never matches, a function nothing calls, a check a genre names that no module implements. So a check ships with a fixture designed to break it, a planted page with a known answer, and it is not a check until that fixture fails by name. The engine's own gate (its selftest and its end-to-end run) plants one for every core check and every <a class="defn-link" href="/content/concepts/extension-point/">extension point</a>, and a genre that names a check nobody provides stops the gate instead of silently passing.</p>
+
+<p>The law cuts both ways. It forbids pretending a convention is enforced when nothing enforces it, and it forbids adding a check without proving it can fail. How to hold your own checks to it is in <a href="/content/books/running-a-library/03-the-gate.html#s4">The gate, §4</a>; where a new check belongs is <a href="/content/notes/the-placement-rule.html">the placement rule</a>.</p>
+
+<p class="anchors">Sources / related: <a href="/content/hubs/content-kit.html">content-kit</a> · the kit's <code>CONTRIBUTING.md</code> and the engine's <code>ckit/selftest.py</code>.</p>
+
+</main>
+</body>
+</html>

@@ -65,9 +65,37 @@
       "href": "/content/hubs/content-kit.html"
     }
   ],
-  "related": [],
-  "entries": [],
-  "notes": [],
+  "related": [
+    {
+      "slug": "prior-art",
+      "title": "Prior art",
+      "href": "/content/related/prior-art.html"
+    }
+  ],
+  "entries": [
+    {
+      "slug": "why-hand-authored-html",
+      "title": "Why hand-authored HTML",
+      "href": "/content/entries/why-hand-authored-html/"
+    }
+  ],
+  "notes": [
+    {
+      "slug": "the-design-law",
+      "title": "The design law",
+      "href": "/content/notes/the-design-law.html"
+    },
+    {
+      "slug": "the-placement-rule",
+      "title": "The placement rule",
+      "href": "/content/notes/the-placement-rule.html"
+    },
+    {
+      "slug": "twins-drift",
+      "title": "Twins drift",
+      "href": "/content/notes/twins-drift.html"
+    }
+  ],
   "concepts": [
     {
       "slug": "annotation",

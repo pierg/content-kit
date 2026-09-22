@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prior art</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+.works td:first-child { min-width: 150px; }
+.works td { overflow-wrap: anywhere; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="related-work, llm wiki, documentation, prose linting, static site generators, web annotation">
+</head>
+<body class="hb">
+<main>
+
+<h1>Prior art</h1>
+<p class="sub"><b>Status: LIVE</b> — what others have built or proposed for agent-maintained knowledge, documentation structure, prose checking, publishing notes, and annotating the web, each on its own terms, with our reading kept separate.</p>
+
+<h2 id="works">The works</h2>
+<p>One row per work. Both columns are theirs, summarised neutrally from the linked source. Every link below was opened on 2026-09-22 and checked to be the work described; where a detail could not be confirmed from the source, the row leaves it out rather than guessing.</p>
+
+<div style="overflow-x:auto">
+<table class="works">
+<tr><th>Work</th><th>What they did</th><th>What they claim</th></tr>
+<tr>
+<td><b>Andrej Karpathy — "LLM Wiki"</b><br><span class="muted">idea file, GitHub gist, April 2026</span><br><a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">gist.github.com/karpathy/442a6bf5…</a></td>
+<td>Describes a pattern for a personal knowledge base that an LLM agent builds and maintains: immutable raw sources, a wiki of interlinked markdown pages the agent writes, and a schema file of conventions (such as a <code>CLAUDE.md</code>). Three operations: ingest a source into the wiki, query the wiki, and lint it for contradictions, stale claims, orphan pages and missing cross-references. An index file and a log file help the agent navigate; Obsidian is suggested for browsing.</td>
+<td>The wiki is a persistent, compounding artifact, so knowledge is compiled once rather than re-derived from raw sources on every question. The human curates sources and asks questions; the LLM does the summarising, cross-referencing and bookkeeping. Shared as an idea for each reader's agent to build, not as code.</td>
+</tr>
+<tr>
+<td><b>Daniele Procida — Diátaxis</b><br><a href="https://diataxis.fr/">diataxis.fr</a></td>
+<td>A framework that sorts technical documentation into four kinds by the reader's need: tutorials (learning), how-to guides (a task), reference (information) and explanation (understanding), with a distinct approach to content and form for each.</td>
+<td>Organising documentation around those four needs improves it for readers and authors alike; the framework is light-weight and easy to apply, and has been adopted across hundreds of documentation projects.</td>
+</tr>
+<tr>
+<td><b>Write the Docs — "Docs as Code"</b><br><a href="https://www.writethedocs.org/guide/docs-as-code/">writethedocs.org/guide/docs-as-code</a></td>
+<td>A community guide to writing documentation with the same tools as code: issue trackers, version control, plain-text markup, code review and automated tests.</td>
+<td>Writing docs this way brings writers into development teams and makes documentation a shared responsibility of writers and developers.</td>
+</tr>
+<tr>
+<td><b>Vale</b><br><a href="https://vale.sh/">vale.sh</a> · <a href="https://github.com/vale-cli/vale">github.com/vale-cli/vale</a><br><span class="muted">MIT licence</span></td>
+<td>A command-line prose linter. A style is a folder of YAML rules (substitutions, terms, patterns); Vale parses the markup (Markdown, AsciiDoc, reStructuredText, HTML and others) and applies the rules to the prose, in editors and in CI.</td>
+<td>It brings code-like linting to prose, letting teams turn their style guide into automated checks. Because it parses markup instead of guessing at it, rules can target headings, lists or table cells and skip code and URLs.</td>
+</tr>
+<tr>
+<td><b>Quartz</b> (jackyzha0)<br><a href="https://quartz.jzhao.xyz/">quartz.jzhao.xyz</a> · <a href="https://github.com/jackyzha0/quartz">github.com/jackyzha0/quartz</a><br><span class="muted">MIT licence</span></td>
+<td>A static site generator that turns a folder of Markdown notes, Obsidian-compatible, into a website with wikilinks, backlinks, a graph view, full-text search, popover previews and transclusion.</td>
+<td>A fast, batteries-included way to publish a digital garden: interlinked notes online with little configuration.</td>
+</tr>
+<tr>
+<td><b>Hypothesis</b><br><a href="https://web.hypothes.is/">web.hypothes.is</a> · <a href="https://github.com/hypothesis/client">github.com/hypothesis/client</a><br><span class="muted">client: BSD 2-clause licence</span></td>
+<td>An annotation service with an open-source client: readers highlight and comment on web pages and PDFs through a browser client. Its 2013 post <a href="https://web.hypothes.is/blog/fuzzy-anchoring/">"Fuzzy Anchoring"</a> describes storing each annotation's target three ways (a range in the markup, character offsets, and the quoted text with its context) and re-attaching it by trying each in turn, ending in fuzzy text matching.</td>
+<td>Combining selectors with fuzzy matching lets annotations survive changes to a document's structure and content. The service presents itself today as a social annotation platform for teaching and teams.</td>
+</tr>
+<tr>
+<td><b>W3C — Web Annotation Data Model</b><br><span class="muted">W3C Recommendation, 23 February 2017</span><br><a href="https://www.w3.org/TR/annotation-model/">w3.org/TR/annotation-model</a></td>
+<td>A standard model for annotations: a body, a target, and selectors that say which part of the target is meant, among them the <code>TextQuoteSelector</code>, an <code>exact</code> quote with an optional <code>prefix</code> and <code>suffix</code> to tell repeated passages apart.</td>
+<td>A common model lets annotations be shared and reused across platforms rather than locked to one tool.</td>
+</tr>
+<tr>
+<td><b>Jeremy Howard — llms.txt</b><br><span class="muted">proposal, first published 3 September 2024</span><br><a href="https://llmstxt.org/">llmstxt.org</a></td>
+<td>Proposes a markdown file at a site's <code>/llms.txt</code> with curated guidance and links for language models, and markdown versions of pages beside the HTML ones.</td>
+<td>Web pages are built for people, and their navigation and layout waste a model's context; a concise, curated text serves agents better at the moment they use a site.</td>
+</tr>
+<tr>
+<td><b>AGENTS.md</b><br><a href="https://agents.md/">agents.md</a></td>
+<td>An open format: a markdown file at a repository's root (and, in a monorepo, in subprojects, the closest one winning) holding the instructions a coding agent needs: build steps, tests, conventions.</td>
+<td>A "README for agents": one predictable place for agent context that keeps the human README uncluttered, supported by a growing set of coding-agent tools.</td>
+</tr>
+</table>
+</div>
+
+<h2 id="reading">Our reading</h2>
+<p class="muted">This section is ours, not theirs: what each work settles or leaves open for the question of how agents write pages that keep belonging.</p>
+
+<p><b>The LLM wiki is the closest in intent.</b> Both have an agent writing an interlinked body of pages for a human, with a lint pass over it. The differences are in what is made mechanical. There the page conventions live in a schema file the agent reads, and the lint is a health check the agent performs with judgment, catching contradictions and stale claims. Here the conventions are <a class="defn-link" href="/content/concepts/genre/">genres</a> with a written voice, and the lint is a <a class="defn-link" href="/content/concepts/gate/">gate</a> that fails a commit, but checks only structural proxies: it cannot see a contradiction. The wiki also treats ingesting raw sources as a first-class operation, which content-kit does not; content-kit adds a channel the wiki lacks, from the reading human back to a later agent, through <a class="defn-link" href="/content/concepts/annotation/">annotations</a>.</p>
+
+<p><b>Diátaxis and the genres answer different questions.</b> Diátaxis sorts by what the reader needs to do; content-kit's genres sort by the role a page plays in a library (a claim, a definition, a map, a step in a sequence), and attach checks to each. They overlap (a chapter behaves like a tutorial, a concept like reference), and the core has no how-to genre; a library that wants one can declare it with a fixed section order through an <a class="defn-link" href="/content/concepts/extension-point/">extension point</a>. Diátaxis is guidance for writers; the genres try to make the checkable part of such guidance a gate.</p>
+
+<p><b>Docs as code is the ground content-kit stands on,</b> with two changes: the main author is an agent rather than an engineer, and review happens on the rendered page rather than in a diff.</p>
+
+<p><b>Vale checks what the gate leaves to reviewers.</b> The gate checks form and genre proxies, never wording; Vale checks wording against a style and parses HTML. They look complementary, since a Vale style could carry the part of a genre's voice that is checkable as vocabulary. Nobody here has tried running Vale over a content-kit library, so that is a possibility, not a result.</p>
+
+<p><b>Quartz shares the reader's affordances and not the pipeline.</b> Backlinks, search and hover previews are in both; wikilinks, transclusion and the graph view are Quartz's alone. Quartz builds a site from markdown; content-kit serves hand-written HTML with no build. Why is argued in <a href="/content/entries/why-hand-authored-html/">Why hand-authored HTML</a>.</p>
+
+<p><b>From Hypothesis and the W3C model, content-kit borrows the anchor and refuses the fuzziness.</b> Its sidecars use the <code>TextQuoteSelector</code> shape as specified. It does not re-attach a quote that has changed: an exact match (with prefix and suffix to choose among repeats, and a whitespace-insensitive fallback) either finds the passage or the gate fails. Hypothesis has to survive pages it does not control; a library controls its pages, so it can require that an open note be answered before its passage is rewritten. Storage differs for the same reason: a committed file beside the page rather than a hosted service.</p>
+
+<p><b>llms.txt and AGENTS.md treat agents as readers of documentation; content-kit treats them as its writers.</b> They meet at the authoring rules: a repository's <code>AGENTS.md</code> is a natural place to tell its agent to use the <code>/present</code> skill.</p>
+
+<p><b>What nobody has measured,</b> as far as this page's sources show: whether mechanical genre checks make agent-written pages better than written guidance alone does. The <a href="/content/notes/the-design-law.html">design law</a> predicts they do; that prediction has not been tested against a control.</p>
+
+<h2 id="backlinks">Cited by</h2>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>

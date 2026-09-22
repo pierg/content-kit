@@ -266,6 +266,30 @@
     "href": "/content/concepts/skeleton/"
   },
   {
+    "title": "Why hand-authored HTML",
+    "sub": "Status: LIVE — why content-kit pages are written as HTML by whoever writes them, served exactly as written, with no markdown source and no build, and what that costs.",
+    "defn": "THE POSITION A page is one HTML file, written directly by its author (usually an agent) against one shared shell of styles and scripts, and served byte for byte as it was written. There is no source format behind it, no generator in front of it, and so no second version of it anywhere.",
+    "headings": [
+      "No build step",
+      "No drift between source and render",
+      "Agents write HTML well enough",
+      "The shell is the style contract",
+      "Quote-anchored review needs stable rendered text",
+      "What it costs",
+      "Where this would be the wrong choice",
+      "Cited by"
+    ],
+    "tags": [
+      "html",
+      "markdown",
+      "static site",
+      "build step",
+      "design decision"
+    ],
+    "kind": "entry",
+    "href": "/content/entries/why-hand-authored-html/"
+  },
+  {
     "title": "content-kit",
     "sub": "Status: LIVE — a page contract for agent-written knowledge: where a page goes, how it reads, what checks it, and how a person reviews it in the browser. Start here.",
     "defn": "",
@@ -286,5 +310,68 @@
     ],
     "kind": "hub",
     "href": "/content/hubs/content-kit.html"
+  },
+  {
+    "title": "The design law",
+    "sub": "Status: LIVE — a layer without a mechanical check is a suggestion; every check ships with a fixture designed to break it.",
+    "defn": "",
+    "headings": [],
+    "tags": [
+      "design law",
+      "checks",
+      "fixtures",
+      "gate"
+    ],
+    "kind": "note",
+    "href": "/content/notes/the-design-law.html"
+  },
+  {
+    "title": "The placement rule",
+    "sub": "Status: LIVE — mechanisms below, conventions above: if it makes sense in a code repository's docs, it belongs in content-kit; if it only makes sense in a lab or a personal library, it belongs in a layer.",
+    "defn": "",
+    "headings": [],
+    "tags": [
+      "placement rule",
+      "layers",
+      "mechanisms",
+      "conventions",
+      "extension points"
+    ],
+    "kind": "note",
+    "href": "/content/notes/the-placement-rule.html"
+  },
+  {
+    "title": "Twins drift",
+    "sub": "Status: LIVE — a document kept in two formats is two documents, and they drift apart.",
+    "defn": "",
+    "headings": [],
+    "tags": [
+      "one format per document",
+      "drift",
+      "markdown",
+      "html"
+    ],
+    "kind": "note",
+    "href": "/content/notes/twins-drift.html"
+  },
+  {
+    "title": "Prior art",
+    "sub": "Status: LIVE — what others have built or proposed for agent-maintained knowledge, documentation structure, prose checking, publishing notes, and annotating the web, each on its own terms, with our reading kept separate.",
+    "defn": "",
+    "headings": [
+      "The works",
+      "Our reading",
+      "Cited by"
+    ],
+    "tags": [
+      "related-work",
+      "llm wiki",
+      "documentation",
+      "prose linting",
+      "static site generators",
+      "web annotation"
+    ],
+    "kind": "related",
+    "href": "/content/related/prior-art.html"
   }
 ]

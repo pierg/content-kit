@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Twins drift</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="one format per document, drift, markdown, html">
+</head>
+<body class="hb">
+<main>
+
+<h1>Twins drift</h1>
+<p class="sub"><b>Status: LIVE</b> — a document kept in two formats is two documents, and they drift apart.</p>
+
+<p>The moment a page exists twice (as markdown and as HTML, as a draft in a chat and a page in the repository, as a summary and the thing summarised), there are two documents that must be edited together forever, and sooner or later one is edited alone. Nothing notices. Both still read well on their own, and the reader who lands on the stale one has no way to tell.</p>
+
+<p>So content-kit keeps one format per document: the page is the HTML file, with no source behind it and no render in front of it (<a href="/content/entries/why-hand-authored-html/">why HTML</a>). The one sanctioned pair is an imported external paper, their text as <code>main.md</code> beside our reading of it as <code>index.html</code>, declared by a <code>source.json</code>. It holds because the two are not twins: one is theirs and frozen, the other is ours and says something different.</p>
+
+<p>Facts have twins too. A number copied from the <a class="defn-link" href="/content/concepts/record/">record</a> into a page is a second copy of the line it came from, and it goes stale the same way; link to the line instead. The generated indices look like twins of the pages and are not, because the <a class="defn-link" href="/content/concepts/gate/">gate</a> regenerates them and fails when the committed copy differs. A copy is safe exactly when something compares it with the original on every commit.</p>
+
+<p class="anchors">Sources / related: <a href="/content/hubs/content-kit.html">content-kit</a> · <a href="/content/notes/the-design-law.html">The design law</a> · the kit's <code>skills/present/SKILL.md</code> (one format per document).</p>
+
+</main>
+</body>
+</html>

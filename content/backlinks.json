@@ -75,6 +75,11 @@
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "The design law",
+      "href": "/content/notes/the-design-law.html",
+      "kind": "note"
     }
   ],
   "/content/books/running-a-library/04-the-review-loop.html": [
@@ -124,6 +129,11 @@
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "The placement rule",
+      "href": "/content/notes/the-placement-rule.html",
+      "kind": "note"
     }
   ],
   "/content/concepts/annotation/": [
@@ -143,9 +153,29 @@
       "kind": "concept"
     },
     {
+      "title": "Why hand-authored HTML",
+      "href": "/content/entries/why-hand-authored-html/",
+      "kind": "entry"
+    },
+    {
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "The design law",
+      "href": "/content/notes/the-design-law.html",
+      "kind": "note"
+    },
+    {
+      "title": "The placement rule",
+      "href": "/content/notes/the-placement-rule.html",
+      "kind": "note"
+    },
+    {
+      "title": "Prior art",
+      "href": "/content/related/prior-art.html",
+      "kind": "related"
     }
   ],
   "/content/concepts/chronicle/": [
@@ -210,6 +240,21 @@
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "The design law",
+      "href": "/content/notes/the-design-law.html",
+      "kind": "note"
+    },
+    {
+      "title": "The placement rule",
+      "href": "/content/notes/the-placement-rule.html",
+      "kind": "note"
+    },
+    {
+      "title": "Prior art",
+      "href": "/content/related/prior-art.html",
+      "kind": "related"
     }
   ],
   "/content/concepts/gate/": [
@@ -249,9 +294,34 @@
       "kind": "concept"
     },
     {
+      "title": "Why hand-authored HTML",
+      "href": "/content/entries/why-hand-authored-html/",
+      "kind": "entry"
+    },
+    {
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "The design law",
+      "href": "/content/notes/the-design-law.html",
+      "kind": "note"
+    },
+    {
+      "title": "The placement rule",
+      "href": "/content/notes/the-placement-rule.html",
+      "kind": "note"
+    },
+    {
+      "title": "Twins drift",
+      "href": "/content/notes/twins-drift.html",
+      "kind": "note"
+    },
+    {
+      "title": "Prior art",
+      "href": "/content/related/prior-art.html",
+      "kind": "related"
     }
   ],
   "/content/concepts/genre/": [
@@ -289,6 +359,16 @@
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "The design law",
+      "href": "/content/notes/the-design-law.html",
+      "kind": "note"
+    },
+    {
+      "title": "Prior art",
+      "href": "/content/related/prior-art.html",
+      "kind": "related"
     }
   ],
   "/content/concepts/record/": [
@@ -306,6 +386,11 @@
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "Twins drift",
+      "href": "/content/notes/twins-drift.html",
+      "kind": "note"
     }
   ],
   "/content/concepts/skeleton/": [
@@ -340,6 +425,38 @@
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "Twins drift",
+      "href": "/content/notes/twins-drift.html",
+      "kind": "note"
+    },
+    {
+      "title": "Prior art",
+      "href": "/content/related/prior-art.html",
+      "kind": "related"
+    }
+  ],
+  "/content/hubs/content-kit.html": [
+    {
+      "title": "Why hand-authored HTML",
+      "href": "/content/entries/why-hand-authored-html/",
+      "kind": "entry"
+    },
+    {
+      "title": "The design law",
+      "href": "/content/notes/the-design-law.html",
+      "kind": "note"
+    },
+    {
+      "title": "The placement rule",
+      "href": "/content/notes/the-placement-rule.html",
+      "kind": "note"
+    },
+    {
+      "title": "Twins drift",
+      "href": "/content/notes/twins-drift.html",
+      "kind": "note"
     }
   ],
   "/content/notes/the-design-law.html": [
@@ -357,6 +474,21 @@
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "The placement rule",
+      "href": "/content/notes/the-placement-rule.html",
+      "kind": "note"
+    },
+    {
+      "title": "Twins drift",
+      "href": "/content/notes/twins-drift.html",
+      "kind": "note"
+    },
+    {
+      "title": "Prior art",
+      "href": "/content/related/prior-art.html",
+      "kind": "related"
     }
   ],
   "/content/notes/the-placement-rule.html": [
@@ -374,6 +506,11 @@
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
+    },
+    {
+      "title": "The design law",
+      "href": "/content/notes/the-design-law.html",
+      "kind": "note"
     }
   ],
   "/content/notes/twins-drift.html": [
@@ -381,6 +518,11 @@
       "title": "Genres and voice — Running a library",
       "href": "/content/books/running-a-library/02-genres-and-voice.html",
       "kind": "book"
+    },
+    {
+      "title": "Why hand-authored HTML",
+      "href": "/content/entries/why-hand-authored-html/",
+      "kind": "entry"
     },
     {
       "title": "content-kit",
@@ -393,6 +535,11 @@
       "title": "Annotation",
       "href": "/content/concepts/annotation/",
       "kind": "concept"
+    },
+    {
+      "title": "Why hand-authored HTML",
+      "href": "/content/entries/why-hand-authored-html/",
+      "kind": "entry"
     },
     {
       "title": "content-kit",

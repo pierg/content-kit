@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why hand-authored HTML</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="html, markdown, static site, build step, design decision">
+</head>
+<body class="hb">
+<main>
+
+<h1>Why hand-authored HTML</h1>
+<p class="sub"><b>Status: LIVE</b> — why content-kit pages are written as HTML by whoever writes them, served exactly as written, with no markdown source and no build, and what that costs.</p>
+
+<blockquote class="defn" id="the-position">
+<span class="defn-name">THE POSITION</span><br>
+A page is one HTML file, written directly by its author (usually an agent) against one shared shell of styles and scripts, and served byte for byte as it was written. There is no source format behind it, no generator in front of it, and so no second version of it anywhere.
+</blockquote>
+
+<p>Most documentation tooling makes the opposite choice: write markdown, render it with a static site generator through a theme. That choice is sensible when people write the pages by hand and the rendering is somebody else's problem. This entry argues that when agents write the pages, and a gate has to check them, the balance tips the other way. Each section makes one claim and says what it rests on; the last sections state the costs and where the argument would fail.</p>
+
+<h2 id="build">No build step</h2>
+
+<p>The file on disk is the page. <code>ckit serve</code> is a standard-library HTTP server with two roots, the shell at <code>/shell/</code> and the repository at <code>/</code>, and it serves each page file as it is <span class="own">ckit/serve.py</span>. <code>ckit export</code> copies the same files into a static site and changes only one thing in them, prefixing root-absolute URLs when the site lives under a path <span class="own">ckit/export.py</span>. The engine has no dependencies beyond Python's standard library; the only third-party code is KaTeX and marked, vendored in the shell <span class="own">CONTRIBUTING.md</span>.</p>
+
+<p>What this buys is less a matter of speed than of fewer things to fail. There is no toolchain version to pin, no build to run before a preview, and nothing between an agent's edit and what the reader sees that the agent would have to debug. An agent that writes a page can reload it and see exactly what it wrote.</p>
+
+<h2 id="drift">No drift between source and render</h2>
+
+<p>A markdown source and its rendered HTML are two versions of one document. If only the source is committed, what readers see depends on a build that may not have run; if both are committed, they can disagree. With one file there is nothing to disagree with. The authoring contract makes this a rule, one format per document, and allows exactly one exception: an imported external paper, whose own text is kept as <code>main.md</code> beside our reading of it, declared as a pair by <code>source.json</code> <span class="own">skills/present/SKILL.md</span>. The general form of the argument is the note <a href="/content/notes/twins-drift.html">Twins drift</a>.</p>
+
+<h2 id="fluent">Agents write HTML well enough</h2>
+
+<p>This claim is the weakest of the set, and rests on observation rather than measurement. HTML is the web's native format, and current models write it readily. The vocabulary an agent has to learn on top of it is small and written down in one place: a set of colour tokens, a few dozen classes, a handful of blocks such as the definition, the check-yourself and the side-by-side lanes <span class="own">shell/COMPONENTS.md</span>. Every page of this library was written by an agent following the <code>/present</code> skill and passes the gate. That shows it can be done. It does not show it is easier or less error-prone than markdown; nobody here has measured that.</p>
+
+<p>What HTML does give an agent that markdown does not is the whole vocabulary without escape hatches. A figure with a caption, a two-lane comparison, a collapsible answer, a definition the shell can pop on hover: in markdown each needs a shortcode, an extension or raw HTML anyway. Here they are ordinary elements with shell classes.</p>
+
+<h2 id="contract">The shell is the style contract</h2>
+
+<p>Every page links <code>/shell/lib.css</code> and <code>/shell/lib.js</code>, and the lint fails a page that does not <span class="own">ckit/lint.py</span>. The same lint refuses raw hex colours, a <code>var(--…)</code> token that nothing declares, and any class that looks like shell vocabulary without being in it. The shell each library uses is vendored and hashed, so every library on the same kit renders the same way, and a design change reaches every page through one re-vendor, with no page edited <span class="own">kit/PIN</span>.</p>
+
+<p>In a generator setup the contract is the theme's templates, which the author never sees. Here it is a vocabulary the author writes in directly, and one a machine can check line by line. That is what lets a page be both hand-written and uniform.</p>
+
+<h2 id="anchors">Quote-anchored review needs stable rendered text</h2>
+
+<p>Readers annotate the rendered page by selecting prose, and an <a class="defn-link" href="/content/concepts/annotation/">annotation</a> is stored as the quoted text plus a little context. For the gate to say whether an open note's passage still exists, it must find the quote in the text the reader saw. The engine keeps one text model for this, shared by the lint, the annotation layer and the search index: it extracts a page's prose from the source file the way the browser's <code>innerText</code> sees it, dropping scripts and styles and putting whitespace at block boundaries <span class="own">ckit/text.py</span>.</p>
+
+<p>That only works because the source file and the served page are the same file. With a build in between, the gate would have to run the build to check an anchor, or check it against source text that differs from what was selected: markdown punctuation, expanded shortcodes, generated headings. Even with one file, the browser and the engine can disagree about a space at an inline boundary, and the engine falls back to a whitespace-insensitive match for that case <span class="own">ckit/annotations.py</span>. With a build in the way, those small mismatches would become real ones.</p>
+
+<h2 id="costs">What it costs</h2>
+
+<ul>
+<li><b>Verbose source.</b> Every page carries a head of boilerplate, and tables and lists take more typing than in markdown. For an agent that is tokens; for a person editing by hand it is friction. One paragraph per line keeps diffs readable, but a page still carries far more markup than the same text in markdown.</li>
+<li><b>No includes.</b> There are no partials or templates. The chrome every page shares (sidebar, chapter strip, table of contents, backlinks, definitions on hover) is added at load time by <code>lib.js</code>. A reader without JavaScript gets each page's content and none of that chrome.</li>
+<li><b>Committed indices.</b> The catalog, the search index and the backlinks are generated files, committed and checked current. Two branches that each add a page usually conflict in them; the fix is to regenerate after the merge, but it is a step a markdown site would not have.</li>
+<li><b>A lint that reads source, not a parsed page.</b> The checks are regular expressions over the file, which is what keeps them short and fast. It also means a code sample on a page is read like the page itself: a sample showing a hex colour or an unknown class fails unless a character in it is escaped.</li>
+<li><b>One output format.</b> There is no single source that also renders to PDF or slides. A paper is its own <code>.tex</code> file; it shares figures and a bibliography with the pages, never sentences.</li>
+</ul>
+
+<h2 id="wrong">Where this would be the wrong choice</h2>
+
+<p>If most pages are written by people who do not want to write tags, the verbosity costs more than the gate saves, and a markdown pipeline with a prose linter is the better fit. If the same text must come out as a website, a book and slides, a single source with several renderers earns its build step. content-kit is for the case where agents do most of the writing, a person does most of the reviewing, and both need what they see to be exactly what was written.</p>
+
+<details class="check">
+<summary>Can you restate the argument in one sentence, and name the claim it leans on least?</summary>
+<div class="ans">When agents write and a gate checks, one hand-written HTML file per page removes the build, the drift between source and render, and the gap between the text a reader annotates and the text the gate checks, at the cost of verbose source, runtime chrome and committed indices. The weakest claim is that agents write HTML as well as markdown, which rests on observation, not measurement.</div>
+</details>
+
+<p class="anchors">Sources / related: <a href="/content/hubs/content-kit.html">content-kit</a> · <a href="/content/related/prior-art.html">Prior art</a> · <a href="/content/notes/twins-drift.html">Twins drift</a> · <a class="defn-link" href="/content/concepts/gate/">gate</a> · <a class="defn-link" href="/content/concepts/annotation/">annotation</a>.</p>
+
+<h2 id="backlinks">Cited by</h2>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>
