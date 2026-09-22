@@ -24,7 +24,7 @@ The page contract stops knowing what a lab is. Everything a layer needs now reac
 - **The catalog is the genre table**: sidebar, landing page and search filters are derived from the loaded genres, so an extension genre appears everywhere a core one does.
 - **`<meta name="topic">`** reaches the search index and the catalog (as `topic`) when a page declares one; whether a topic is *required* is a layer's convention (folio's).
 - **An extra index may be an object** carrying its records under `records` (a federated index with its sources beside them).
-- **`ckit init`, `ckit where`, `ckit export`.** `export` writes a static site (landing page, shell, theme, shell pages, content, record files); `--base /<repo>/` serves it under a path such as a GitHub project site — the shell reads its base from its own URL, so nothing else needs configuring. `home` may name a shell page.
+- **`ckit init`, `ckit where`, `ckit export`.** `export` writes a static site (landing page, a 404 page, shell, theme, shell pages, content, record files); `--base /<repo>/` serves it under a path such as a GitHub project site — the shell reads its base from its own URL, so nothing else needs configuring. `home` may name a shell page.
 - **Packaging**: `uv tool install git+https://github.com/pierg/content-kit@v0.4.0` gives a `ckit` that carries the kit as package data. `make check` proves it (`tests/wheel.sh`).
 - **The kit's own documentation**, written as a content-kit library in `content/`, published at <https://pierg.github.io/content-kit/>.
 - LICENSE (MIT), CONTRIBUTING, CODE_OF_CONDUCT, and CI: `check.yml` (Python 3.10–3.14 with node) and `pages.yml`.
