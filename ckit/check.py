@@ -26,28 +26,27 @@ def run(repo: Repo) -> int:
     declared = repo.cfg.get("ckit")
     if declared is None:
         print(
-            f'{repo.rel(repo.root / "lab.json")}: no "ckit" version declared — add '
+            f'{repo.rel(repo.marker or repo.root / "kit.json")}: no "ckit" version declared — add '
             f'"ckit": "{__version__}" so the repo records what it was checked against',
             file=sys.stderr,
         )
         return 1
     if str(declared) != __version__:
         print(
-            f"engine mismatch: lab.json declares ckit {declared}, this engine is {__version__}. "
-            "Re-run install.sh from the content-kit checkout you mean to use, or bump the pin "
-            "deliberately.",
+            f"engine mismatch: kit.json declares ckit {declared}, this engine is {__version__}. "
+            "Re-run `ckit init` with the engine you mean to use, or bump the pin deliberately.",
             file=sys.stderr,
         )
         return 1
     if not (repo.shell / "lib.css").is_file():
-        print(f"no vendored shell at {repo.rel(repo.shell)} — run content-kit's install.sh here",
+        print(f"no vendored shell at {repo.rel(repo.shell)} — run `ckit init` here",
               file=sys.stderr)
         return 1
 
     home = repo.cfg.get("home")
     if home and home != "dashboard" and home_page(repo) is None:
         print(
-            f'lab.json "home" ({home!r}) does not resolve to a page under {repo.rel(repo.content)} — '
+            f'kit.json "home" ({home!r}) does not resolve to a page under {repo.rel(repo.content)} — '
             'point it at an existing file, or a directory with an index.html, or set "home": "dashboard".',
             file=sys.stderr,
         )
@@ -68,7 +67,7 @@ def run(repo: Repo) -> int:
     books = repo.content / "books"
     node = shutil.which("node")
     if books.is_dir() and node:
-        env = {**os.environ, "LAB_ROOT": str(repo.root)}
+        env = {**os.environ, "CKIT_ROOT": str(repo.root)}
         for book in sorted(books.iterdir()):
             if not (book / "index.html").is_file():
                 continue

@@ -12,7 +12,7 @@ Generic extraction (any repo): every dated heading in a declared record file is 
     ## 2026-08-26 — [decision] folio becomes a library
 
 The tag names the kind — pivot · kill · decision · lesson · instrument · result — and an
-untagged heading is a plain `entry`. A repo declares its record in lab.json:
+untagged heading is a plain `entry`. A repo declares its record in kit.json:
 
     "record": ["HISTORY.md", "QUESTIONS.md", "ops/", "record/", "experiments/*/PROBE.md"],
     "chronicle": {
@@ -79,7 +79,7 @@ def _expand(repo: Repo, items: list, key: str) -> list[Path]:
         elif p.is_file():
             out.append(p)
         else:
-            raise SystemExit(f"lab.json {key}: {item!r} does not exist")
+            raise SystemExit(f"kit.json {key}: {item!r} does not exist")
     seen: set[Path] = set()
     uniq = []
     for p in out:
@@ -150,7 +150,7 @@ def load_extractors(repo: Repo) -> list:
     for item in cfg.get("extractors") or []:
         p = repo.root / item
         if not p.is_file():
-            raise SystemExit(f"lab.json chronicle.extractors: {item!r} not found")
+            raise SystemExit(f"kit.json chronicle.extractors: {item!r} not found")
         spec = importlib.util.spec_from_file_location(f"chronicle_ext_{p.stem}", p)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)  # type: ignore[union-attr]
@@ -210,7 +210,7 @@ def record_catalog(repo: Repo) -> list[dict]:
         if p.is_dir() or p.suffix != ".md":
             continue
         if not p.is_file():
-            raise SystemExit(f"lab.json record: {item!r} does not exist")
+            raise SystemExit(f"kit.json record: {item!r} does not exist")
         rel = p.relative_to(repo.root).as_posix()
         out.append({"title": md_title(p.read_text(encoding="utf-8", errors="replace"), p.stem),
                     "path": rel, "href": viewer_href(rel)})

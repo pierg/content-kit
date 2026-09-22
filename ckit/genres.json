@@ -1,5 +1,5 @@
 {
-  "_": "The core genre set. Human-readable voice lives in genres/GENRES.md; this file is what the engine checks. A repo extends or overrides it under `genres` in lab.json — same shape, deep-merged per genre.",
+  "_": "The core genre set. Human-readable voice lives in genres/GENRES.md; this file is what the engine checks. A repo extends or overrides it under `genres` in kit.json — same shape, deep-merged per genre.",
   "genres": {
     "note": {
       "dir": "notes",

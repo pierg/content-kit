@@ -234,14 +234,14 @@
         decisionsPanel(d.decisions || []),
       ].filter(Boolean);
       document.getElementById("grid").innerHTML = panels.length ? panels.join("") :
-        empty("No ladder data yet — declare a record (and a ladder extractor) in lab.json and run `ckit lint`.");
+        empty("No ladder data yet — declare a record (and a ladder extractor) in kit.json and run `ckit lint`.");
       document.getElementById("meta").textContent =
         (d.findings || []).length + " findings · " + (d.experiments || []).length + " experiments · " +
         (d.questions || []).length + " questions · " + (d.claims || []).length + " claims";
       renderExplore(catalog);
     }).catch(function (ex) {
       document.getElementById("meta").textContent =
-        "No dashboard yet — set \"home\": \"dashboard\" (or \"dashboard\": true, to keep a different home) in lab.json and run `ckit lint`. (" + ex.message + ")";
+        "No dashboard yet — set \"home\": \"dashboard\" (or \"dashboard\": true, to keep a different home) in kit.json and run `ckit lint`. (" + ex.message + ")";
     });
   });
 })();

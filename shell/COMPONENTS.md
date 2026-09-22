@@ -170,7 +170,7 @@ When a page is served by the engine, an **✎ Annotate** toggle appears bottom-r
 
 ## Record and chronicle (engine chrome)
 
-`/shell/record.html?p=<path.md>` renders one file of the repo's declared record (`lab.json` `record`) in the shell — the markdown stays the artifact; the banner names it. `/shell/chronicle.html` renders `content/chronicle.json`, the generated timeline (dated headings with `[pivot]`-style tags, plus whatever extractor the repo declares). Both are chrome like the search page: never authored, never copied into `content/`.
+`/shell/record.html?p=<path.md>` renders one file of the repo's declared record (`kit.json` `record`) in the shell — the markdown stays the artifact; the banner names it. `/shell/chronicle.html` renders `content/chronicle.json`, the generated timeline (dated headings with `[pivot]`-style tags, plus whatever extractor the repo declares). Both are chrome like the search page: never authored, never copied into `content/`.
 
 ## Craft
 

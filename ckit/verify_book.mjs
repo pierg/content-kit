@@ -13,21 +13,22 @@ import vm from "node:vm";
 
 const ENGINE = dirname(fileURLToPath(import.meta.url));
 
-/* Resolve the lab root the same way engine/paths.py does, or a vendored kit looks for
-   the book inside itself. The kit lives at <lab>/kit/, so ENGINE/.. is the KIT root,
-   not the lab root. Order: $LAB_ROOT, then the nearest ancestor holding lab.json, then
-   the kit root's parent when the kit root is named "kit", then the kit root itself. */
-function labRoot() {
-  if (process.env.LAB_ROOT) return resolve(process.env.LAB_ROOT);
+/* Resolve the repo root the same way ckit/paths.py does, or a vendored kit looks for
+   the book inside itself. Order: $CKIT_ROOT (or its old name $LAB_ROOT), then the nearest
+   ancestor holding kit.json (or the deprecated lab.json), then the kit root's parent when
+   the kit root is named "kit", then the kit root itself. */
+function repoRoot() {
+  const env = process.env.CKIT_ROOT || process.env.LAB_ROOT;
+  if (env) return resolve(env);
   let dir = resolve(ENGINE, "..");
   const kitRoot = dir;
   for (let d = dir; ; d = dirname(d)) {
-    if (existsSync(join(d, "lab.json"))) return d;
+    if (existsSync(join(d, "kit.json")) || existsSync(join(d, "lab.json"))) return d;
     if (dirname(d) === d) break;
   }
   return basename(kitRoot) === "kit" ? dirname(kitRoot) : kitRoot;
 }
-const LIB_ROOT = labRoot();
+const LIB_ROOT = repoRoot();
 const bookArg = process.argv[2] || "content/books/proofs-forever";
 const BOOK = resolve(LIB_ROOT, bookArg);
 if (!existsSync(BOOK)) {

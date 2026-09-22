@@ -1,6 +1,6 @@
 """Start / stop / status a repo's reader server in the background.
 
-    ckit up [--host H] [--port P]     # background; URL from lab.json unless overridden
+    ckit up [--host H] [--port P]     # background; URL from kit.json unless overridden
     ckit down
     ckit status
 

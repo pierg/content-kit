@@ -14,14 +14,14 @@ fail() { echo "e2e: $*" >&2; exit 1; }
 
 echo "--- install ---"
 bash "$KIT/install.sh" "$REPO" --name "Scratch Repo" --port $PORT >/dev/null
-for f in lab.json Makefile .gitignore kit/PIN kit/shell/lib.css kit/shell/search.html kit/shell/annotate.js \
+for f in kit.json Makefile .gitignore kit/PIN kit/shell/lib.css kit/shell/search.html kit/shell/annotate.js \
          kit/genres/GENRES.md kit/genres/genres.json kit/craft/CRAFT.md kit/skills/present/SKILL.md \
          kit/skills/address/SKILL.md kit/verify.sh kit/tools/kit_hash.py; do
   [ -e "$REPO/$f" ] || fail "install did not create $f"
 done
 [ -L "$REPO/.claude/skills/present" ] || fail "present skill not symlinked"
 [ -L "$REPO/.claude/skills/address" ] || fail "address skill not symlinked"
-grep -q "\"ckit\": \"$(ckit version)\"" "$REPO/lab.json" || fail "lab.json did not get the engine pin"
+grep -q "\"ckit\": \"$(ckit version)\"" "$REPO/kit.json" || fail "kit.json did not get the engine pin"
 grep -q '^source content-kit ' "$REPO/kit/PIN" || fail "PIN has no content-kit source line"
 ( cd "$REPO" && git init -q && git add -A && git status --porcelain kit/PIN | grep -q . ) \
   || fail "kit/PIN is not stageable — it must be tracked, not ignored"
@@ -42,7 +42,7 @@ echo "gate ok"
 echo "--- the record and its chronicle ---"
 mkdir -p "$REPO/record"
 printf '# Log — LIVE\n\n### 2026-09-01 — [pivot] direction changed\n\nBecause.\n' > "$REPO/record/log.md"
-python3 - "$REPO/lab.json" <<'PY'
+python3 - "$REPO/kit.json" <<'PY'
 import json, sys
 from pathlib import Path
 p = Path(sys.argv[1]); c = json.loads(p.read_text())
@@ -66,13 +66,13 @@ echo "# tampered" >> "$REPO/kit/shell/COMPONENTS.md"
 echo "drift ok"
 
 echo "--- the engine pin bites ---"
-python3 - "$REPO/lab.json" <<'PY'
+python3 - "$REPO/kit.json" <<'PY'
 import json, sys
 from pathlib import Path
 p = Path(sys.argv[1]); c = json.loads(p.read_text()); c["ckit"] = "0.0.0"; p.write_text(json.dumps(c, indent=2) + "\n")
 PY
 ( cd "$REPO" && ckit check >/dev/null 2>&1 ) && fail "a mismatched pin passed the gate"
-python3 - "$REPO/lab.json" "$(ckit version)" <<'PY'
+python3 - "$REPO/kit.json" "$(ckit version)" <<'PY'
 import json, sys
 from pathlib import Path
 p = Path(sys.argv[1]); c = json.loads(p.read_text()); c["ckit"] = sys.argv[2]; p.write_text(json.dumps(c, indent=2) + "\n")
@@ -93,8 +93,8 @@ curl -fsS "$B/content/chronicle.json" | grep -q "direction changed" || fail "chr
 curl -fsS "$B/" | grep -q "Chronicle" || fail "landing lacks the chronicle link"
 curl -fsS "$B/content/notes/hello.html" | grep -q "Status: LIVE" || fail "scaffolded page lacks its status line"
 
-echo "--- a home written to lab.json on disk reaches the handler through load_repo ---"
-python3 - "$REPO/lab.json" <<'PY'
+echo "--- a home written to kit.json on disk reaches the handler through load_repo ---"
+python3 - "$REPO/kit.json" <<'PY'
 import json, sys
 from pathlib import Path
 p = Path(sys.argv[1]); c = json.loads(p.read_text())
@@ -106,7 +106,7 @@ PY
 sleep 0.5
 curl -sI "$B/" | grep -q '302' || fail "a content-page home on disk did not redirect through load_repo"
 curl -sI "$B/" | grep -q '^Location: /content/concepts/thing/' || fail "content-page home redirected to the wrong canonical URL"
-python3 - "$REPO/lab.json" <<'PY'
+python3 - "$REPO/kit.json" <<'PY'
 import json, sys
 from pathlib import Path
 p = Path(sys.argv[1]); c = json.loads(p.read_text())

@@ -9,7 +9,7 @@ You are producing a **document**, not a chat reply. Chat gets the TL;DR and the 
 
 ## Golden rules
 
-1. **The genre fixes the voice.** Where a page lives says what it is, and what it is says how it reads. Pick the genre first — `kit/genres/GENRES.md` has the register, the assumed reader and the forbidden moves for each — and do not invent one. If no core genre fits, the repo may declare one in `lab.json` (`genres`); that is a deliberate, visible decision, not a workaround.
+1. **The genre fixes the voice.** Where a page lives says what it is, and what it is says how it reads. Pick the genre first — `kit/genres/GENRES.md` has the register, the assumed reader and the forbidden moves for each — and do not invent one. If no core genre fits, the repo may declare one in `kit.json` (`genres`); that is a deliberate, visible decision, not a workaround.
 2. **Status in the first line.** The first `<p class="sub">` says LIVE, HISTORICAL, PARKED, RETIRED, FROZEN or DRAFT. The gate checks it.
 3. **One format per document.** A markdown draft *and* an HTML page of the same document are twins, and twins drift. The one legitimate pair is an imported external paper (`main.md` is their text, `index.html` is your reading; `source.json` declares it).
 4. **In a lab, every number cites a finding.** If `record/findings.md` exists here, no number enters a page except by citing an `F-<n>` row, and what may be *said* about it is bounded by `record/claims.md`. If a sentence has no claim licensing it, promote the finding first — do not write the sentence and reconcile later. Misses at the same volume as wins.

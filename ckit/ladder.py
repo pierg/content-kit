@@ -9,7 +9,7 @@ It is generated exactly like the chronicle: `ckit lint` / `ckit nav` write
 `content/ladder.json`, `ckit check` fails if it drifts, and `/shell/dashboard.html` renders
 it. Nobody writes it, so it cannot drift from the files it points at.
 
-Opt-in, per repo. A repo turns the dashboard on in lab.json:
+Opt-in, per repo. A repo turns the dashboard on in kit.json:
 
     "home": "dashboard"        # the dashboard is the front door served at /
                                # (or "dashboard": true to generate it without changing the door)

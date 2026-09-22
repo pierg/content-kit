@@ -1,6 +1,6 @@
 """Serve a repo's reader pages — stdlib only, zero deps, no build step.
 
-    ckit serve                       # foreground, port from lab.json
+    ckit serve                       # foreground, port from kit.json
     ckit up / ckit down              # background (ctl.py)
 
 Two roots are mounted:
@@ -218,7 +218,7 @@ def make_handler(repo: Repo):
                     # own relative links and the backlinks index (keyed on canonical hrefs) hold
                     page = home_page(repo)
                     if page is None:
-                        self.send_error(404, f'lab.json "home" ({home!r}) does not resolve to a page')
+                        self.send_error(404, f'kit.json "home" ({home!r}) does not resolve to a page')
                         return
                     self.send_response(302)
                     self.send_header("Location", _href_of(repo, page))
@@ -280,7 +280,7 @@ def main(argv: list[str]) -> int:
     args = ap.parse_args(argv)
     repo = load_repo(args.root)
     if not (repo.shell / "lib.css").is_file():
-        raise SystemExit(f"no vendored shell at {repo.rel(repo.shell)} — run install.sh here first")
+        raise SystemExit(f"no vendored shell at {repo.rel(repo.shell)} — run `ckit init` here first")
     host = args.host or repo.cfg["host"]
     port = args.port or int(repo.cfg["port"])
     httpd = ThreadingHTTPServer((host, port), make_handler(repo))

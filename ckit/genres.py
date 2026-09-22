@@ -1,7 +1,7 @@
 """The genre taxonomy: which shapes exist, where each lives, and what is checked on each.
 
 Core genres ship with the engine (`genres.json`); a repo extends or overrides them under
-`genres` in `lab.json`. Classification is by path — the content tree *is* the taxonomy —
+`genres` in `kit.json`. Classification is by path — the content tree *is* the taxonomy —
 and a page that matches no genre is an error, not a default.
 """
 
@@ -47,10 +47,10 @@ def load_genres(repo: Repo | None = None) -> dict[str, Genre]:
     spec = core_spec()
     ext = (repo.cfg.get("genres") if repo else None) or {}
     if not isinstance(ext, dict):
-        raise SystemExit("lab.json: `genres` must be an object keyed by genre name")
+        raise SystemExit("kit.json: `genres` must be an object keyed by genre name")
     for name, over in ext.items():
         if not isinstance(over, dict):
-            raise SystemExit(f"lab.json: genres.{name} must be an object")
+            raise SystemExit(f"kit.json: genres.{name} must be an object")
         spec[name] = _deep_merge(spec.get(name, {}), over)
 
     out: dict[str, Genre] = {}

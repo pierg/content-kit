@@ -69,7 +69,7 @@ def _scratch() -> tuple[Path, Repo]:
     root = tmp / "repo"
     (root / "kit").mkdir(parents=True)
     os.symlink(KIT_SRC / "shell", root / "kit" / "shell")
-    (root / "lab.json").write_text(json.dumps({
+    (root / "kit.json").write_text(json.dumps({
         "name": "Scratch", "content": "content", "host": "127.0.0.1", "port": 5399,
         "ckit": __version__,
     }, indent=2) + "\n")
@@ -118,6 +118,31 @@ def main(argv: list[str]) -> int:
         if rc != 0:
             failures.append(f"`ckit check` on a clean repo returned {rc}:\n{buf.getvalue()}")
 
+        # --- the config file: kit.json, with lab.json read as a deprecated alias that says so
+        #     exactly once per run however often a legacy repo is loaded
+        legacy = tmp / "legacy"
+        legacy.mkdir()
+        (legacy / "lab.json").write_text(json.dumps({"name": "Legacy", "ckit": __version__}))
+        from . import paths as paths_mod
+        paths_mod._warned_legacy = False
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            old_a, old_b = load_repo(legacy), load_repo(legacy)
+        warned = [ln for ln in err.getvalue().splitlines() if "deprecated" in ln]
+        if old_a.cfg.get("name") != "Legacy" or old_b.marker.name != "lab.json":
+            failures.append("a repo carrying only lab.json must still load")
+        if len(warned) != 1:
+            failures.append(f"lab.json must print exactly one deprecation line per run, got {len(warned)}")
+        if repo.marker is None or repo.marker.name != "kit.json" or repo.cfg.get("name") != "Scratch":
+            failures.append("a repo with kit.json must load from kit.json")
+        both = tmp / "both"
+        both.mkdir()
+        (both / "kit.json").write_text(json.dumps({"name": "New"}))
+        (both / "lab.json").write_text(json.dumps({"name": "Old"}))
+        if load_repo(both).cfg.get("name") != "New":
+            failures.append("kit.json must win over lab.json when both exist")
+        planted += 3
+
         # --- the genre set and the catalog are one registry: a genre dir missing from
         #     CATALOG_GROUPS lints and is searched, but never reaches the sidebar and is
         #     badged "page" — silent, so it is asserted rather than remembered
@@ -159,10 +184,10 @@ def main(argv: list[str]) -> int:
             "def extract(root, cfg):\n"
             "    return {'events': [{'date': '2026-09-04', 'kind': 'experiment', 'title': 'E1 locked', 'href': '/shell/record.html?p=e1.md'}],\n"
             "            'experiments': [{'slug': 'e1', 'title': 'E1', 'href': '/shell/record.html?p=e1.md', 'locked': '2026-09-04', 'findings': []}]}\n", encoding="utf-8")
-        cfg = json.loads((repo.root / "lab.json").read_text())
+        cfg = json.loads((repo.root / "kit.json").read_text())
         cfg["record"] = ["record/lab.md"]
         cfg["chronicle"] = {"sources": ["record/"], "extractors": ["ext.py"]}
-        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
         repo = load_repo(repo.root)
         _lint(repo)
         chron = json.loads((repo.content / "chronicle.json").read_text())
@@ -181,10 +206,10 @@ def main(argv: list[str]) -> int:
         # split: `record` lists files (sidebar); `chronicle.sources` sweeps dirs (scanner)
         (repo.root / "record" / "log.md").write_text(
             "# Log — LIVE\n\n### 2026-09-05 — [decision] the split lands\n\nBecause.\n", encoding="utf-8")
-        cfg = json.loads((repo.root / "lab.json").read_text())
+        cfg = json.loads((repo.root / "kit.json").read_text())
         cfg["record"] = ["record/lab.md", "record/log.md", "record/"]  # a dir here is scanner-only, not sidebar
         cfg["chronicle"] = {"sources": ["record/"], "extractors": ["ext.py"]}
-        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
         repo2 = load_repo(repo.root)
         _lint(repo2)
         cat2 = json.loads((repo2.content / "catalog.json").read_text())
@@ -220,11 +245,11 @@ def main(argv: list[str]) -> int:
             "            'findings': [{'id': 'F-1', 'title': 'the planted finding', 'status': 'BANKED', 'href': '/x#f-1'}],\n"
             "            'claims': [{'id': 'C-1', 'title': 'the planted claim', 'rests_on': ['F-1'], 'href': '/x#c-1'}]}\n",
             encoding="utf-8")
-        cfg = json.loads((repo.root / "lab.json").read_text())
+        cfg = json.loads((repo.root / "kit.json").read_text())
         cfg["record"] = ["record/state.md", "record/lab.md", "record/log.md", "record/"]
         cfg["chronicle"] = {"sources": ["record/"], "extractors": ["ext.py"]}
         cfg["home"] = "dashboard"
-        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
         repo = load_repo(repo.root)
         _lint(repo)
         lad_path = repo.content / "ladder.json"
@@ -260,9 +285,9 @@ def main(argv: list[str]) -> int:
         planted += 1
         # opting out is inert: catalog carries no dashboard flag and no ladder.json is expected
         lad_path.unlink()
-        cfg = json.loads((repo.root / "lab.json").read_text())
+        cfg = json.loads((repo.root / "kit.json").read_text())
         del cfg["home"]
-        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
         repo = load_repo(repo.root)
         _lint(repo)
         if lad_path.is_file():
@@ -272,7 +297,7 @@ def main(argv: list[str]) -> int:
         planted += 1
         # re-enable so the remaining fixtures run against a consistent, dashboard-on repo
         cfg["home"] = "dashboard"
-        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
         repo = load_repo(repo.root)
         _lint(repo)
 
@@ -441,10 +466,10 @@ def main(argv: list[str]) -> int:
             planted += 1
 
         # --- per-repo genre extension: a new genre dir is recognised and its checks apply
-        cfg = json.loads((repo.root / "lab.json").read_text())
+        cfg = json.loads((repo.root / "kit.json").read_text())
         cfg["genres"] = {"recipe": {"dir": "recipes", "layout": "flat",
                                     "checks": {"status": True, "max_words": 50}}}
-        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
         repo2 = load_repo(repo.root)
         _write(repo2, "recipes/ok.html", _page("Recipe"))
         _write(repo2, "recipes/long.html", _page("Long recipe", "<p>" + "word " * 80 + "</p>"))
@@ -459,7 +484,7 @@ def main(argv: list[str]) -> int:
 
         # --- the version pin is load-bearing
         cfg["ckit"] = "0.0.0"
-        (repo.root / "lab.json").write_text(json.dumps(cfg))
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
         buf = io.StringIO()
         with redirect_stdout(buf):
             err = io.StringIO()

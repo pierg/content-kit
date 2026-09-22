@@ -6,7 +6,7 @@
 # Vendored into <repo>/kit/ — the parts an agent must find in-repo, readable, pinned:
 #   shell/   genres/   craft/   skills/present   skills/address   tools/kit_hash.py   verify.sh
 # Not vendored — the engine. `ckit` is installed once (install-engine.sh) and the repo
-# records the version it was checked against in lab.json; `ckit check` fails on a mismatch.
+# records the version it was checked against in kit.json; `ckit check` fails on a mismatch.
 #
 # Idempotent: re-running re-vendors and re-pins, and scaffolds only what is missing.
 # It touches only its own paths under kit/, so a lab-kit overlay beside them survives.
@@ -52,26 +52,27 @@ scaffold() {  # scaffold <relative-target> <template>
   fi
 }
 echo "scaffolding"
-scaffold lab.json   lab.json
+# kit.json is the config file; a repo that still carries the deprecated lab.json keeps it
+[ -f "$REPO/lab.json" ] && [ ! -f "$REPO/kit.json" ] || scaffold kit.json kit.json
 scaffold Makefile   Makefile
 scaffold .gitignore gitignore
 mkdir -p "$REPO"/content/{notes,entries,concepts,hubs,projects,papers,related,books}
 
-# lab.json: name and port on first creation; the engine pin every time — installing IS the
+# kit.json: name and port on first creation; the engine pin every time — installing IS the
 # deliberate act of accepting this engine version.
 python3 - "$REPO" "$NAME" "${PORT:-}" "$VERSION" <<'PY'
 import json, sys
 from pathlib import Path
 repo, name, port, version = Path(sys.argv[1]), sys.argv[2], sys.argv[3], sys.argv[4]
-p = repo / "lab.json"
+p = repo / "kit.json" if (repo / "kit.json").is_file() or not (repo / "lab.json").is_file() else repo / "lab.json"
 cfg = json.loads(p.read_text())
 if str(cfg.get("name", "")).startswith("<"):
     cfg["name"] = name
     if port:
         cfg["port"] = int(port)
-    print(f"  set     lab.json name={name}" + (f" port={port}" if port else ""))
+    print(f"  set     {p.name} name={name}" + (f" port={port}" if port else ""))
 if cfg.get("ckit") != version:
-    print(f"  pin     lab.json ckit={version}" + (f" (was {cfg['ckit']})" if cfg.get("ckit") else ""))
+    print(f"  pin     {p.name} ckit={version}" + (f" (was {cfg['ckit']})" if cfg.get("ckit") else ""))
     cfg["ckit"] = version
 p.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n")
 PY

@@ -351,7 +351,7 @@
       renderNow(pair[1]);
       render();
     }).catch(function (ex) {
-      document.getElementById("meta").textContent = "No chronicle yet — declare `record` (and an extractor) in lab.json and run `ckit lint`. (" + ex.message + ")";
+      document.getElementById("meta").textContent = "No chronicle yet — declare `record` (and an extractor) in kit.json and run `ckit lint`. (" + ex.message + ")";
     });
     var params = new URLSearchParams(location.search);
     if (params.get("q")) { input.value = params.get("q"); state.q = input.value; }
