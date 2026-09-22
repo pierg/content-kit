@@ -6,6 +6,7 @@
     dist/content/…        the content tree and its generated indices (annotation sidecars stay
                           home: review traffic is for the served repo, not the published site)
     dist/<record files>   the markdown the record viewer and the chronicle link to
+    dist/404.html         what a static host serves for a path that is not there
     dist/.nojekyll        so GitHub Pages serves every path as-is
 
 The export rewrites nothing at the default base. `--base /<repo>/` is for a site served under a
@@ -79,6 +80,17 @@ def _index(repo: Repo, base: str) -> str:
     return _landing(repo).decode("utf-8")
 
 
+def _not_found(repo: Repo) -> str:
+    name = html_mod.escape(str(repo.cfg.get("name", "library")))
+    return ('<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            f'<title>Not found — {name}</title>\n<link rel="stylesheet" href="/shell/lib.css">\n'
+            '<script src="/shell/lib.js" defer></script>\n</head>\n<body class="hb">\n<main>\n'
+            '<h1>Not found</h1>\n<p class="sub">No page lives at this address — it may have moved.</p>\n'
+            f'<p><a href="/">{name}</a> · <a href="/shell/search.html">Search everything</a></p>\n'
+            '</main>\n</body>\n</html>\n')
+
+
 def run(repo: Repo, out: Path, base: str = "/") -> int:
     if not base.startswith("/") or not base.endswith("/"):
         raise SystemExit(f"--base must start and end with '/' (e.g. /my-repo/), got {base!r}")
@@ -96,6 +108,7 @@ def run(repo: Repo, out: Path, base: str = "/") -> int:
     (out / ".nojekyll").write_text("")
 
     _write(out / "index.html", _index(repo, base), base)
+    _write(out / "404.html", _not_found(repo), base)
     n_shell = _copy_tree(repo.shell, out / "shell", base, skip=lambda p: "skeletons" in p.parts)
     _write(out / "shell" / "theme.css", config.theme_css(repo), base)
     for name, src in config.shell_pages(repo).items():

@@ -167,7 +167,7 @@ echo "annotate ok"
 
 echo "--- export: a static site that serves under python3 -m http.server, at the root and under a base ---"
 ( cd "$REPO" && ckit export --out "$TMP/site" >/dev/null ) || fail "ckit export failed"
-for f in index.html .nojekyll shell/lib.css shell/lib.js shell/theme.css shell/board.html shell/search.html \
+for f in index.html 404.html .nojekyll shell/lib.css shell/lib.js shell/theme.css shell/board.html shell/search.html \
          content/catalog.json content/notes/hello.html record/log.md; do
   [ -e "$TMP/site/$f" ] || fail "export lacks $f"
 done
@@ -184,6 +184,7 @@ kill "$HTTPD"; HTTPD=""
 mkdir -p "$TMP/pages"
 ( cd "$REPO" && ckit export --out "$TMP/pages/proj" --base /proj/ >/dev/null ) || fail "ckit export --base failed"
 grep -q 'href="/proj/shell/lib.css"' "$TMP/pages/proj/content/notes/hello.html" || fail "--base did not prefix the page's shell link"
+grep -q 'href="/proj/shell/search.html"' "$TMP/pages/proj/404.html" || fail "the 404 page must link search under the base"
 grep -q 'href="/shell/' "$TMP/pages/proj/content/notes/hello.html" && fail "--base left a root-absolute shell link"
 grep -q '"href": "/content/' "$TMP/pages/proj/content/catalog.json" || fail "--base must leave the JSON indices alone"
 python3 -m http.server "$SPORT" -d "$TMP/pages" -b 127.0.0.1 >/dev/null 2>&1 & HTTPD=$!
