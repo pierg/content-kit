@@ -104,6 +104,7 @@ def _tokens(rel: str, text: str, known: set[str]) -> list[str]:
     nothing at all — silently. It is almost always a token from another repo's vocabulary."""
     here = known | set(VAR_DECL.findall(text))
     out: list[str] = []
+    text = markup_only(text)
     for m in VAR_USE.finditer(text):
         if m.group(1) not in here:
             line = text.count("\n", 0, m.start()) + 1
@@ -117,8 +118,32 @@ def allowed_classes(repo: Repo, genres: dict[str, Genre]) -> set[str]:
     return ALLOWED | {f"hb-kind-{name}" for name in genres} | config.classes(repo)
 
 
+MARKUP = re.compile(r"<(style|script)\b[^>]*>.*?</\1>|<!--.*?-->|<[^>]+>", re.S | re.I)
+
+
+def _blank(s: str) -> str:
+    return re.sub(r"[^\n]", " ", s)
+
+
+def markup_only(text: str) -> str:
+    """The page with its text content blanked (line breaks kept, so line numbers hold): only tags,
+    their attributes, and style and script bodies remain. A hex colour, a class name or a token
+    written *as text* — a code sample, an issue number — is not styling, so the form checks do not
+    read it; a commented-out tag is not served, so they do not read that either."""
+    out: list[str] = []
+    last = 0
+    for m in MARKUP.finditer(text):
+        out.append(_blank(text[last:m.start()]))
+        seg = m.group(0)
+        out.append(_blank(seg) if seg.startswith("<!--") else seg)
+        last = m.end()
+    out.append(_blank(text[last:]))
+    return "".join(out)
+
+
 def _form(rel: str, text: str, allowed: set[str] = ALLOWED) -> list[str]:
     probs: list[str] = []
+    text = markup_only(text)
     for m in HEX.finditer(text):
         line = text.count("\n", 0, m.start()) + 1
         probs.append(f"{rel}:{line}: hex color {m.group(0)} — use shell tokens")

@@ -181,7 +181,10 @@
         return getJson(href).catch(function () { return []; });
       });
       return Promise.all([getJson("/content/search-index.json")].concat(extra)).then(function (lists) {
-        idx = [].concat.apply([], lists.map(function (l) { return Array.isArray(l) ? l : []; }));
+        /* an index is a list of records, or an object carrying them under "records" */
+        idx = [].concat.apply([], lists.map(function (l) {
+          return Array.isArray(l) ? l : (l && Array.isArray(l.records) ? l.records : []);
+        }));
         initFilters(catalog);
         render();
       });

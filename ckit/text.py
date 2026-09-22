@@ -31,6 +31,7 @@ DEFN_RE = re.compile(
     r'<blockquote\b[^>]*class="[^"]*\bdefn\b[^"]*"[^>]*>(.*?)</blockquote>', re.I | re.S
 )
 TAGS_META_RE = re.compile(r'<meta[^>]*name=["\']tags["\'][^>]*content=["\']([^"\']*)["\']', re.I)
+TOPIC_META_RE = re.compile(r'<meta[^>]*name=["\']topic["\'][^>]*content=["\']([^"\']*)["\']', re.I)
 STATUS_META_RE = re.compile(
     r'<meta[^>]*name=["\']status["\'][^>]*content=["\']([^"\']*)["\']', re.I
 )

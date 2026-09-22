@@ -169,7 +169,11 @@ def run(repo: Path, *, name: str | None = None, port: int | None = None, quiet: 
     say(f"pinned  content-kit@{ref[:8]}")
     from . import book_nav
     from .paths import load_repo
-    written = book_nav.regenerate(load_repo(repo))
+    try:
+        written = book_nav.regenerate(load_repo(repo))
+    except SystemExit as exc:  # a layer named in kit.json that is not vendored yet, say
+        written = []
+        say(f"  note    indices not generated yet ({exc}) — run `ckit nav` once every layer is installed")
     if written:
         say("indices generated: " + ", ".join(written))
     say("\ndone. next:")

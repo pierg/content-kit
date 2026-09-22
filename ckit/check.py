@@ -72,20 +72,19 @@ def run(repo: Repo) -> int:
     print(f"content lint clean — {n} file(s)")
 
     books = repo.content / "books"
+    to_verify = [b for b in sorted(books.iterdir()) if (b / "index.html").is_file()] if books.is_dir() else []
     node = shutil.which("node")
-    if books.is_dir() and node:
-        env = {**os.environ, "CKIT_ROOT": str(repo.root)}
-        for book in sorted(books.iterdir()):
-            if not (book / "index.html").is_file():
-                continue
-            r = subprocess.run([node, str(PACKAGE_DIR / "verify_book.mjs"), repo.rel(book)],
-                               cwd=repo.root, env=env)
-            if r.returncode != 0:
-                print(f"book verify failed: {repo.rel(book)}", file=sys.stderr)
-                return r.returncode
-    elif books.is_dir():
-        print("books present but node not found — book verify skipped", file=sys.stderr)
+    if to_verify and not node:
+        print(f"{len(to_verify)} book(s) to verify but node is not on PATH — install node to run the gate",
+              file=sys.stderr)
         return 1
+    env = {**os.environ, "CKIT_ROOT": str(repo.root)}
+    for book in to_verify:
+        r = subprocess.run([node, str(PACKAGE_DIR / "verify_book.mjs"), repo.rel(book)],
+                           cwd=repo.root, env=env)
+        if r.returncode != 0:
+            print(f"book verify failed: {repo.rel(book)}", file=sys.stderr)
+            return r.returncode
     print("content check ok")
     return 0
 

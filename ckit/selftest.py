@@ -665,6 +665,60 @@ def main(argv: list[str]) -> int:
                 failures.append(f"{f.relative_to(KIT_SRC)} uses the domain token {m.group(0)!r} — the shell's hues are neutral")
         planted += 1
 
+        # --- the 0.4 follow-ups: text is not markup, topics reach the indices, node only for books,
+        #     and init survives a kit.json that names a layer not vendored yet
+        ytmp, yrepo = _scratch()
+        _write(yrepo, "notes/sample.html", _page("Sample",
+               "<pre><code>&lt;span class=\"hb-bogus\" style=\"color:#ff0000; border-color: var(--nope)\"&gt;</code></pre>"
+               "<p>Issue #abc123, and the token var(--nope) named in prose.</p>"
+               "<!-- <span class=\"hb-bogus\">commented out</span> -->",
+               head='<meta name="topic" content="kitchen">'))
+        with redirect_stdout(io.StringIO()):
+            probs6, _ = lint.run(yrepo, nav=True)
+        if any("sample.html" in x for x in probs6):
+            failures.append("text that looks like markup (a code sample, a comment) must not trip the form checks: "
+                            + " | ".join(x for x in probs6 if "sample.html" in x))
+        planted += 1
+        si6 = json.loads((yrepo.content / "search-index.json").read_text())
+        cat6 = json.loads((yrepo.content / "catalog.json").read_text())
+        if [r.get("topic") for r in si6 if r["href"].endswith("sample.html")] != ["kitchen"] \
+                or [n.get("topic") for n in cat6["notes"]] != ["kitchen"]:
+            failures.append("a page's <meta name=topic> must reach the search index and the catalog")
+        planted += 1
+        real_which = check.shutil.which
+        check.shutil.which = lambda name: None if name == "node" else real_which(name)
+        try:
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                (yrepo.content / "books").mkdir(exist_ok=True)
+                rc_empty = check.run(load_repo(yrepo.root))
+            new.create(yrepo, "book", "a-book")
+            with redirect_stdout(io.StringIO()):
+                lint.run(yrepo, nav=True)
+            err = io.StringIO()
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc_book = check.run(load_repo(yrepo.root))
+        finally:
+            check.shutil.which = real_which
+        if rc_empty != 0:
+            failures.append("with no book to verify, the gate must not need node")
+        if rc_book == 0 or "node is not on PATH" not in err.getvalue():
+            failures.append("a book to verify without node must fail the gate, saying so")
+        planted += 2
+        from . import init as init_mod
+        fresh = ytmp / "fresh"
+        fresh.mkdir()
+        (fresh / "kit.json").write_text(json.dumps({"name": "Fresh", "genres": ["kit/layer/genres.json"]}))
+        out = io.StringIO()
+        with redirect_stdout(out):
+            rc_init = init_mod.run(fresh, quiet=False)
+        if rc_init != 0 or "indices not generated yet" not in out.getvalue():
+            failures.append("init must survive a kit.json naming a layer that is not vendored yet, and say so")
+        pin = (fresh / "kit" / "PIN").read_text()
+        if not pin.startswith("source content-kit ") or len(pin.splitlines()[0].split()) != 4:
+            failures.append(f"init must pin content-kit in a four-field source line: {pin.splitlines()[0]!r}")
+        planted += 2
+        shutil.rmtree(ytmp, ignore_errors=True)
+
         # --- the version pin is load-bearing
         cfg = json.loads((repo.root / "kit.json").read_text())
         cfg["ckit"] = "0.0.0"

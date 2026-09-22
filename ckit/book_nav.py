@@ -31,7 +31,7 @@ from . import chronicle, config, plugins
 from .genres import EXEMPT_PARTS, catalog_groups, load_genres
 from .paths import Repo
 from .text import (
-    DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TAGS_META_RE, TITLE_RE, strip_tags, title_of,
+    DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TAGS_META_RE, TITLE_RE, TOPIC_META_RE, strip_tags, title_of,
 )
 
 NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
@@ -52,6 +52,16 @@ def kind_by_folder(repo: Repo) -> dict[str, str]:
 
 def _read(p: Path) -> str:
     return p.read_text(encoding="utf-8", errors="replace")
+
+
+def _topic(p: Path) -> str | None:
+    """A page's `<meta name="topic">` — a mechanism any content tree may use; a layer decides
+    whether it is required (folio does)."""
+    try:
+        m = TOPIC_META_RE.search(_read(p))
+    except OSError:
+        return None
+    return m.group(1).strip() or None if m else None
 
 
 def _title(p: Path) -> str:
@@ -184,6 +194,11 @@ def build_catalog(repo: Repo) -> dict:
                 for p in sorted(d.glob("*.html")):
                     items.append({"slug": p.stem, "title": _title(p),
                                   "href": f"/{c}/{folder}/{p.stem}.html"})
+            for item, p in zip(items, [d / i["slug"] / "index.html" if layout == "folder" else d / f"{i['slug']}.html"
+                                       for i in items]):
+                topic = _topic(p)
+                if topic:  # only when declared, so a repo without topics carries none
+                    item["topic"] = topic
         out[folder] = items
     out["record"] = chronicle.record_catalog(repo) if chronicle.enabled(repo) else []
     for key, items in (("links", config.links(repo)), ("refs", config.refs(repo)),
@@ -236,7 +251,8 @@ def _href_of(repo: Repo, p: Path) -> str:
 def _record(repo: Repo, p: Path, kinds: dict[str, str]) -> dict:
     text = _read(p)
     tags_match = TAGS_META_RE.search(text)
-    return {
+    topic = TOPIC_META_RE.search(text)
+    rec = {
         "title": _snippet(text, TITLE_RE) or _snippet(text, H1_RE) or p.stem,
         "sub": _snippet(text, SUB_RE, 240),
         "defn": _snippet(text, DEFN_RE, 400),
@@ -245,6 +261,9 @@ def _record(repo: Repo, p: Path, kinds: dict[str, str]) -> dict:
         "kind": _kind_of(repo, p.relative_to(repo.root), kinds),
         "href": _href_of(repo, p),
     }
+    if topic and topic.group(1).strip():
+        rec["topic"] = topic.group(1).strip()
+    return rec
 
 
 def build_search_index(repo: Repo) -> list[dict]:
