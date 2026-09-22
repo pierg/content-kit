@@ -55,7 +55,7 @@ grep -q '"pivot"' "$REPO/content/chronicle.json" || fail "chronicle.json lacks t
 grep -q 'record/log.md' "$REPO/content/catalog.json" || fail "catalog lacks the record"
 printf '### 2026-09-02 — [bogus] x\n' >> "$REPO/record/log.md"
 ( cd "$REPO" && ckit lint >/dev/null 2>&1 ) && fail "an unknown chronicle tag passed"
-sed -i '$ d' "$REPO/record/log.md"
+sed -i.bak '$ d' "$REPO/record/log.md" && rm -f "$REPO/record/log.md.bak"
 ( cd "$REPO" && ckit lint >/dev/null )
 echo "chronicle ok"
 
@@ -135,7 +135,7 @@ ID="$(cd "$REPO" && ckit annotations list --json | python3 -c 'import json,sys; 
 # an OPEN thread whose passage is rewritten must turn the gate red
 ( cd "$REPO" && ckit annotations add /content/notes/hello.html --author e2e --body "again" --quote "Atomic-thought unit" >/dev/null )
 ( cd "$REPO" && ckit lint >/dev/null )
-sed -i 's/Atomic-thought unit/Rewritten/' "$REPO/content/notes/hello.html"
+sed -i.bak 's/Atomic-thought unit/Rewritten/' "$REPO/content/notes/hello.html" && rm -f "$REPO/content/notes/hello.html.bak"
 ( cd "$REPO" && make check >/dev/null 2>&1 ) && fail "an open thread with a stale anchor passed the gate"
 ( cd "$REPO" && make down >/dev/null )
 echo "annotate ok"
