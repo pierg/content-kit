@@ -30,7 +30,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from . import annotations, book_nav, plugins
+from . import annotations, book_nav, config, plugins
 from .genres import Genre, classify, is_exempt, load_genres
 from .paths import DOC_STATUS, Repo
 from .text import DEFN_RE, STATUS_META_RE, SUB_RE, strip_tags, word_count
@@ -91,7 +91,12 @@ ALLOWED = {
 }
 
 
-def _form(rel: str, text: str) -> list[str]:
+def allowed_classes(repo: Repo, genres: dict[str, Genre]) -> set[str]:
+    """The shell's vocabulary, a badge per loaded genre, and whatever kit.json `classes` adds."""
+    return ALLOWED | {f"hb-kind-{name}" for name in genres} | config.classes(repo)
+
+
+def _form(rel: str, text: str, allowed: set[str] = ALLOWED) -> list[str]:
     probs: list[str] = []
     for m in HEX.finditer(text):
         line = text.count("\n", 0, m.start()) + 1
@@ -104,7 +109,7 @@ def _form(rel: str, text: str) -> list[str]:
         probs.append(f'{rel}: missing href="/shell/lib.css"')
     for m in CLASS_ATTR.finditer(text):
         for cls in m.group(1).split():
-            if SHELLISH.match(cls) and cls not in ALLOWED:
+            if SHELLISH.match(cls) and cls not in allowed:
                 probs.append(f"{rel}: unknown shell class '{cls}'")
     return probs
 
@@ -266,10 +271,10 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
 
 
 def lint_file(repo: Repo, path: Path, genres: dict[str, Genre],
-              provided: dict | None = None) -> list[str]:
+              provided: dict | None = None, allowed: set[str] | None = None) -> list[str]:
     rel = repo.rel(path)
     text = path.read_text(encoding="utf-8", errors="replace")
-    probs = _form(rel, text)
+    probs = _form(rel, text, allowed if allowed is not None else allowed_classes(repo, genres))
     g = classify(repo, path, genres)
     if g is None:
         known = ", ".join(sorted({x.dir for x in genres.values()}))
@@ -296,10 +301,11 @@ def run(repo: Repo, paths: list[Path] | None = None, *, nav: bool = True) -> tup
     """(problems, files linted). Regenerates the indices unless nav=False."""
     genres = load_genres(repo)
     page_checks, repo_checks = plugin_checks(repo, genres)
+    allowed = allowed_classes(repo, genres)
     files = iter_pages(repo, paths)
     probs: list[str] = []
     for f in files:
-        probs.extend(lint_file(repo, f, genres, page_checks))
+        probs.extend(lint_file(repo, f, genres, page_checks, allowed))
     for name, fn in repo_checks.items():
         got = fn(repo) or []
         if not isinstance(got, list):

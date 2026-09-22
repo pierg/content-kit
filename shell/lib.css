@@ -7,6 +7,10 @@
    Agents write content HTML; this file is the style contract for the whole repo.
    ========================================================================== */
 
+/* The repo's own names for these hues and its own widget classes (kit.json "theme"),
+   served beside this file as /shell/theme.css — an empty stylesheet when none is declared. */
+@import url("theme.css");
+
 html:has(body.hb) { margin: 0; }
 
 .hb {
@@ -236,7 +240,8 @@ html:has(body.hb) { margin: 0; }
 .hb ul[data-backlinks] li { margin: 4px 0; }
 .hb .hb-kind { font: 700 10px ui-monospace, Menlo, monospace; text-transform: uppercase;
                letter-spacing: 0.05em; padding: 1px 6px; border-radius: 3px;
-               border: 1px solid; margin-right: 6px; vertical-align: 1px; }
+               border: 1px solid; margin-right: 6px; vertical-align: 1px;
+               color: var(--ink-2); border-color: var(--baseline); }  /* any genre, until styled */
 .hb .hb-kind-book    { color: var(--reach);  border-color: var(--reach); }
 .hb .hb-kind-entry   { color: var(--gen);    border-color: var(--gen); }
 .hb .hb-kind-story   { color: var(--gen);    border-color: var(--gen); }

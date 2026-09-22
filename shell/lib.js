@@ -5,10 +5,37 @@
    Book chapter order is discovered into nav.json (`ckit nav`; lint does it too).
    Optional thin overrides live in that book's book.json.
    Agents edit content pages; this file changes rarely and deliberately.
+
+   Every URL the shell builds is root-absolute (/content/…, /shell/…) and goes through
+   hbUrl(), which prefixes the site's base path — "/" under `ckit serve`, "/<repo>/" on a
+   project site written by `ckit export --base /<repo>/`. The base is read from this
+   script's own URL, so nothing needs configuring.
    ========================================================================== */
 
 (function () {
   "use strict";
+
+  var BASE = (function () {
+    var s = document.currentScript;
+    if (!s || !s.src) return "/";
+    try {
+      return new URL(s.src, location.href).pathname.replace(/shell\/lib\.js$/, "") || "/";
+    } catch (e) { return "/"; }
+  })();
+
+  function hbUrl(href) {
+    if (typeof href !== "string" || href.charAt(0) !== "/" || href.charAt(1) === "/") return href;
+    return BASE + href.slice(1);
+  }
+
+  /* The site-relative path of this page ("/content/x/"), whatever the base. */
+  function sitePath() {
+    var p = location.pathname;
+    return p.indexOf(BASE) === 0 ? "/" + p.slice(BASE.length) : p;
+  }
+
+  window.hbBase = BASE;
+  window.hbUrl = hbUrl;
 
   /* Tab groups: <section data-hbtabs data-active="a">
                    <button class="tbtn" data-tab="a">…</button> …
@@ -126,11 +153,11 @@
   }
 
   /* Backlinks: any <ul data-backlinks> gets populated from
-     /content/backlinks.json keyed by location.pathname. */
+     /content/backlinks.json keyed by the page's site path. */
   function initBacklinks() {
     var lists = document.querySelectorAll("ul[data-backlinks]");
     if (!lists.length) return;
-    var here = location.pathname;
+    var here = sitePath();
     if (here.endsWith("/index.html")) here = here.slice(0, -"index.html".length);
     fetchJson("/content/backlinks.json").then(function (data) {
       var hits = (data && data[here]) || [];
@@ -142,7 +169,7 @@
         ul.innerHTML = hits.map(function (b) {
           return '<li><span class="hb-kind hb-kind-' + escapeAttr(b.kind) + '">' +
             escapeHtml(b.kind) + '</span> ' +
-            '<a href="' + escapeAttr(b.href) + '">' + escapeHtml(b.title) + '</a></li>';
+            '<a href="' + escapeAttr(hbUrl(b.href)) + '">' + escapeHtml(b.title) + '</a></li>';
         }).join("");
       });
     }).catch(function () {
@@ -156,11 +183,11 @@
      static host never grows the affordance and stays portable. See shell/annotate.js. */
   function initAnnotate() {
     if (!document.querySelector("main")) return;
-    fetch("/__annotations/ping", { credentials: "same-origin", cache: "no-store" })
+    fetch(hbUrl("/__annotations/ping"), { credentials: "same-origin", cache: "no-store" })
       .then(function (r) {
         if (!r.ok) return;
         var s = document.createElement("script");
-        s.src = "/shell/annotate.js";
+        s.src = hbUrl("/shell/annotate.js");
         s.defer = true;
         document.head.appendChild(s);
       })
@@ -199,30 +226,42 @@
     });
   }
 
-  /* Record id links: F-<n> and C-<n> in the content become links into the record
-     viewer (findings.md / claims.md at their stable ids). Inline <code> is linked;
-     <pre> blocks, existing links, headings, and pinned <lab>:F-n are left alone.
-     Idempotent — a second pass skips ids already inside an <a>. Called here for
-     content pages, and by record.html after it injects a rendered record file. */
-  var REC_ID = /\b(F-\d+(?:\.\d+)?|C-\d+)\b/g;
-  var REC_SKIP = { A: 1, PRE: 1, SCRIPT: 1, STYLE: 1, H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1 };
+  /* Reference links: ids matching a kit.json `refs` pattern become links, e.g.
+       "refs": [{"pattern": "Q-\\d+", "href": "/shell/record.html?p=QUESTIONS.md#{id}"}]
+     Text inside inline <code> is linked; <pre> blocks, existing links, headings, scripts
+     and styles are left alone, and so is a qualified id (`other:Q-3`, another repo's).
+     Idempotent — a second pass skips ids already inside an <a>. Runs on content pages, and
+     through hbLinkRefs() on anything a shell page renders later (the record viewer). */
+  var REF_SKIP = { A: 1, PRE: 1, SCRIPT: 1, STYLE: 1, H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1 };
+  var catalogCache = null;
+  function catalogPromise() {  /* one fetch of the catalog per page, shared by every caller */
+    if (!catalogCache) catalogCache = fetchJson("/content/catalog.json").catch(function () { return null; });
+    return catalogCache;
+  }
+  window.hbCatalog = catalogPromise;
 
-  function recIdHref(id) {
-    var file = id.charAt(0) === "C" ? "record/claims.md" : "record/findings.md";
-    return "/shell/record.html?p=" + file + "#" + id;
+  function compileRefs(refs) {
+    var out = [];
+    (refs || []).forEach(function (r) {
+      try {
+        out.push({ re: new RegExp("^(?:" + r.pattern + ")$"), src: r.pattern, href: r.href });
+      } catch (e) { /* ckit check reports a bad pattern; the shell just skips it */ }
+    });
+    return out;
   }
 
-  function linkRecordIds(root) {
-    if (!root || typeof document.createTreeWalker !== "function") return;
+  function linkRefs(root, refs) {
+    if (!root || !refs.length || typeof document.createTreeWalker !== "function") return;
+    var any = new RegExp("\\b(" + refs.map(function (r) { return "(?:" + r.src + ")"; }).join("|") + ")\\b", "g");
     var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode: function (node) {
         var v = node.nodeValue;
-        if (!v || v.indexOf("-") === -1) return NodeFilter.FILTER_REJECT;
+        if (!v) return NodeFilter.FILTER_REJECT;
         for (var p = node.parentNode; p && p !== root; p = p.parentNode) {
-          if (p.nodeType === 1 && REC_SKIP[p.tagName]) return NodeFilter.FILTER_REJECT;
+          if (p.nodeType === 1 && REF_SKIP[p.tagName]) return NodeFilter.FILTER_REJECT;
         }
-        REC_ID.lastIndex = 0;
-        return REC_ID.test(v) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        any.lastIndex = 0;
+        return any.test(v) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
       }
     });
     var targets = [];
@@ -232,14 +271,17 @@
       var text = t.nodeValue;
       var frag = document.createDocumentFragment();
       var last = 0, m;
-      REC_ID.lastIndex = 0;
-      while ((m = REC_ID.exec(text))) {
+      any.lastIndex = 0;
+      while ((m = any.exec(text))) {
         var idx = m.index;
-        if (idx > 0 && text.charAt(idx - 1) === ":") continue; /* pinned <lab>:F-n */
+        if (idx > 0 && text.charAt(idx - 1) === ":") continue; /* qualified: another repo's id */
+        var ref = null;
+        for (var i = 0; i < refs.length; i++) if (refs[i].re.test(m[1])) { ref = refs[i]; break; }
+        if (!ref) continue;
         if (idx > last) frag.appendChild(document.createTextNode(text.slice(last, idx)));
         var a = document.createElement("a");
         a.className = "rec-ref";
-        a.setAttribute("href", recIdHref(m[1]));
+        a.setAttribute("href", hbUrl(ref.href.split("{id}").join(m[1])));
         a.textContent = m[1];
         frag.appendChild(a);
         last = idx + m[1].length;
@@ -250,7 +292,15 @@
     });
   }
 
-  window.hbLinkRecordIds = linkRecordIds;
+  /* hbLinkRefs(root) — for shell pages that render content after load. hbRefs() resolves to
+     the compiled refs, so a page can also use them (the record viewer anchors headings on them). */
+  window.hbRefs = function () {
+    return catalogPromise().then(function (c) { return compileRefs(c && c.refs); });
+  };
+  window.hbLinkRefs = function (root) {
+    return window.hbRefs().then(function (refs) { linkRefs(root, refs); });
+  };
+  window.hbLinkRecordIds = window.hbLinkRefs;  /* the 0.3 name, kept for one minor version */
 
   /* Generic stepper: hbStepper({el, count, render}) wires ⟲/◀/▶ buttons marked
      data-step="reset|prev|next" inside el, calls render(i) on every change. */
@@ -280,12 +330,12 @@
   }
 
   function bookRoot() {
-    var m = location.pathname.match(/^(\/content\/books\/[^/]+)\//);
+    var m = sitePath().match(/^(\/content\/books\/[^/]+)\//);
     return m ? m[1] + "/" : null;
   }
 
   function fetchJson(url) {
-    return fetch(url, { credentials: "same-origin" }).then(function (r) {
+    return fetch(hbUrl(url), { credentials: "same-origin" }).then(function (r) {
       if (!r.ok) throw new Error(url + " " + r.status);
       return r.json();
     });
@@ -376,24 +426,31 @@
 
   function catalogBlock(catalog, bookSlug) {
     if (!catalog) return "";
+    var here = sitePath();
+    var extra = (catalog.links || []).map(function (l) {
+      return '<a class="hb-side-lib" href="' + escapeAttr(hbUrl(l.href)) + '"' +
+        (l.title ? ' title="' + escapeAttr(l.title) + '"' : "") +
+        (here === l.href ? ' aria-current="page"' : "") + ">" + escapeHtml(l.label) + "</a> ";
+    }).join("");
     var bits = [
       '<div class="hb-side-section">' +
-        (catalog.dashboard ? '<a class="hb-side-lib" href="/shell/dashboard.html" title="The record as a status board">Dashboard</a> ' : '') +
-        '<a class="hb-side-lib" href="/">Library</a> ' +
-        '<a class="hb-side-search" href="/shell/search.html" title="Search all content">Search</a>' +
-        ((catalog.record && catalog.record.length) ? ' <a class="hb-side-search" href="/shell/chronicle.html" title="The record as a timeline">Chronicle</a>' : '') +
+        (catalog.dashboard ? '<a class="hb-side-lib" href="' + hbUrl("/shell/dashboard.html") + '" title="The record as a status board">Dashboard</a> ' : '') +
+        extra +
+        '<a class="hb-side-lib" href="' + hbUrl("/") + '">Library</a> ' +
+        '<a class="hb-side-search" href="' + hbUrl("/shell/search.html") + '" title="Search all content">Search</a>' +
+        ((catalog.record && catalog.record.length) ? ' <a class="hb-side-search" href="' + hbUrl("/shell/chronicle.html") + '" title="The record as a timeline">Chronicle</a>' : '') +
       '</div>'
     ];
 
     function list(label, items, isHere) {
       if (!items || !items.length) return;
       bits.push(
-        '<div class="hb-side-section"><div class="hb-side-label">' + label +
+        '<div class="hb-side-section"><div class="hb-side-label">' + escapeHtml(label) +
         '</div><ul class="hb-side-list">'
       );
       items.forEach(function (item) {
         bits.push(
-          "<li><a href=\"" + escapeAttr(item.href) + "\"" +
+          "<li><a href=\"" + escapeAttr(hbUrl(item.href)) + "\"" +
           (isHere(item) ? ' class="here" aria-current="page"' : "") + ">" +
           escapeHtml(item.title) + "</a></li>"
         );
@@ -401,35 +458,13 @@
       bits.push("</ul></div>");
     }
 
-    list("Papers", catalog.papers, function (p) {
-      return location.pathname === p.href;
-    });
-    list("Books", catalog.books, function (b) {
-      return bookSlug && b.slug === bookSlug;
-    });
-    list("Projects", catalog.projects, function (p) {
-      return location.pathname === p.href;
-    });
-    list("Stories", catalog.stories, function (s) {
-      return location.pathname === s.href;
-    });
-    list("Hubs", catalog.hubs, function (h) {
-      return location.pathname === h.href;
-    });
-    list("Related", catalog.related, function (r) {
-      return location.pathname === r.href;
-    });
-    list("Entries", catalog.entries, function (e) {
-      return location.pathname === e.href;
-    });
-    list("Notes", catalog.notes, function (n) {
-      return location.pathname === n.href;
-    });
-    list("Concepts", catalog.concepts, function (c) {
-      return location.pathname === c.href;
+    (catalog.groups || []).forEach(function (g) {
+      list(g.label, catalog[g.key], g.kind === "book" || g.key === "books"
+        ? function (b) { return bookSlug && b.slug === bookSlug; }
+        : function (p) { return here === p.href; });
     });
     list("Record", catalog.record, function (r) {
-      return location.pathname === "/shell/record.html" && location.search === "?p=" + r.path;
+      return here === "/shell/record.html" && location.search === "?p=" + r.path;
     });
 
     return bits.join("");
@@ -515,7 +550,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var root = bookRoot();
-    var catalogP = fetchJson("/content/catalog.json").catch(function () { return null; });
+    var catalogP = catalogPromise();
     var bookP = manualBook
       ? Promise.resolve(manualBook)
       : root
@@ -530,7 +565,7 @@
       initDefnLinks();
       initBacklinks();
       initAnnotate();
-      linkRecordIds(document.querySelector("main"));
+      linkRefs(document.querySelector("main"), compileRefs(catalog && catalog.refs));
     });
   });
 })();

@@ -11,7 +11,12 @@
 (function () {
   "use strict";
 
-  var VENDOR = "/shell/vendor/katex/";
+  /* Beside this script, so an exported site under a base path finds KaTeX too. */
+  var VENDOR = (function () {
+    var s = document.currentScript;
+    try { return new URL("vendor/katex/", s && s.src ? s.src : location.origin + "/shell/").href; }
+    catch (e) { return "/shell/vendor/katex/"; }
+  })();
 
   var css = document.createElement("link");
   css.rel = "stylesheet";

@@ -26,8 +26,8 @@ import json
 import re
 from pathlib import Path
 
-from . import chronicle, ladder, plugins
-from .genres import EXEMPT_PARTS
+from . import chronicle, config, ladder, plugins
+from .genres import EXEMPT_PARTS, catalog_groups, load_genres
 from .paths import Repo
 from .text import (
     DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TAGS_META_RE, TITLE_RE, strip_tags, title_of,
@@ -36,22 +36,17 @@ from .text import (
 NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
 HREF_RE = re.compile(r'href="(/content/[^"#?]*)(?:[#?][^"]*)?"', re.I)
 
-# Sidebar / landing order. Folder genres list <dir>/<slug>/index.html; flat ones <dir>/<slug>.html.
-# Every core genre's `dir` is a group here and every group is a genre dir — the selftest asserts
-# it, because a genre missing from this tuple still lints and is still searched, but silently
-# never appears in the sidebar and is badged "page".
-CATALOG_GROUPS = (
-    ("papers", "paper", "folder"),
-    ("books", "book", "folder"),
-    ("projects", "project", "folder"),
-    ("stories", "story", "folder"),
-    ("hubs", "hub", "flat"),
-    ("related", "related", "flat"),
-    ("entries", "entry", "folder"),
-    ("notes", "note", "flat"),
-    ("concepts", "concept", "folder"),
-)
-KIND_BY_FOLDER = {folder: kind for folder, kind, _ in CATALOG_GROUPS}
+
+
+def groups(repo: Repo) -> list[dict]:
+    """Sidebar / landing / search-filter order, derived from the genre table (genres.catalog_groups):
+    a folder group lists <dir>/<slug>/index.html, a flat one <dir>/<slug>.html. Deriving it is
+    what keeps an extension genre from linting and searching fine while never reaching the sidebar."""
+    return catalog_groups(load_genres(repo))
+
+
+def kind_by_folder(repo: Repo) -> dict[str, str]:
+    return {g["key"]: g["kind"] for g in groups(repo)}
 
 
 def _read(p: Path) -> str:
@@ -172,8 +167,10 @@ def _books(repo: Repo) -> list[Path]:
 
 def build_catalog(repo: Repo) -> dict:
     c = repo.content_name
-    out: dict = {}
-    for folder, _kind, layout in CATALOG_GROUPS:
+    grps = groups(repo)
+    out: dict = {"groups": grps}
+    for g in grps:
+        folder, layout = g["key"], g["layout"]
         d = repo.content / folder
         items: list[dict] = []
         if d.is_dir():
@@ -188,15 +185,19 @@ def build_catalog(repo: Repo) -> dict:
                                   "href": f"/{c}/{folder}/{p.stem}.html"})
         out[folder] = items
     out["record"] = chronicle.record_catalog(repo) if chronicle.enabled(repo) else []
+    for key, items in (("links", config.links(repo)), ("refs", config.refs(repo)),
+                       ("indices", config.indices(repo))):
+        if items:  # only when declared, so a repo that uses none carries none
+            out[key] = items
     if ladder.enabled(repo):
         out["dashboard"] = True  # opt-in only — omitted otherwise, so a non-adopting repo's catalog.json is unchanged
     return out
 
 
-def _kind_of(repo: Repo, rel: Path) -> str:
+def _kind_of(repo: Repo, rel: Path, kinds: dict[str, str] | None = None) -> str:
     parts = rel.parts
     if len(parts) >= 2 and parts[0] == repo.content_name:
-        return KIND_BY_FOLDER.get(parts[1], "page")
+        return (kinds if kinds is not None else kind_by_folder(repo)).get(parts[1], "page")
     return "page"
 
 
@@ -233,7 +234,7 @@ def _href_of(repo: Repo, p: Path) -> str:
     return href[: -len("index.html")] if href.endswith("/index.html") else href
 
 
-def _record(repo: Repo, p: Path) -> dict:
+def _record(repo: Repo, p: Path, kinds: dict[str, str]) -> dict:
     text = _read(p)
     tags_match = TAGS_META_RE.search(text)
     return {
@@ -242,13 +243,14 @@ def _record(repo: Repo, p: Path) -> dict:
         "defn": _snippet(text, DEFN_RE, 400),
         "headings": _all(text, H2_RE) + _all(text, H3_RE, 4),
         "tags": [t.strip() for t in tags_match.group(1).split(",")] if tags_match else [],
-        "kind": _kind_of(repo, p.relative_to(repo.root)),
+        "kind": _kind_of(repo, p.relative_to(repo.root), kinds),
         "href": _href_of(repo, p),
     }
 
 
 def build_search_index(repo: Repo) -> list[dict]:
-    return [_record(repo, p) for p in _indexable(repo)]
+    kinds = kind_by_folder(repo)
+    return [_record(repo, p, kinds) for p in _indexable(repo)]
 
 
 def _normalize_href(href: str) -> str:
@@ -258,10 +260,11 @@ def _normalize_href(href: str) -> str:
 def build_backlinks(repo: Repo) -> dict[str, list[dict]]:
     """Reverse index: for each internal href, the pages that link to it."""
     pages = []
+    kinds = kind_by_folder(repo)
     for p in _indexable(repo):
         text = _read(p)
         title = _snippet(text, TITLE_RE) or _snippet(text, H1_RE) or p.stem
-        pages.append((text, _href_of(repo, p), title, _kind_of(repo, p.relative_to(repo.root))))
+        pages.append((text, _href_of(repo, p), title, _kind_of(repo, p.relative_to(repo.root), kinds)))
     reverse: dict[str, list[dict]] = {}
     seen: set[tuple[str, str]] = set()
     for text, self_href, title, kind in pages:

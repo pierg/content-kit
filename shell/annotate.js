@@ -28,7 +28,7 @@
 
   var css = document.createElement("link");
   css.rel = "stylesheet";
-  css.href = "/shell/annotate.css";
+  css.href = window.hbUrl ? window.hbUrl("/shell/annotate.css") : "/shell/annotate.css";
   document.head.appendChild(css);
 
   var toggle = el("button", "hb-ann-toggle hb-ann-ui", "✎ Annotate");

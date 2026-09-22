@@ -23,19 +23,11 @@
 .hit .title { font-weight: 700; font-size: 15px; }
 .hit .title a { color: var(--ink-1); }
 .hit .title a:hover { color: var(--gen); text-decoration: none; }
-.hit .kind { font: 700 10.5px ui-monospace, Menlo, monospace; text-transform: uppercase;
-             letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px;
-             margin-right: 8px; }
-.hit .kind.book    { color: var(--reach);  border: 1px solid var(--reach); }
-.hit .kind.entry   { color: var(--gen);    border: 1px solid var(--gen); }
-.hit .kind.story   { color: var(--gen);    border: 1px solid var(--gen); }
-.hit .kind.concept { color: var(--judge);  border: 1px solid var(--judge); }
-.hit .kind.hub     { color: var(--world);  border: 1px solid var(--world); }
-.hit .kind.note    { color: var(--ink-2);  border: 1px solid var(--baseline); }
-.hit .kind.project { color: var(--cert);   border: 1px solid var(--cert); }
-.hit .kind.page    { color: var(--ink-3);  border: 1px solid var(--baseline); }
-.hit .kind.paper   { color: var(--target); border: 1px solid var(--target); }
-.hit .kind.related { color: var(--slack);  border: 1px solid var(--slack); }
+/* the kind badge takes its colour from the shared .hb-kind-<genre> rule (lib.css, or a layer's theme) */
+.hb .hit .kind { font: 700 10.5px ui-monospace, Menlo, monospace; text-transform: uppercase;
+             letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px; border-width: 1px; border-style: solid;
+             margin: 0 8px 0 0; vertical-align: 0; }
+.hit .origin { font: 10.5px ui-monospace, Menlo, monospace; color: var(--ink-3); margin-left: 8px; }
 .hit .sub  { color: var(--ink-2); font-size: 13px; margin: 4px 0; }
 .hit .snip { color: var(--ink-3); font-size: 12.5px; font-family: ui-monospace, Menlo, monospace; margin: 4px 0; }
 .hit .snip mark { background: color-mix(in srgb, var(--judge) 22%, transparent); color: var(--ink-1); border-radius: 2px; padding: 0 2px; }
@@ -65,7 +57,12 @@
 <script>
 (function () {
   "use strict";
-  var KINDS = ["paper", "book", "project", "hub", "related", "entry", "note", "concept", "page"];
+  /* The site's base path ("/" under ckit serve, "/<repo>/" on an exported project site). */
+  var BASE = location.pathname.replace(/shell\/[^\/]*$/, "");
+  function u(href) {
+    return typeof href === "string" && href.charAt(0) === "/" && href.charAt(1) !== "/" ? BASE + href.slice(1) : href;
+  }
+  var KINDS = [];  /* the catalog's groups, in its order, then "page" */
   var state = { q: "", kinds: new Set() };
   var idx = [];
 
@@ -134,8 +131,9 @@
       var snip = bestSnippet(r, q);
       return '<li class="hit">' +
         '<div>' +
-          '<span class="kind ' + r.kind + '">' + r.kind + '</span>' +
-          '<span class="title"><a href="' + r.href + '">' + highlight(r.title, q) + '</a></span>' +
+          '<span class="kind hb-kind hb-kind-' + esc(r.kind) + '">' + esc(r.kind) + '</span>' +
+          '<span class="title"><a href="' + esc(u(r.href)) + '">' + highlight(r.title, q) + '</a></span>' +
+          (r.origin ? '<span class="origin">' + esc(r.origin) + '</span>' : '') +
           (r.tags && r.tags.length
             ? '<span class="tags">' + r.tags.map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('') + '</span>'
             : '') +
@@ -147,8 +145,11 @@
     }).join("");
   }
 
-  function initFilters() {
+  function initFilters(catalog) {
     var el = document.getElementById("filters");
+    KINDS = ((catalog && catalog.groups) || []).map(function (g) { return g.kind; });
+    idx.forEach(function (r) { if (KINDS.indexOf(r.kind) === -1) KINDS.push(r.kind); });
+    KINDS = KINDS.filter(function (k) { return k !== "page"; }).concat(["page"]);
     el.innerHTML = KINDS.map(function (k) {
       return '<button class="fchip" data-kind="' + k + '">' + k + '</button>';
     }).join("");
@@ -163,16 +164,30 @@
     });
   }
 
+  function getJson(url) {
+    return fetch(u(url), { credentials: "same-origin" }).then(function (r) {
+      if (!r.ok) throw new Error(url + " " + r.status);
+      return r.json();
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
-    initFilters();
     var input = document.getElementById("q");
     input.addEventListener("input", function () { state.q = input.value; render(); });
-    fetch("/content/search-index.json", { credentials: "same-origin" })
-      .then(function (r) { return r.json(); })
-      .then(function (data) { idx = data; render(); })
-      .catch(function () {
-        document.getElementById("meta").textContent = "Failed to load index.";
+    /* the repo's own index, then every extra index kit.json `indices` declares (a folio's
+       federated catalog of sibling repos, say) — merged; one that fails to load is skipped */
+    getJson("/content/catalog.json").catch(function () { return null; }).then(function (catalog) {
+      var extra = ((catalog && catalog.indices) || []).map(function (href) {
+        return getJson(href).catch(function () { return []; });
       });
+      return Promise.all([getJson("/content/search-index.json")].concat(extra)).then(function (lists) {
+        idx = [].concat.apply([], lists.map(function (l) { return Array.isArray(l) ? l : []; }));
+        initFilters(catalog);
+        render();
+      });
+    }).catch(function () {
+      document.getElementById("meta").textContent = "Failed to load index.";
+    });
     // Support ?q= in URL for shareable searches
     var params = new URLSearchParams(location.search);
     if (params.get("q")) { input.value = params.get("q"); state.q = input.value; }

@@ -143,14 +143,15 @@ def main(argv: list[str]) -> int:
             failures.append("kit.json must win over lab.json when both exist")
         planted += 3
 
-        # --- the genre set and the catalog are one registry: a genre dir missing from
-        #     CATALOG_GROUPS lints and is searched, but never reaches the sidebar and is
-        #     badged "page" — silent, so it is asserted rather than remembered
+        # --- the genre set and the catalog are one registry: the groups are derived from the
+        #     genre table, so a genre dir cannot lint and search fine yet never reach the sidebar
+        cat = json.loads((repo.content / "catalog.json").read_text())
         dirs = {g["dir"] for g in genres.core_spec().values()}
-        groups = {folder for folder, _kind, _layout in book_nav.CATALOG_GROUPS}
-        if dirs != groups:
-            failures.append("genres.json dirs and CATALOG_GROUPS disagree — only in genres.json: "
-                            f"{sorted(dirs - groups)}; only in the catalog: {sorted(groups - dirs)}")
+        keys = [g["key"] for g in cat.get("groups") or []]
+        if set(keys) != dirs or len(keys) != len(dirs):
+            failures.append(f"catalog groups must be exactly the genre dirs: {keys} vs {sorted(dirs)}")
+        if not all(isinstance(cat.get(k), list) for k in keys):
+            failures.append("every catalog group must carry its item list")
         planted += 1
         cat = json.loads((repo.content / "catalog.json").read_text())
         if [s["slug"] for s in cat.get("stories") or []] != ["a-story"]:
@@ -563,7 +564,127 @@ def main(argv: list[str]) -> int:
         repo = load_repo(repo.root)
         _lint(repo)
 
+        # --- the declarative extension points: each is declared in kit.json, reaches the reader
+        #     (catalog.json, /shell/, the lint), and a malformed one fails `ckit check` by name
+        def check_err(r: Repo) -> str:
+            e = io.StringIO()
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(e):
+                rc_ = check.run(r)
+            return e.getvalue() if rc_ else ""
+
+        xtmp, repo = _scratch()  # a clean repo of its own: the planted violations above stay put
+        new.create(repo, "hub", "a-hub", title="Fixture hub")
+        (repo.root / "plug").mkdir()
+        (repo.root / "plug" / "genres_fx.json").write_text(json.dumps({"genres": {
+            "recipe": {"dir": "recipes", "layout": "flat", "after": "hub", "label": "Recipes",
+                       "skeleton": "plug/recipe.html", "checks": {"status": True}}}}), encoding="utf-8")
+        (repo.root / "plug" / "recipe.html").write_text(_page("A recipe", '<p><span class="hb-kind hb-kind-recipe">recipe</span></p>'), encoding="utf-8")
+        (repo.root / "plug" / "fx.html").write_text("<!DOCTYPE html><title>Fx page</title>", encoding="utf-8")
+        (repo.root / "plug" / "theme-fx.css").write_text(".hb { --fx-hue: var(--teal); }\n", encoding="utf-8")
+        cfg = json.loads((repo.root / "kit.json").read_text())
+        cfg.update({
+            "genres": ["plug/genres_fx.json", {"recipe": {"checks": {"max_words": 60}}}],
+            "shell_pages": {"fx.html": "plug/fx.html"},
+            "theme": "plug/theme-fx.css",
+            "classes": ["sw-fx"],
+            "links": [{"label": "Fx", "href": "/shell/fx.html", "title": "a planted link"}],
+            "refs": [{"pattern": "Q-\\d+", "href": "/shell/record.html?p=record/lab.md#{id}"}],
+            "indices": ["content/extra-index.json"],
+        })
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
+        (repo.content / "extra-index.json").write_text("[]\n", encoding="utf-8")
+        repo = load_repo(repo.root)
+        new.create(repo, "recipe", "soup")  # a repo-relative skeleton, found from the root
+        _write(repo, "notes/sw.html", _page("Sw", '<p><span class="sw-fx">x</span></p>'))
+        _lint(repo)
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        keys = [g["key"] for g in cat.get("groups") or []]
+        if "recipes" not in keys or keys.index("recipes") != keys.index("hubs") + 1:
+            failures.append(f"an extension genre with after=hub must follow hubs in the catalog: {keys}")
+        elif next(g for g in cat["groups"] if g["key"] == "recipes")["label"] != "Recipes":
+            failures.append("an extension genre's label must name its group")
+        if [x["slug"] for x in cat.get("recipes") or []] != ["soup"]:
+            failures.append(f"the extension genre's page is not in its catalog group: {cat.get('recipes')}")
+        si = json.loads((repo.content / "search-index.json").read_text())
+        if {r["kind"] for r in si if "/recipes/" in r["href"]} != {"recipe"}:
+            failures.append("an extension genre's page must be badged with its genre in the search index")
+        planted += 3
+        for key, want in (("links", "Fx"), ("refs", "Q-"), ("indices", "/content/extra-index.json")):
+            if want not in json.dumps(cat.get(key)):
+                failures.append(f"catalog.json must carry the declared {key}: {cat.get(key)}")
+            planted += 1
+        err = check_err(repo)
+        if err:
+            failures.append("a repo using every extension point well must pass `ckit check`: " + err)
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), serve.make_handler(repo))
+        th = threading.Thread(target=httpd.serve_forever, daemon=True)
+        th.start()
+        try:
+            port = httpd.server_address[1]
+            st, _, body = _request(port, "/shell/theme.css")
+            if st != 200 or b"--fx-hue" not in body:
+                failures.append(f"/shell/theme.css must serve the declared theme, got {st}")
+            st, _, body = _request(port, "/shell/fx.html")
+            if st != 200 or b"Fx page" not in body:
+                failures.append(f"a declared shell page must be served at /shell/<name>, got {st}")
+            st, _, body = _request(port, "/")
+            if b'href="/shell/fx.html"' not in body or b">Fx &rarr;<" not in body:
+                failures.append("the landing page must carry the declared links")
+            repo.cfg["home"] = "fx"
+            st, _, body = _request(port, "/")
+            if st != 200 or b"Fx page" not in body:
+                failures.append(f"a home naming a shell page must serve it at /, got {st}")
+            repo.cfg.pop("home")
+            saved_theme = repo.cfg.pop("theme")
+            st, _, body = _request(port, "/shell/theme.css")
+            if st != 200 or b"{" in body:
+                failures.append("/shell/theme.css must be an empty stylesheet when no theme is declared")
+            repo.cfg["theme"] = saved_theme
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+            th.join(timeout=2)
+        planted += 4
+        # the lint accepts a declared class and rejects it once undeclared
+        repo.cfg["classes"] = []
+        with redirect_stdout(io.StringIO()):
+            probs4, _ = lint.run(repo, nav=False)
+        _expect(probs4, "notes/sw.html", "unknown shell class 'sw-fx'", failures)
+        repo.cfg["classes"] = ["sw-fx"]
+        planted += 1
+        # malformed declarations fail the gate, each by name
+        for key, bad, needle in (
+            ("shell_pages", {"fx.html": "plug/missing.html"}, "plug/missing.html"),
+            ("shell_pages", {"lib.css": "plug/fx.html"}, "would shadow"),
+            ("theme", "plug/missing.css", "plug/missing.css"),
+            ("links", [{"href": "/x"}], "needs a label"),
+            ("refs", [{"pattern": "Q-(\\d+", "href": "/x#{id}"}], "not a regular expression"),
+            ("refs", [{"pattern": "Q-\\d+", "href": "/x"}], "must contain {id}"),
+            ("indices", ["content/missing-index.json"], "content/missing-index.json"),
+            ("classes", "sw-fx", "kit.json classes"),
+        ):
+            saved = repo.cfg.get(key)
+            repo.cfg[key] = bad
+            err = check_err(repo)
+            if needle not in err:
+                failures.append(f"a malformed {key} ({bad!r}) must fail `ckit check` naming {needle!r}; got: {err[:200]!r}")
+            repo.cfg[key] = saved
+            planted += 1
+        # the genre table names only real genres
+        (repo.root / "plug" / "genres_bad.json").write_text(json.dumps({"x": {"dir": "xs", "layout": "flat", "after": "nope"}}))
+        repo.cfg["genres"] = ["plug/genres_fx.json", "plug/genres_bad.json"]
+        try:
+            genres.load_genres(repo)
+            failures.append("an `after` naming no genre must fail loud")
+        except SystemExit as exc:
+            if "nope" not in str(exc):
+                failures.append(f"the bad-after error must name it: {exc}")
+        planted += 1
+        shutil.rmtree(xtmp, ignore_errors=True)
+        repo = load_repo(tmp / "repo")
+
         # --- the version pin is load-bearing
+        cfg = json.loads((repo.root / "kit.json").read_text())
         cfg["ckit"] = "0.0.0"
         (repo.root / "kit.json").write_text(json.dumps(cfg))
         buf = io.StringIO()

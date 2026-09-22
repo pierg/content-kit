@@ -49,6 +49,16 @@
 (function () {
   "use strict";
   var STATUS = /\b(LIVE|HISTORICAL|PARKED|RETIRED|FROZEN|DRAFT)\b/;
+  /* The site's base path ("/" under ckit serve, "/<repo>/" on an exported project site). */
+  var BASE = location.pathname.replace(/shell\/[^\/]*$/, "");
+  function u(href) {
+    return typeof href === "string" && href.charAt(0) === "/" && href.charAt(1) !== "/" ? BASE + href.slice(1) : href;
+  }
+  /* The repo's kit.json `refs`, compiled by lib.js — once it has run (it is deferred). */
+  var refsP = new Promise(function (resolve) {
+    function go() { resolve(window.hbRefs ? window.hbRefs() : []); }
+    if (window.hbRefs) go(); else document.addEventListener("DOMContentLoaded", go);
+  });
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function slugify(t) { return String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
@@ -59,7 +69,7 @@
   var art = document.getElementById("rec");
 
   if (!p || p.indexOf("..") !== -1 || p.charAt(0) === "/" || !/\.md$/i.test(p)) {
-    banner.innerHTML = '<span class="rec-err">Give the viewer a record file: <code>/shell/record.html?p=record/logbook/lab.md</code></span>';
+    banner.innerHTML = '<span class="rec-err">Give the viewer a record file: <code>/shell/record.html?p=record/log.md</code></span>';
     return;
   }
   document.title = p.split("/").pop() + " — record";
@@ -77,21 +87,25 @@
     var hash = "";
     var i = path.indexOf("#");
     if (i >= 0) { hash = path.slice(i); path = path.slice(0, i); }
-    if (/\.md$/i.test(path)) return "/shell/record.html?p=" + path + hash;
-    return "/" + path + hash;
+    if (/\.md$/i.test(path)) return u("/shell/record.html?p=" + path + hash);
+    return u("/" + path + hash);
   }
 
-  fetch("/" + p, { credentials: "same-origin", cache: "no-store" })
-    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-    .then(function (md) {
+  Promise.all([
+    fetch(u("/" + p), { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); }),
+    refsP.then(null, function () { return []; })
+  ])
+    .then(function (pair) {
+      var md = pair[0], refs = pair[1] || [];
       var head = md.split("\n").slice(0, 8).join(" ");
       var st = (head.match(STATUS) || [])[1];
       banner.innerHTML =
         'Rendered from <code>' + esc(p) + '</code> — the file is the record · ' +
-        '<a href="/' + esc(p) + '">raw</a>' +
+        '<a href="' + esc(u("/" + p)) + '">raw</a>' +
         (st ? ' · <span class="rec-status ' + st.toLowerCase() + '">' + st + '</span>' : '') +
-        ' · <a href="/shell/chronicle.html">chronicle</a>';
-      /* De-blob dense field rows (a finding's "**Status:** … / **Anchor:** …" lines) by
+        ' · <a href="' + esc(u("/shell/chronicle.html")) + '">chronicle</a>';
+      /* De-blob dense field rows (a record row's "**Status:** … / **Anchor:** …" lines) by
          forcing a break only before a bold-label line — a source line starting with **…:
          — NOT globally. breaks stays false, so hard-wrapped prose (the frozen history
          logbooks, README, CLAUDE.md) still reflows to the browser width instead of
@@ -103,10 +117,15 @@
       var seen = {};
       var toc = [];
       art.querySelectorAll("h1, h2, h3, h4").forEach(function (h) {
-        /* A finding or claim heading ("F-32 · …", "C-1 · …") gets its id as a stable
-           anchor so #F-32 resolves and survives title edits; everything else slugifies. */
-        var idm = h.textContent.match(/^\s*(F-\d+(?:\.\d+)?|C-\d+)\b/);
-        var id = idm ? idm[1] : slugify(h.textContent);
+        /* A heading that opens with an id the repo declares in kit.json `refs` ("Q-3 · …")
+           gets that id as a stable anchor, so #Q-3 resolves and survives title edits;
+           everything else slugifies. */
+        var id = null;
+        for (var r = 0; r < refs.length && !id; r++) {
+          var idm = h.textContent.match(new RegExp("^\\s*(" + refs[r].src + ")\\b"));
+          if (idm) id = idm[1];
+        }
+        id = id || slugify(h.textContent);
         if (!id) return;
         var n = 1, base = id;
         while (seen[id]) { n += 1; id = base + "-" + n; }
@@ -115,9 +134,9 @@
         if (h.tagName === "H2" || h.tagName === "H3") toc.push({ id: id, text: h.textContent, lvl: h.tagName });
       });
       art.querySelectorAll("a[href]").forEach(function (a) { a.setAttribute("href", resolve(a.getAttribute("href"))); });
-      art.querySelectorAll("img[src]").forEach(function (im) { var s = im.getAttribute("src"); if (!/^(\/|[a-z]+:)/i.test(s)) im.setAttribute("src", "/" + dir + s); });
-      /* Cross-link F-/C- ids within the record too (after resolve, so these absolute hrefs are left alone). */
-      if (window.hbLinkRecordIds) window.hbLinkRecordIds(art);
+      art.querySelectorAll("img[src]").forEach(function (im) { var s = im.getAttribute("src"); if (!/^(\/|[a-z]+:)/i.test(s)) im.setAttribute("src", u("/" + dir + s)); });
+      /* Link declared ids within the record too (after resolve, so these absolute hrefs are left alone). */
+      if (window.hbLinkRefs) window.hbLinkRefs(art);
 
       if (toc.length > 1) {
         var el = document.getElementById("toc");

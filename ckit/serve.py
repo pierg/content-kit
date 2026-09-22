@@ -5,7 +5,9 @@
 
 Two roots are mounted:
 
-  /shell/...        the vendored shell (CSS / JS / KaTeX / skeletons / search page)
+  /shell/...        the vendored shell (CSS / JS / KaTeX / skeletons / search page), plus
+                    /shell/theme.css (the repo's kit.json `theme`, or an empty stylesheet) and
+                    each kit.json `shell_pages` entry at /shell/<name>
   /...              the repo root, so /content/... resolves to the repo's own pages
 
 That split is why a repo vendors only the shell, and why every page's absolute
@@ -31,9 +33,9 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from . import __version__, annotations
-from . import chronicle, ladder
-from .book_nav import CATALOG_GROUPS, _books, _href_of, _title
-from .paths import Repo, home_page, load_repo
+from . import chronicle, config, ladder
+from .book_nav import _books, _href_of, _title, groups
+from .paths import Repo, home_page, home_shell_page, load_repo
 
 
 def _esc(text: str) -> str:
@@ -42,6 +44,13 @@ def _esc(text: str) -> str:
 
 def _href(repo: Repo, p: Path) -> str:
     return "/" + p.relative_to(repo.root).as_posix()
+
+
+def _based(href: str, base: str) -> str:
+    """A root-absolute href under a base path ("/" leaves it alone) — for `ckit export --base`."""
+    if base == "/" or not href.startswith("/") or href.startswith("//"):
+        return href
+    return base.rstrip("/") + href
 
 
 def _group_items(repo: Repo, folder: str, layout: str) -> list[tuple[str, Path]]:
@@ -56,31 +65,36 @@ def _group_items(repo: Repo, folder: str, layout: str) -> list[tuple[str, Path]]
     return [(_title(p), p) for p in sorted(d.glob("*.html"))]
 
 
-def _list_group(repo: Repo, title: str, items: list[tuple[str, Path]], empty: str) -> str:
+def _list_group(repo: Repo, title: str, items: list[tuple[str, Path]], empty: str,
+                base: str = "/") -> str:
     if not items:
         return f'<h2>{_esc(title)}</h2><p class="muted">{_esc(empty)}</p>'
     lis = "\n".join(
-        f'<li><a href="{_esc(_href(repo, p))}">{_esc(name)}</a>'
+        f'<li><a href="{_esc(_based(_href(repo, p), base))}">{_esc(name)}</a>'
         f'<div class="path">{_esc(_href(repo, p))}</div></li>'
         for name, p in items
     )
     return f'<h2>{_esc(title)}</h2>\n<ul class="catalog">\n{lis}\n</ul>'
 
 
-def _landing(repo: Repo) -> bytes:
+def _landing(repo: Repo, base: str = "/") -> bytes:
     name = _esc(str(repo.cfg.get("name", "library")))
     question = _esc(str(repo.cfg.get("question", "")))
     lede = f'<p class="sub">{question}</p>' if question else ""
-    c = repo.content_name
-    chron = ' <a class="search-cta" href="/shell/chronicle.html">Chronicle &rarr;</a>' if chronicle.enabled(repo) else ""
+    b = lambda href: _esc(_based(href, base))  # noqa: E731
+    chron = f' <a class="search-cta" href="{b("/shell/chronicle.html")}">Chronicle &rarr;</a>' if chronicle.enabled(repo) else ""
+    extra = "".join(
+        f' <a class="search-cta" href="{b(x["href"])}"' + (f' title="{_esc(x["title"])}"' if x.get("title") else "")
+        + f'>{_esc(x["label"])} &rarr;</a>'
+        for x in config.links(repo))
     rec = chronicle.record_catalog(repo) if chronicle.enabled(repo) else []
     record = ("<h2>Record</h2>\n<ul class=\"catalog\">\n" + "\n".join(
-        f'<li><a href="{_esc(r["href"])}">{_esc(r["title"])}</a><div class="path">{_esc(r["path"])}</div></li>' for r in rec)
+        f'<li><a href="{b(r["href"])}">{_esc(r["title"])}</a><div class="path">{_esc(r["path"])}</div></li>' for r in rec)
         + "\n</ul>") if rec else ""
-    groups = "\n".join(
-        _list_group(repo, folder.capitalize(), _group_items(repo, folder, layout),
-                    f"No {folder} yet — `ckit new {kind} <slug>`")
-        for folder, kind, layout in CATALOG_GROUPS
+    grps = "\n".join(
+        _list_group(repo, g["label"], _group_items(repo, g["key"], g["layout"]),
+                    f"No {g['key']} yet — `ckit new {g['kind']} <slug>`", base)
+        for g in groups(repo)
     )
     body = f"""<!DOCTYPE html>
 <html lang="en">
@@ -88,8 +102,8 @@ def _landing(repo: Repo) -> bytes:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{name}</title>
-<link rel="stylesheet" href="/shell/lib.css">
-<script src="/shell/lib.js" defer></script>
+<link rel="stylesheet" href="{b("/shell/lib.css")}">
+<script src="{b("/shell/lib.js")}" defer></script>
 <style>
   .catalog {{ list-style: none; padding: 0; }}
   .catalog li {{ margin: 0 0 10px; }}
@@ -97,10 +111,10 @@ def _landing(repo: Repo) -> bytes:
   .home-lede {{ background: var(--surface-1); border: 1px solid var(--ring);
                 border-radius: 12px; padding: 14px 18px; margin: 18px 0; }}
   .home-lede a.search-cta {{ display: inline-block; margin-top: 6px;
-                border: 1.5px solid var(--judge); color: var(--judge);
+                border: 1.5px solid var(--violet); color: var(--violet);
                 border-radius: 999px; padding: 4px 14px; font-weight: 700;
                 font-size: 13px; text-decoration: none; }}
-  .home-lede a.search-cta:hover {{ background: color-mix(in srgb, var(--judge) 10%, transparent); }}
+  .home-lede a.search-cta:hover {{ background: color-mix(in srgb, var(--violet) 10%, transparent); }}
 </style>
 </head>
 <body class="hb">
@@ -109,10 +123,10 @@ def _landing(repo: Repo) -> bytes:
 {lede}
 
 <div class="home-lede">
-Looking for something? <a class="search-cta" href="/shell/search.html">Search everything &rarr;</a>{chron}
+Looking for something? <a class="search-cta" href="{b("/shell/search.html")}">Search everything &rarr;</a>{chron}{extra}
 </div>
 
-{groups}
+{grps}
 {record}
 </main>
 </body>
@@ -125,9 +139,9 @@ def _slug_file(repo: Repo, slug: str) -> Path | None:
     """Resolve a bare slug to a page, so /foo redirects to whichever genre owns it."""
     if not slug or "/" in slug or slug in (".", ".."):
         return None
-    for folder, _kind, layout in CATALOG_GROUPS:
-        p = repo.content / folder / slug / "index.html" if layout == "folder" \
-            else repo.content / folder / f"{slug}.html"
+    for g in groups(repo):
+        p = repo.content / g["key"] / slug / "index.html" if g["layout"] == "folder" \
+            else repo.content / g["key"] / f"{slug}.html"
         if p.is_file():
             return p
     return None
@@ -159,6 +173,8 @@ def make_handler(repo: Repo):
     root = repo.root.resolve()
 
     def resolve(rel_path: str) -> Path | None:
+        if rel_path.startswith("shell/") and rel_path[len("shell/"):] in config.shell_pages(repo):
+            return config.shell_pages(repo)[rel_path[len("shell/"):]].resolve()
         if rel_path == "shell" or rel_path.startswith("shell/"):
             base, tail = shell, rel_path[len("shell"):].lstrip("/")
         else:
@@ -213,6 +229,16 @@ def make_handler(repo: Repo):
             path = unquote(urlparse(self.path).path)
             if path in ("", "/"):
                 home = repo.cfg.get("home")
+                shell_home = home_shell_page(repo)
+                if shell_home:
+                    # a layer's shell page is the front door — served in place, not redirected,
+                    # so the page's absolute /shell/ and /content/ links hold from /
+                    page_file = config.shell_pages(repo)[shell_home]
+                    if not page_file.is_file():
+                        self.send_error(404, f'kit.json "home" ({home!r}): {repo.rel(page_file)} is missing')
+                        return
+                    self._send(200, page_file.read_bytes(), "text/html; charset=utf-8", body)
+                    return
                 if home and home != "dashboard":
                     # a content page is the front door — redirect to its canonical URL so its
                     # own relative links and the backlinks index (keyed on canonical hrefs) hold
@@ -230,6 +256,9 @@ def make_handler(repo: Repo):
                     self._send(200, dash.read_bytes(), "text/html; charset=utf-8", body)
                     return
                 self._send(200, _landing(repo), "text/html; charset=utf-8", body)
+                return
+            if path == "/shell/theme.css":
+                self._send(200, config.theme_css(repo), "text/css; charset=utf-8", body)
                 return
             if path == "/__annotations/ping":
                 self._json(200, {"ok": True, "engine": __version__}, body)

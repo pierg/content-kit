@@ -18,8 +18,8 @@ import shutil
 import subprocess
 import sys
 
-from . import __version__, book_nav, lint
-from .paths import PACKAGE_DIR, Repo, home_page, load_repo
+from . import __version__, book_nav, config, lint
+from .paths import PACKAGE_DIR, Repo, home_page, home_shell_page, load_repo
 
 
 def run(repo: Repo) -> int:
@@ -43,11 +43,17 @@ def run(repo: Repo) -> int:
               file=sys.stderr)
         return 1
 
+    bad = config.problems(repo)
+    if bad:
+        print("kit.json declares extension points that do not hold:", file=sys.stderr)
+        print("\n".join("  " + s for s in bad), file=sys.stderr)
+        return 1
+
     home = repo.cfg.get("home")
-    if home and home != "dashboard" and home_page(repo) is None:
+    if home and home != "dashboard" and home_page(repo) is None and home_shell_page(repo) is None:
         print(
             f'kit.json "home" ({home!r}) does not resolve to a page under {repo.rel(repo.content)} — '
-            'point it at an existing file, or a directory with an index.html, or set "home": "dashboard".',
+            'point it at an existing file, a directory with an index.html, or a declared shell page.',
             file=sys.stderr,
         )
         return 1
