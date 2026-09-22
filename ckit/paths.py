@@ -50,7 +50,7 @@ DEFAULTS: dict = {
 EXTENSION_KEYS = ("genres", "checks", "generators", "chronicle", "shell_pages", "links", "refs",
                   "theme", "classes", "indices")
 
-# DISCIPLINE §8 — every document declares whether it is still true, in its opening lines.
+# Every document declares whether it is still true, in its opening lines.
 DOC_STATUS = ("LIVE", "HISTORICAL", "PARKED", "RETIRED", "FROZEN", "DRAFT")
 
 PACKAGE_DIR = Path(__file__).resolve().parent
@@ -125,7 +125,7 @@ def home_page(repo: Repo) -> Path | None:
     not a crash — `Path / home` is never reached.
     """
     home = repo.cfg.get("home")
-    if not isinstance(home, str) or not home or home == "dashboard" or home_shell_page(repo):
+    if not isinstance(home, str) or not home or home_shell_page(repo):
         return None
     target = (repo.root / home).resolve()
     if target.is_dir():
@@ -138,7 +138,7 @@ def home_page(repo: Repo) -> Path | None:
 
 
 def home_shell_page(repo: Repo) -> str | None:
-    """The `shell_pages` name `home` names (`"dashboard"` or `"dashboard.html"`), if it names one:
+    """The `shell_pages` name `home` names (`"revise"` or `"revise.html"`), if it names one:
     a layer's page served at `/` as the front door."""
     home = repo.cfg.get("home")
     pages = repo.cfg.get("shell_pages") or {}

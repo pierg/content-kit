@@ -61,7 +61,7 @@ html:has(body.hb) { margin: 0; }
 .hb .muted { color: var(--ink-3); }
 .hb a { color: var(--gen); text-decoration: none; }
 .hb a:hover { text-decoration: underline; }
-/* Auto-generated links to a record id (F-<n>/C-<n>); keep the id from breaking across lines. */
+/* Auto-generated links to an id a kit.json `refs` pattern declares; keep it on one line. */
 .hb .rec-ref { white-space: nowrap; }
 .hb code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em;
            background: var(--surface-1); border: 1px solid var(--grid); border-radius: 4px; padding: 0 4px; }
@@ -244,7 +244,6 @@ html:has(body.hb) { margin: 0; }
                color: var(--ink-2); border-color: var(--baseline); }  /* any genre, until styled */
 .hb .hb-kind-book    { color: var(--reach);  border-color: var(--reach); }
 .hb .hb-kind-entry   { color: var(--gen);    border-color: var(--gen); }
-.hb .hb-kind-story   { color: var(--gen);    border-color: var(--gen); }
 .hb .hb-kind-concept { color: var(--judge);  border-color: var(--judge); }
 .hb .hb-kind-hub     { color: var(--world);  border-color: var(--world); }
 .hb .hb-kind-note    { color: var(--ink-2);  border-color: var(--baseline); }

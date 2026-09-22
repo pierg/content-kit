@@ -18,6 +18,7 @@ Optional thin override: content/books/<slug>/book.json
 Writes (committed artifacts; regenerate via `ckit nav` — lint does it too):
   content/books/<slug>/nav.json
   content/catalog.json · content/search-index.json · content/backlinks.json
+  content/chronicle.json (when the repo declares a record) · every kit.json generator's files
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ import json
 import re
 from pathlib import Path
 
-from . import chronicle, config, ladder, plugins
+from . import chronicle, config, plugins
 from .genres import EXEMPT_PARTS, catalog_groups, load_genres
 from .paths import Repo
 from .text import (
@@ -189,8 +190,6 @@ def build_catalog(repo: Repo) -> dict:
                        ("indices", config.indices(repo))):
         if items:  # only when declared, so a repo that uses none carries none
             out[key] = items
-    if ladder.enabled(repo):
-        out["dashboard"] = True  # opt-in only — omitted otherwise, so a non-adopting repo's catalog.json is unchanged
     return out
 
 
@@ -293,10 +292,7 @@ def expected_files(repo: Repo) -> dict[Path, object]:
     expected[repo.content / "search-index.json"] = build_search_index(repo)
     expected[repo.content / "backlinks.json"] = build_backlinks(repo)
     if chronicle.enabled(repo):
-        chron = chronicle.build(repo)
-        expected[repo.content / "chronicle.json"] = chron
-        if ladder.enabled(repo):
-            expected[repo.content / "ladder.json"] = ladder.build(repo, chron)
+        expected[repo.content / "chronicle.json"] = chronicle.build(repo)
     core = {p.resolve() for p in expected}
     for path, data in plugins.generated_files(repo).items():
         if path in core:

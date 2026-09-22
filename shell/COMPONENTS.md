@@ -154,7 +154,7 @@ Reusable across books (in `lib.css`):
 | `.mtable` | key column bold |
 | `.wcap` · `.wcap-sm` · `.wcap-md` · `.wcap-lg` | caption sizes |
 
-Chapter-only widgets (encoding fields, ladder, D×P, …) stay in that chapter's `<style>`.
+Chapter-only widgets (a bespoke encoding table, a one-off explorer, …) stay in that chapter's `<style>`.
 
 ## Motif boxes
 

@@ -28,7 +28,6 @@ CLEAN = {
     "note": "a-note",
     "concept": "a-concept",
     "entry": "an-entry",
-    "story": "a-story",
     "hub": "a-hub",
     "project": "a-project",
     "paper": "a-paper",
@@ -48,13 +47,14 @@ def _page(title: str, body: str = "<p>Body.</p>", *, sub: str = "<b>Status: LIVE
     return PAGE.format(title=title, sub=sub, body=body, head=head)
 
 
-STORY_SECTIONS = ("question", "why", "did", "happened", "learned", "not", "deeper", "backlinks")
-SEALED = "<b>Status: LIVE</b> — a sealed story of one result against <code>F-1</code>."
+SHAPE = ("steps", "why", "pitfalls")  # a fixed-shape extension genre's sections, in order
+SHAPED = {"howto": {"dir": "howtos", "layout": "folder",
+                    "checks": {"status": True, "require_sections": list(SHAPE)}}}
 
 
-def _story(title: str, *, sections: tuple[str, ...] = STORY_SECTIONS, sub: str = SEALED) -> str:
-    """A story: the fixed sections in their fixed order, sealed to a row in its opening line."""
-    return _page(title, "".join(f'<h2 id="{s}">{s}</h2><p>x</p>' for s in sections), sub=sub)
+def _shaped(title: str, *, sections: tuple[str, ...] = SHAPE) -> str:
+    """A page of a fixed-shape genre: the declared sections, in the declared order."""
+    return _page(title, "".join(f'<h2 id="{s}">{s}</h2><p>x</p>' for s in sections))
 
 
 def _write(repo: Repo, rel: str, text: str) -> Path:
@@ -153,15 +153,6 @@ def main(argv: list[str]) -> int:
         if not all(isinstance(cat.get(k), list) for k in keys):
             failures.append("every catalog group must carry its item list")
         planted += 1
-        cat = json.loads((repo.content / "catalog.json").read_text())
-        if [s["slug"] for s in cat.get("stories") or []] != ["a-story"]:
-            failures.append(f"the scaffolded story is not a catalog group: {cat.get('stories')}")
-        si = json.loads((repo.content / "search-index.json").read_text())
-        story_kinds = {r["kind"] for r in si if "/stories/" in r["href"]}
-        if story_kinds != {"story"}:
-            failures.append(f"a story must be badged 'story', not 'page': {story_kinds}")
-        planted += 1
-
         # --- a stale committed index fails the gate; regenerating repairs it
         catalog = repo.content / "catalog.json"
         good = catalog.read_text(encoding="utf-8")
@@ -182,9 +173,13 @@ def main(argv: list[str]) -> int:
             "# Lab logbook — LIVE\n\n### 2026-09-01 — [pivot] the substrate changes\n\nWhy it changed, in one paragraph.\n\n"
             "### 2026-09-02T10:00Z — an untagged entry\n\nPlain.\n\n### 2026-09-03 — [lesson] what bit us\n", encoding="utf-8")
         (repo.root / "ext.py").write_text(
+            "KINDS = [{'name': 'release', 'hue': 'teal'}, 'errata']\n"
+            "CARDS = {'view': 'releases', 'label': 'Releases', 'kind': 'release', 'empty': 'no releases'}\n"
             "def extract(root, cfg):\n"
-            "    return {'events': [{'date': '2026-09-04', 'kind': 'experiment', 'title': 'E1 locked', 'href': '/shell/record.html?p=e1.md'}],\n"
-            "            'experiments': [{'slug': 'e1', 'title': 'E1', 'href': '/shell/record.html?p=e1.md', 'locked': '2026-09-04', 'findings': []}]}\n", encoding="utf-8")
+            "    return {'events': [{'date': '2026-09-04', 'kind': 'release', 'title': 'R1 shipped', 'href': '/shell/record.html?p=r1.md'}],\n"
+            "            'cards': [{'title': 'R1', 'href': '/shell/record.html?p=r1.md', 'date': '2026-09-04', 'status': 'SHIPPED',\n"
+            "                       'fields': [{'label': 'Notes', 'text': 'the first'}, {'label': 'Fixes', 'items': [], 'empty': 'none'}]}]}\n",
+            encoding="utf-8")
         cfg = json.loads((repo.root / "kit.json").read_text())
         cfg["record"] = ["record/lab.md"]
         cfg["chronicle"] = {"sources": ["record/"], "extractors": ["ext.py"]}
@@ -193,10 +188,18 @@ def main(argv: list[str]) -> int:
         _lint(repo)
         chron = json.loads((repo.content / "chronicle.json").read_text())
         kinds = [e["kind"] for e in chron["events"]]
-        if kinds != ["experiment", "lesson", "entry", "pivot"]:
+        if kinds != ["release", "lesson", "entry", "pivot"]:
             failures.append(f"chronicle events wrong or unsorted: {kinds}")
-        if not chron["experiments"] or chron["experiments"][0]["slug"] != "e1":
-            failures.append("plugin experiment not merged into the chronicle")
+        legend = [k["name"] for k in chron.get("kinds") or []]
+        if legend != ["pivot", "kill", "decision", "lesson", "instrument", "result", "release", "errata", "entry"]:
+            failures.append(f"chronicle.json must list the core kinds, then the extractor's, then entry: {legend}")
+        rel_kind = next((k for k in chron.get("kinds") or [] if k["name"] == "release"), {})
+        if rel_kind.get("hue") != "teal" or rel_kind.get("story") is not True:
+            failures.append(f"an extractor kind keeps its declared hue and joins the Story view: {rel_kind}")
+        cards = chron.get("cards") or {}
+        if cards.get("view") != "releases" or [c["title"] for c in cards.get("items") or []] != ["R1"]:
+            failures.append(f"the extractor's cards must reach chronicle.json under its view: {cards}")
+        planted += 2
         if not any(e["summary"].startswith("Why it changed") for e in chron["events"]):
             failures.append("event summary not taken from the paragraph under the heading")
         cat = json.loads((repo.content / "catalog.json").read_text())
@@ -230,89 +233,29 @@ def main(argv: list[str]) -> int:
             pass
         (repo.root / "record" / "bad.md").unlink()
         planted += 1
-        _lint(repo)
-
-        # --- the dashboard: opt-in ladder.json, generated + drift-checked like the chronicle,
-        #     merging an extractor's ladder() vocabulary with the generic now / decisions.
-        (repo.root / "record" / "state.md").write_text(
-            "# State — LIVE\n\nThe planted current phase, in a sentence.\n", encoding="utf-8")
-        (repo.root / "ext.py").write_text(
-            "def extract(root, cfg):\n"
-            "    return {'events': [{'date': '2026-09-04', 'kind': 'experiment', 'title': 'E1 locked', 'href': '/shell/record.html?p=e1.md'},\n"
-            "                       {'date': '2026-09-06', 'kind': 'decision', 'title': 'the planted decision', 'summary': 'why', 'href': '/shell/record.html?p=d.md'}],\n"
-            "            'experiments': [{'slug': 'e1', 'title': 'E1', 'href': '/shell/record.html?p=e1.md', 'locked': '2026-09-04', 'status': 'LOCKED', 'findings': []}]}\n"
-            "def ladder(root, cfg):\n"
-            "    return {'questions': [{'id': 'Q1', 'title': 'the planted question', 'status': 'OPEN', 'kill': 'k', 'href': '/x#q1'}],\n"
-            "            'findings': [{'id': 'F-1', 'title': 'the planted finding', 'status': 'BANKED', 'href': '/x#f-1'}],\n"
-            "            'claims': [{'id': 'C-1', 'title': 'the planted claim', 'rests_on': ['F-1'], 'href': '/x#c-1'}]}\n",
-            encoding="utf-8")
-        cfg = json.loads((repo.root / "kit.json").read_text())
-        cfg["record"] = ["record/state.md", "record/lab.md", "record/log.md", "record/"]
-        cfg["chronicle"] = {"sources": ["record/"], "extractors": ["ext.py"]}
-        cfg["home"] = "dashboard"
-        (repo.root / "kit.json").write_text(json.dumps(cfg))
-        repo = load_repo(repo.root)
-        _lint(repo)
-        lad_path = repo.content / "ladder.json"
-        if not lad_path.is_file():
-            failures.append("ladder.json not generated when home=dashboard")
-        else:
-            lad = json.loads(lad_path.read_text())
-            if [q["id"] for q in lad.get("questions") or []] != ["Q1"]:
-                failures.append(f"ladder questions not merged from the extractor: {lad.get('questions')}")
-            if [f["id"] for f in lad.get("findings") or []] != ["F-1"]:
-                failures.append(f"ladder findings not merged: {lad.get('findings')}")
-            if not lad.get("claims") or lad["claims"][0]["rests_on"] != ["F-1"]:
-                failures.append(f"ladder claims not merged: {lad.get('claims')}")
-            if not lad.get("now") or "planted current phase" not in (lad["now"].get("summary") or ""):
-                failures.append(f"ladder 'now' not scraped from the State file: {lad.get('now')}")
-            if not any(d["kind"] == "decision" for d in lad.get("decisions") or []):
-                failures.append(f"ladder decisions not taken from the chronicle: {lad.get('decisions')}")
-        cat = json.loads((repo.content / "catalog.json").read_text())
-        if cat.get("dashboard") is not True:
-            failures.append("catalog.json missing the dashboard flag when opted in")
-        if not (KIT_SRC / "shell" / "dashboard.html").is_file():
-            failures.append("the dashboard shell page is missing")
+        # a kind no extractor declares is refused too, naming the kind
+        good_ext = (repo.root / "ext.py").read_text(encoding="utf-8")
+        (repo.root / "ext.py").write_text(good_ext.replace("'kind': 'release'", "'kind': 'bogus-kind'"), encoding="utf-8")
+        try:
+            _lint(load_repo(repo.root))
+            failures.append("an extractor event of an undeclared kind must fail loud")
+        except SystemExit as exc:
+            if "bogus-kind" not in str(exc):
+                failures.append(f"the undeclared-kind error must name the kind, got: {exc}")
+        (repo.root / "ext.py").write_text(good_ext, encoding="utf-8")
         planted += 1
-        # a stale ladder.json fails the gate, exactly like any other committed index
-        good_lad = lad_path.read_text(encoding="utf-8")
-        lad_path.write_text(good_lad.replace("planted finding", "tampered"), encoding="utf-8")
-        err = io.StringIO()
-        with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
-            rc = check.run(repo)
-        if rc == 0 or "out of date" not in err.getvalue():
-            failures.append("a stale ladder.json must fail `ckit check`")
-        _lint(repo)  # regenerates / restores
-        planted += 1
-        # opting out is inert: catalog carries no dashboard flag and no ladder.json is expected
-        lad_path.unlink()
-        cfg = json.loads((repo.root / "kit.json").read_text())
-        del cfg["home"]
-        (repo.root / "kit.json").write_text(json.dumps(cfg))
-        repo = load_repo(repo.root)
-        _lint(repo)
-        if lad_path.is_file():
-            failures.append("ladder.json must not be regenerated once the repo opts out")
-        if "dashboard" in json.loads((repo.content / "catalog.json").read_text()):
-            failures.append("catalog.json must drop the dashboard flag when opted out")
-        planted += 1
-        # re-enable so the remaining fixtures run against a consistent, dashboard-on repo
-        cfg["home"] = "dashboard"
-        (repo.root / "kit.json").write_text(json.dumps(cfg))
-        repo = load_repo(repo.root)
         _lint(repo)
 
         # --- `home` as a content page: `/` 302s to its canonical URL; a dangling one fails
-        #     `ckit check` and 404s at serve time; `"home": "dashboard"` keeps serving the
-        #     dashboard exactly as before — exercised through a live instance of the handler
+        #     `ckit check` and 404s at serve time — exercised through a live instance of the handler
         httpd = ThreadingHTTPServer(("127.0.0.1", 0), serve.make_handler(repo))
         server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         server_thread.start()
         port = httpd.server_address[1]
         try:
-            status, _, dash_body = _request(port, "/")
-            if status != 200 or b"<title>Dashboard</title>" not in dash_body:
-                failures.append(f'"home": "dashboard" should still serve the dashboard at /, got {status}')
+            status, _, landing = _request(port, "/")
+            if status != 200 or b"Search everything" not in landing:
+                failures.append(f"with no home, / should serve the generated landing page, got {status}")
             planted += 1
 
             repo.cfg["home"] = "content/projects/a-project"  # a real page from the CLEAN fixtures
@@ -333,7 +276,7 @@ def main(argv: list[str]) -> int:
                 failures.append("a dangling home must fail `ckit check` with the new message")
             planted += 1
 
-            # a non-string home (the likely slip beside "dashboard": true) is dangling, not a crash
+            # a non-string home (the likely slip for a boolean switch) is dangling, not a crash
             repo.cfg["home"] = True
             status, _, _ = _request(port, "/")
             if status != 404:
@@ -345,7 +288,7 @@ def main(argv: list[str]) -> int:
                 failures.append('"home": true must fail `ckit check` with the dangling-home message, not raise')
             planted += 1
         finally:
-            repo.cfg["home"] = "dashboard"  # leave the fixture consistent for what follows
+            repo.cfg.pop("home", None)  # leave the fixture consistent for what follows
             httpd.shutdown()
             httpd.server_close()
             server_thread.join(timeout=2)
@@ -402,41 +345,28 @@ def main(argv: list[str]) -> int:
         plant("notes/sections.html", _page("Sections", "<h2>One</h2><p>x</p>"), "<h2>")
         plant("notes/long.html", _page("Long", "<p>" + "word " * 450 + "</p>"), "over the 400")
         plant("concepts/nodefn/index.html", _page("No defn"), 'no <blockquote class="defn">')
-        plant("concepts/cites/index.html",
-              _page("Cites", '<blockquote class="defn" id="c"><span class="defn-name">C</span><br>See F-3.</blockquote>'),
-              "inside its defn")
         plant("stray/x.html", _page("Stray"), "outside any genre")
         plant("projects/nometa/index.html", _page("No meta"), 'needs <meta name="status"')
         plant("projects/badmeta/index.html",
               _page("Bad meta", head='<meta name="status" content="whatever">'), "not active|shipped|paused")
         plant("hubs/long.html", _page("Long hub", "<p>" + "word " * 1600 + "</p>"), "over the 1500")
-        # a story's shape is fixed and its opening line is sealed to the rows it tells: the
-        # compliant ones are silent, each mutation is reported by the id it broke
-        _write(repo, "stories/sealed/index.html", _story("Sealed"))
-        _write(repo, "stories/cross-lab/index.html",
-               _story("Cross lab", sub="<b>Status: LIVE</b> — sealed to <code>dsl:F-3</code>, "
-                                       "another lab's pinned row."))
-        plant("stories/missing/index.html",
-              _story("Missing", sections=tuple(s for s in STORY_SECTIONS if s != "not")),
-              'no <h2 id="not"> section')
-        # commented-out markup renders as nothing: without stripping comments first, a story
-        # could delete its bounds section, comment it back in where it belonged, and pass
-        commented = _story("Commented", sections=tuple(s for s in STORY_SECTIONS if s != "not"))
-        plant("stories/commented/index.html",
-              commented.replace('<h2 id="deeper">',
-                                '<!-- <h2 id="not">what it does not show</h2> --><h2 id="deeper">'),
-              'no <h2 id="not"> section')
-        plant("stories/hidden-id/index.html",
-              _story("Hidden id", sub="<b>Status: LIVE</b> — a story whose row is commented "
-                                      "out <!-- <code>F-1</code> -->."),
-              "names no finding")
-        plant("stories/misordered/index.html",
-              _story("Misordered", sections=("question", "why", "did", "happened", "not",
-                                             "learned", "deeper", "backlinks")),
-              '<h2 id="not"> is out of order')
-        plant("stories/unbound/index.html",
-              _story("Unbound", sub="<b>Status: LIVE</b> — a story that names no row."),
-              "names no finding")
+        # a fixed-shape genre (an extension declaring require_sections): the compliant page is
+        # silent, each mutation is reported by the section id it broke
+        cfg = json.loads((repo.root / "kit.json").read_text())
+        cfg["genres"] = SHAPED
+        (repo.root / "kit.json").write_text(json.dumps(cfg))
+        repo = load_repo(repo.root)
+        _write(repo, "howtos/fine/index.html", _shaped("Fine"))
+        plant("howtos/missing/index.html", _shaped("Missing", sections=("steps", "pitfalls")),
+              'no <h2 id="why"> section')
+        # commented-out markup renders as nothing: without stripping comments first, a page
+        # could delete a section, comment it back in where it belonged, and pass
+        plant("howtos/commented/index.html",
+              _shaped("Commented", sections=("steps", "pitfalls")).replace(
+                  '<h2 id="pitfalls">', '<!-- <h2 id="why">why</h2> --><h2 id="pitfalls">'),
+              'no <h2 id="why"> section')
+        plant("howtos/misordered/index.html", _shaped("Misordered", sections=("steps", "pitfalls", "why")),
+              '<h2 id="pitfalls"> is out of order')
         # a chapter that links forward without declaring it, and one that declares it
         _write(repo, "books/fwd/index.html", _page("Fwd book"))
         _write(repo, "books/fwd/02-later.html", _page("Later"))
@@ -460,11 +390,10 @@ def main(argv: list[str]) -> int:
         if any("03-fine.html" in p for p in probs):
             failures.append("a declared (data-fwd) forward reference must not be reported")
         planted += 1
-        for quiet in ("stories/sealed", "stories/cross-lab"):
-            if any(quiet in p for p in probs):
-                failures.append(f"a compliant story ({quiet}) was reported: "
-                                + " | ".join(p for p in probs if quiet in p))
-            planted += 1
+        if any("howtos/fine" in p for p in probs):
+            failures.append("a compliant fixed-shape page was reported: "
+                            + " | ".join(p for p in probs if "howtos/fine" in p))
+        planted += 1
 
         # --- per-repo genre extension: a new genre dir is recognised and its checks apply
         cfg = json.loads((repo.root / "kit.json").read_text())

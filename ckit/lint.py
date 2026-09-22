@@ -13,16 +13,16 @@ Form (every page):
 Genre (by position in the tree — see genres.json and genres/GENRES.md):
   5. every page belongs to a genre; a page outside any genre is an error, not a default
   6. status — the first <p class="sub"> declares LIVE · HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT
-  7. per-genre proxies for voice: word bounds, no <h2> in a note, a defn in a concept that cites
-     no finding, no undeclared forward reference in a chapter, a lifecycle meta on a project,
-     the fixed sections of a story in order and the rows its status line is sealed to
+  7. per-genre proxies for voice: word bounds, no <h2> in a note, a defn in a concept, no
+     undeclared forward reference in a chapter, a lifecycle meta on a project, a fixed-shape
+     genre's sections in order — and any check a module under kit.json `checks` provides
 
 Annotations:
   8. every *.annotations.json validates and every quote it anchors is still on its page
 
-This is the *content* gate. A lab's *record* gate — every number traces to a finding — is
-lab-kit's ladder lint, and the two are deliberately separate: form is whether a page renders
-like the rest of the library, the ladder is whether it is allowed to say what it says.
+This is the *content* gate: whether a page renders like the rest of the library and reads
+like its genre. Whether it is allowed to say what it says is a layer's business — a layer
+brings its own checks through kit.json `checks` and its own gate beside this one.
 """
 
 from __future__ import annotations
@@ -42,9 +42,6 @@ BOOK_JS = re.compile(r'src=["\']book\.js["\']')
 BOOK_CSS = re.compile(r"book\.css")
 H2 = re.compile(r"<h2\b", re.I)
 H2_ID = re.compile(r'<h2\b[^>]*\sid="([^"]+)"', re.I)
-FINDING = re.compile(r"\bF-\d+(?:\.\d+)*\b")
-# A row id as a page cites it: `F-12`, `F-22.1`, or another lab's pinned row, `dsl:F-3`.
-BOUND_ID = re.compile(r"<code\b[^>]*>\s*(?:[a-z][a-z0-9_-]*:)?F-\d+(?:\.\d+)*\s*</code>", re.I)
 COMMENT = re.compile(r"<!--.*?-->", re.S)
 BURIED = re.compile(r"<(script|style|noscript|template)\b[^>]*>.*?</\1>", re.S | re.I)
 ANCHOR = re.compile(r"<a\b([^>]*)>", re.I)
@@ -87,7 +84,7 @@ ALLOWED = {
     "hb-side-label", "hb-side-list", "hb-toc", "hb-toc-label",
     "hb-kind", "hb-kind-book", "hb-kind-entry", "hb-kind-concept",
     "hb-kind-hub", "hb-kind-note", "hb-kind-project", "hb-kind-page",
-    "hb-kind-paper", "hb-kind-related", "hb-kind-story",
+    "hb-kind-paper", "hb-kind-related",
 }
 
 
@@ -154,9 +151,8 @@ def _forward_refs(page: Path, text: str) -> list[str]:
 
 # The checks the engine implements. A genre may name any other check a module under kit.json
 # `checks` provides; a name nobody provides fails the gate (see `plugin_checks`).
-CORE_CHECKS = ("status", "max_words", "no_h2", "require_defn", "defn_no_findings",
-               "no_forward_refs", "require_meta_status", "require_sections", "bound_ids",
-               "no_findings")
+CORE_CHECKS = ("status", "max_words", "no_h2", "require_defn", "no_forward_refs",
+               "require_meta_status", "require_sections")
 
 
 def plugin_checks(repo: Repo, genres: dict[str, Genre]) -> tuple[dict, dict]:
@@ -213,15 +209,6 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
                 f"{rel}: no <blockquote class=\"defn\"> with a .defn-name — a {g.name} is a "
                 "definition of record and the popover needs its payload"
             )
-    if c.get("defn_no_findings"):
-        d = DEFN_RE.search(text)
-        if d:
-            ids = sorted(set(FINDING.findall(d.group(1))))
-            if ids:
-                probs.append(
-                    f"{rel}: cites {', '.join(ids)} inside its defn — a definition must survive "
-                    "findings changing; cite below the defn, not in it"
-                )
     if c.get("no_forward_refs"):
         fwd = _forward_refs(page, text)
         if fwd:
@@ -256,17 +243,6 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
                              + " → ".join(want))
                 break
             at = here
-    if c.get("bound_ids"):
-        sub = SUB_RE.search(_served(text))
-        if not BOUND_ID.search(sub.group(1) if sub else ""):
-            probs.append(
-                f'{rel}: the opening line names no finding — a {g.name} is sealed to the rows it '
-                'tells, so its first <p class="sub"> carries at least one <code>F-<n></code>'
-            )
-    if c.get("no_findings"):
-        ids = sorted(set(FINDING.findall(text)))
-        if ids:
-            probs.append(f"{rel}: {g.name} cites {', '.join(ids)} — this genre carries no results")
     return probs
 
 

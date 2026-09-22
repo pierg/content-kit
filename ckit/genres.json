@@ -32,19 +32,10 @@
       "dir": "projects",
       "layout": "folder",
       "skeleton": "project/index.html",
-      "register": "the front door: plain sentences and links — what is being asked, what has been learned with each sentence carrying its rows, the top-level bounds, and dated state",
-      "reader": "arriving cold, deciding what to read next",
-      "forbidden": "undated state — the page is explicitly perishable; re-explaining what a story or a concept page owns; a bound that belongs to one result",
+      "register": "operational, dated, present tense",
+      "reader": "wants to know what is true now",
+      "forbidden": "undated status — the page is explicitly perishable",
       "checks": { "status": true, "require_meta_status": true }
-    },
-    "story": {
-      "dir": "stories",
-      "layout": "folder",
-      "skeleton": "story/index.html",
-      "register": "plain, sealed to its findings: the question in words, why it was expected to help, what was done, what happened, what was learned, what it does not show, where to go deeper",
-      "reader": "a sharp outsider who has never seen the lab",
-      "forbidden": "a rolling narrative; a lab code as the subject of a sentence; a number without its row id; a caveat the rows bind that is missing from what-it-does-not-show",
-      "checks": { "status": true, "require_sections": ["question", "why", "did", "happened", "learned", "not", "deeper", "backlinks"], "bound_ids": true }
     },
     "hub": {
       "dir": "hubs",
@@ -68,7 +59,7 @@
       "dir": "entries",
       "layout": "folder",
       "skeleton": "entry/index.html",
-      "register": "analytical, takes a position, cites findings by id",
+      "register": "analytical, takes a position, says what each claim rests on",
       "reader": "interested, not expert in this artifact",
       "forbidden": "unattributed claims; a wall of prose with no sections to navigate",
       "checks": { "status": true }
@@ -88,8 +79,8 @@
       "skeleton": "concept/index.html",
       "register": "impersonal, present tense, timeless",
       "reader": "has met the term and wants it pinned down",
-      "forbidden": "a definition that depends on a running result — the defn must survive findings changing",
-      "checks": { "status": true, "max_words": 1500, "require_defn": true, "defn_no_findings": true }
+      "forbidden": "a definition that depends on a running result — the defn must survive the results changing",
+      "checks": { "status": true, "max_words": 1500, "require_defn": true }
     }
   }
 }

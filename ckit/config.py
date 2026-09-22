@@ -1,10 +1,10 @@
 """The declarative extension points in kit.json, read and validated in one place.
 
-    "shell_pages": {"dashboard.html": "kit/lab/shell/dashboard.html"}   served as /shell/<name>
+    "shell_pages": {"revise.html": "kit/folio/shell/revise.html"}       served as /shell/<name>
     "theme":       "assets/theme.css"  (or a list)                        served as /shell/theme.css
-    "classes":     ["sw-reach", "lane-reach"]                             the form lint accepts them
-    "links":       [{"label": "Dashboard", "href": "/shell/dashboard.html", "title": "…"}]
-    "refs":        [{"pattern": "F-\\d+(?:\\.\\d+)?", "href": "/shell/record.html?p=record/findings.md#{id}"}]
+    "classes":     ["sw-brand", "lane-brand"]                             the form lint accepts them
+    "links":       [{"label": "Revise", "href": "/shell/revise.html", "title": "…"}]
+    "refs":        [{"pattern": "Q-\\d+", "href": "/shell/record.html?p=QUESTIONS.md#{id}"}]
     "indices":     ["content/federated.json"]                             merged by the search page
 
 `links`, `refs` and `indices` reach the browser through `catalog.json`; the shell pages and the

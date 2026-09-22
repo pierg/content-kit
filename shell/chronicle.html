@@ -6,33 +6,34 @@
 <title>Chronicle</title>
 <link rel="stylesheet" href="/shell/lib.css">
 <style>
-/* The chronicle: the record as a timeline. Three views:
-     · Story (default) — only tagged headings and load-bearing events (pivots, decisions,
-       kills, lessons, missions, experiment locks, findings, claims); grouped by month;
-       summary paragraphs rendered as prose. This is the answer to "how did we get here".
+/* The chronicle: the record as a timeline. Two views, and a third when an extractor adds one:
+     · Story (default) — only tagged headings and the load-bearing kinds (pivots, decisions,
+       kills, lessons, instruments, results, and whatever kinds the repo's extractors declare);
+       grouped by month; summary paragraphs rendered as prose. The answer to "how did we get here".
      · Timeline — every dated heading (the story plus untagged 'entry' items); dense; for
        archaeology.
-     · Experiments — one card per pre-registration with its question, kill rule, findings.
-   Generated from content/chronicle.json by `ckit nav`; nothing here is authored. */
+     · Cards — one card per long-lived thing an extractor tracks, under the name it gives them.
+   Generated from content/chronicle.json by `ckit nav`; nothing here is authored. The kinds, their
+   hues and which of them the Story view shows all come from chronicle.json. */
 
 .chr-wrap { max-width: 780px; }
 .chr-input { width: 100%; padding: 10px 14px; font: 15px/1.4 system-ui, -apple-system, sans-serif;
              background: var(--surface-1); color: var(--ink-1); border: 1.5px solid var(--baseline); border-radius: 10px; }
-.chr-input:focus { outline: 2px solid var(--judge); border-color: var(--judge); }
+.chr-input:focus { outline: 2px solid var(--violet); border-color: var(--violet); }
 .chr-modes { display: flex; gap: 6px; margin: 14px 0 6px; flex-wrap: wrap; }
-.chr-modes .tbtn.active { border-color: var(--judge); color: var(--judge); }
+.chr-modes .tbtn.active { border-color: var(--violet); color: var(--violet); }
 .chr-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 6px; }
 .fchip { font: 600 11.5px ui-monospace, Menlo, monospace; padding: 3px 10px; border-radius: 999px;
          border: 1.5px solid var(--baseline); background: var(--surface-1); color: var(--ink-2); cursor: pointer;
          letter-spacing: 0.03em; text-transform: uppercase; }
-.fchip.on { border-color: var(--judge); color: var(--judge); background: color-mix(in srgb, var(--judge) 8%, var(--surface-1)); }
+.fchip.on { border-color: var(--violet); color: var(--violet); background: color-mix(in srgb, var(--violet) 8%, var(--surface-1)); }
 .chr-meta { color: var(--ink-3); font-size: 12.5px; margin: 6px 2px 14px; }
 
 /* --- "Right now" banner: the current phase, from the first record file whose title says State --- */
 .chr-now { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px;
            padding: 14px 18px; margin: 18px 0 4px; }
 .chr-now-label { font: 700 10.5px ui-monospace, Menlo, monospace; letter-spacing: 0.06em;
-                 text-transform: uppercase; color: var(--judge); }
+                 text-transform: uppercase; color: var(--violet); }
 .chr-now h2 { margin: 4px 0 6px; font-size: 17px; padding: 0; border: 0; }
 .chr-now p { margin: 4px 0 0; color: var(--ink-2); font-size: 14px; }
 .chr-now .more { font: 12.5px ui-monospace, Menlo, monospace; margin-top: 8px; }
@@ -49,11 +50,11 @@
 .chr-story-ev time { font: 12px ui-monospace, Menlo, monospace; color: var(--ink-3); flex: 0 0 auto; }
 .chr-story-ev .t { font-size: 15.5px; font-weight: 600; line-height: 1.35; }
 .chr-story-ev .t a { color: var(--ink-1); }
-.chr-story-ev .t a:hover { color: var(--gen); text-decoration: none; }
+.chr-story-ev .t a:hover { color: var(--azure); text-decoration: none; }
 .chr-story-ev .s { color: var(--ink-2); font-size: 14px; line-height: 1.55; margin: 6px 0 0; }
 .chr-story-ev .l { font-size: 12px; margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: var(--ink-3); }
 .chr-story-ev .l a { color: var(--ink-3); }
-.chr-story-ev .l a:hover { color: var(--gen); }
+.chr-story-ev .l a:hover { color: var(--azure); }
 
 /* --- Timeline view: dense per-day rows --- */
 .chr-day { font: 700 11px ui-monospace, Menlo, monospace; color: var(--ink-3); letter-spacing: 0.05em;
@@ -62,27 +63,26 @@
 .chr-ev time { font: 12px ui-monospace, Menlo, monospace; color: var(--ink-3); padding-top: 2px; }
 .chr-ev .t { font-weight: 600; }
 .chr-ev .t a { color: var(--ink-1); }
-.chr-ev .t a:hover { color: var(--gen); text-decoration: none; }
+.chr-ev .t a:hover { color: var(--azure); text-decoration: none; }
 .chr-ev .s { color: var(--ink-2); font-size: 13px; margin: 2px 0 0; }
 .chr-ev .l { font-size: 12px; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .chr-ev .src { color: var(--ink-3); font: 11px ui-monospace, Menlo, monospace; }
 
-/* --- Kind chips: prominent for the load-bearing kinds; secondary for entry --- */
+/* --- Kind chips: prominent for the load-bearing kinds; secondary for entry. An extractor's
+       kinds are coloured from the hue chronicle.json gives them (see kindStyles below). --- */
 .k { display: inline-block; font: 700 10px ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: 0.05em;
-     padding: 1px 6px; border-radius: 3px; border: 1px solid; margin-right: 6px; vertical-align: 1px; }
+     padding: 1px 6px; border-radius: 3px; border: 1px solid; margin-right: 6px; vertical-align: 1px;
+     color: var(--ink-2); border-color: var(--baseline); }
 .k.entry { color: var(--ink-3); border-color: var(--baseline); }
-.k.pivot { color: var(--world); border-color: var(--world); background: color-mix(in srgb, var(--world) 6%, transparent); }
-.k.kill { color: var(--leak); border-color: var(--leak); background: color-mix(in srgb, var(--leak) 8%, transparent); }
-.k.decision { color: var(--judge); border-color: var(--judge); background: color-mix(in srgb, var(--judge) 6%, transparent); }
-.k.lesson { color: var(--slack); border-color: var(--slack); }
-.k.instrument { color: var(--gen); border-color: var(--gen); }
-.k.result, .k.finding { color: var(--kept-text); border-color: var(--kept); }
-.k.experiment { color: var(--cert); border-color: var(--cert); }
-.k.claim { color: var(--target); border-color: var(--target); }
-.k.mission { color: var(--reach); border-color: var(--reach); }
+.k.pivot { color: var(--orange); border-color: var(--orange); background: color-mix(in srgb, var(--orange) 6%, transparent); }
+.k.kill { color: var(--red); border-color: var(--red); background: color-mix(in srgb, var(--red) 8%, transparent); }
+.k.decision { color: var(--violet); border-color: var(--violet); background: color-mix(in srgb, var(--violet) 6%, transparent); }
+.k.lesson { color: var(--amber); border-color: var(--amber); }
+.k.instrument { color: var(--azure); border-color: var(--azure); }
+.k.result { color: var(--kept-text); border-color: var(--kept); }
 
-/* --- Experiments view --- */
-.chr-ex { border: 1px solid var(--grid); border-left: 3px solid var(--cert); border-radius: 0 10px 10px 0;
+/* --- Cards view --- */
+.chr-ex { border: 1px solid var(--grid); border-left: 3px solid var(--card-hue, var(--indigo)); border-radius: 0 10px 10px 0;
           background: var(--surface-1); padding: 10px 14px; margin: 10px 0; }
 .chr-ex summary { cursor: pointer; font-weight: 700; }
 .chr-ex summary .st { margin-left: 8px; }
@@ -102,15 +102,15 @@
 <main>
 
 <h1>Chronicle</h1>
-<p class="sub">How we got to the current direction — the pivots, the decisions, the lessons, the experiments and what each returned. Generated from the record; nothing here is written by hand.</p>
+<p class="sub">How we got to the current direction — the pivots, the decisions, the lessons, and what each turn returned. Generated from the record; nothing here is written by hand.</p>
 
 <div class="chr-wrap">
   <input id="q" type="search" class="chr-input" placeholder="Filter by words…" autocomplete="off">
   <div class="chr-modes" data-hbtabs data-active="story">
     <button class="tbtn" data-tab="story">Story</button>
     <button class="tbtn" data-tab="timeline">Timeline (every entry)</button>
-    <button class="tbtn" data-tab="experiments">Experiments</button>
-    <div data-pane="story"></div><div data-pane="timeline"></div><div data-pane="experiments"></div>
+    <button class="tbtn" data-tab="cards" id="cards-tab" hidden>Cards</button>
+    <div data-pane="story"></div><div data-pane="timeline"></div><div data-pane="cards"></div>
   </div>
   <div class="chr-filters" id="filters" role="tablist" aria-label="Filter by kind"></div>
   <div class="chr-meta" id="meta">Loading…</div>
@@ -119,21 +119,27 @@
 <section id="now" hidden></section>
 <section id="story"></section>
 <section id="timeline" hidden></section>
-<section id="experiments" hidden></section>
+<section id="cards" hidden></section>
 
 <script>
 (function () {
   "use strict";
 
-  /* Story mode filters out the un-tagged headings; those live in Timeline. */
-  var STORY_KINDS = { pivot: 1, kill: 1, decision: 1, lesson: 1, instrument: 1, result: 1,
-                      experiment: 1, finding: 1, claim: 1, mission: 1 };
-  var ALL_KINDS = ["pivot", "kill", "decision", "lesson", "instrument", "result",
-                   "experiment", "finding", "claim", "mission", "entry"];
+  /* The site's base path ("/" under ckit serve, "/<repo>/" on an exported project site). */
+  var BASE = location.pathname.replace(/shell\/[^\/]*$/, "");
+  function u(href) {
+    return typeof href === "string" && href.charAt(0) === "/" && href.charAt(1) !== "/" ? BASE + href.slice(1) : href;
+  }
+  var CORE = { pivot: 1, kill: 1, decision: 1, lesson: 1, instrument: 1, result: 1, entry: 1 };
+  /* From chronicle.json: every kind in legend order, and which ones Story mode shows —
+     untagged headings stay in Timeline. */
+  var STORY_KINDS = {};
+  var ALL_KINDS = [];
   var MONTHS = ["January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"];
 
-  var data = { events: [], experiments: [] };
+  var data = { kinds: [], events: [] };
+  var CARDS = null;  /* {view, label, kind, empty, items} when an extractor supplies cards */
   var state = { q: "", kinds: new Set(), view: "story" };
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -173,7 +179,7 @@
     var candidates = (catalog && catalog.record) || [];
     var now = candidates.filter(function (r) { return /state/i.test(r.title); })[0];
     if (!now) return;
-    fetch("/" + now.path, { credentials: "same-origin", cache: "no-store" })
+    fetch(u("/" + now.path), { credentials: "same-origin", cache: "no-store" })
       .then(function (r) { return r.ok ? r.text() : null; })
       .then(function (md) {
         if (!md) return;
@@ -201,7 +207,7 @@
             '<div class="chr-now-label">Right now</div>' +
             '<h2>' + esc(h1) + '</h2>' +
             (text ? '<p>' + esc(text) + '</p>' : '') +
-            '<div class="more"><a href="' + esc(now.href) + '">Read ' + esc(now.path) + ' →</a></div>' +
+            '<div class="more"><a href="' + esc(u(now.href)) + '">Read ' + esc(now.path) + ' →</a></div>' +
           '</div>';
       })
       .catch(function () { /* the now-banner is optional; silence is fine */ });
@@ -213,7 +219,9 @@
     var el = document.getElementById("story");
     if (!evs.length) {
       el.innerHTML =
-        '<div class="hint">Story mode shows only tagged events — pivots, kills, decisions, lessons, instruments — plus locked experiments, findings, claims and missions. This record has none yet; add tags with a heading like <code>### 2026-09-11 — [pivot] the substrate changes</code>, or open <b>Timeline (every entry)</b> to see all dated headings.</div>';
+        '<div class="hint">Story mode shows only tagged events — ' +
+        esc(ALL_KINDS.filter(function (k) { return STORY_KINDS[k]; }).join(", ")) +
+        '. This record has none yet; add tags with a heading like <code>### 2026-09-11 — [pivot] the substrate changes</code>, or open <b>Timeline (every entry)</b> to see all dated headings.</div>';
       return;
     }
     var out = [], last = null;
@@ -231,11 +239,11 @@
         '<div class="row">' +
           '<time>' + esc(day(e.date)) + (clock(e.date) ? " " + esc(clock(e.date)) : "") + "</time>" +
           '<span class="k ' + esc(e.kind) + '">' + esc(e.kind) + "</span>" +
-          '<span class="t"><a href="' + esc(e.href) + '">' + esc(cleanTitle(e.title)) + "</a></span>" +
+          '<span class="t"><a href="' + esc(u(e.href)) + '">' + esc(cleanTitle(e.title)) + "</a></span>" +
         "</div>" +
         (e.summary ? '<p class="s">' + esc(e.summary) + "</p>" : "") +
         ((e.links || []).length
-          ? '<div class="l">' + e.links.map(function (l) { return '<a href="' + esc(l.href) + '">' + esc(l.label) + "</a>"; }).join("") + "</div>"
+          ? '<div class="l">' + e.links.map(function (l) { return '<a href="' + esc(u(l.href)) + '">' + esc(l.label) + "</a>"; }).join("") + "</div>"
           : "") +
       "</article>");
     });
@@ -256,10 +264,10 @@
         "<time>" + esc(clock(e.date) || "—") + "</time>" +
         "<div>" +
           '<div class="t"><span class="k ' + esc(e.kind) + '">' + esc(e.kind) + "</span>" +
-            '<a href="' + esc(e.href) + '">' + esc(cleanTitle(e.title)) + "</a></div>" +
+            '<a href="' + esc(u(e.href)) + '">' + esc(cleanTitle(e.title)) + "</a></div>" +
           (e.summary ? '<p class="s">' + esc(e.summary) + "</p>" : "") +
           '<div class="l">' +
-            (e.links || []).map(function (l) { return '<a href="' + esc(l.href) + '">' + esc(l.label) + "</a>"; }).join("") +
+            (e.links || []).map(function (l) { return '<a href="' + esc(u(l.href)) + '">' + esc(l.label) + "</a>"; }).join("") +
             (e.source ? '<span class="src">' + esc(e.source) + "</span>" : "") +
           "</div>" +
         "</div></div>");
@@ -267,30 +275,60 @@
     el.innerHTML = out.join("");
   }
 
-  function renderExperiments() {
+  /* --- Cards: one per long-lived thing an extractor tracks, fields in its order --- */
+  function field(f) {
+    var body;
+    if (f.link) body = '<a href="' + esc(u(f.link.href)) + '">' + esc(f.link.label) + "</a>";
+    else if (f.items) body = f.items.length
+      ? f.items.map(function (x) {
+          return '<span class="f">' + (x.chip ? '<span class="k ' + esc(x.kind || "") + '">' + esc(x.chip) + "</span>" : "") +
+            (x.href ? '<a href="' + esc(u(x.href)) + '">' + esc(x.label) + "</a>" : esc(x.label)) +
+            (x.text ? " " + esc(x.text) : "") + "</span>";
+        }).join("")
+      : '<span class="muted">' + esc(f.empty || "none") + "</span>";
+    else if (f.text) body = esc(f.text);
+    else return "";
+    return "<dt>" + esc(f.label) + "</dt><dd>" + body + "</dd>";
+  }
+
+  function cardText(c) {
+    return [c.title, c.status].concat((c.fields || []).map(function (f) {
+      return [f.text, f.link && f.link.label].concat((f.items || []).map(function (x) { return x.label + " " + (x.text || ""); })).join(" ");
+    })).join(" ");
+  }
+
+  function renderCards() {
     var q = state.q.trim().toLowerCase();
-    var exs = data.experiments.filter(function (x) {
-      return hit(x.title, q) || hit(x.question, q) || hit(x.slug, q) ||
-             hit((x.findings || []).map(function (f) { return f.id + " " + f.title; }).join(" "), q);
-    });
-    var el = document.getElementById("experiments");
-    if (!exs.length) { el.innerHTML = '<p class="empty">' + (data.experiments.length ? "No experiments match." : "No experiments in this record — a lab declares an extractor for its PROBEs in lab.json.") + "</p>"; return; }
-    el.innerHTML = exs.map(function (x) {
-      var st = x.status || "";
-      return '<details class="chr-ex"><summary>' + esc(x.title) +
-        (x.locked ? ' <span class="muted">· ' + esc(day(x.locked)) + "</span>" : "") +
-        (st ? ' <span class="k experiment st">' + esc(st) + "</span>" : "") + "</summary>" +
-        "<dl>" +
-        (x.question ? "<dt>Question</dt><dd>" + esc(x.question) + "</dd>" : "") +
-        (x.kill_rule ? "<dt>Kill rule</dt><dd>" + esc(x.kill_rule) + "</dd>" : "") +
-        "<dt>Pre-registration</dt><dd><a href=\"" + esc(x.href) + '">' + esc(x.slug) + "/PROBE.md</a></dd>" +
-        (x.supersedes ? "<dt>Supersedes</dt><dd>" + esc(x.supersedes) + "</dd>" : "") +
-        (x.superseded_by ? "<dt>Superseded by</dt><dd>" + esc(x.superseded_by) + "</dd>" : "") +
-        "<dt>Findings</dt><dd>" + ((x.findings || []).length
-          ? x.findings.map(function (f) { return '<span class="f"><span class="k finding">' + esc(f.status || "finding") + '</span><a href="' + esc(f.href) + '">' + esc(f.id) + "</a> " + esc(f.title || "") + "</span>"; }).join("")
-          : '<span class="muted">none anchored in this experiment yet</span>') + "</dd>" +
-        "</dl></details>";
+    var el = document.getElementById("cards");
+    var all = (CARDS && CARDS.items) || [];
+    var cs = all.filter(function (c) { return hit(cardText(c), q); });
+    if (!cs.length) { el.innerHTML = '<p class="empty">' + esc(all.length ? "Nothing matches." : (CARDS && CARDS.empty) || "Nothing here yet.") + "</p>"; return; }
+    el.innerHTML = cs.map(function (c) {
+      return '<details class="chr-ex"><summary>' + esc(c.title) +
+        (c.date ? ' <span class="muted">· ' + esc(day(c.date)) + "</span>" : "") +
+        (c.status ? ' <span class="k ' + esc(CARDS.kind) + ' st">' + esc(c.status) + "</span>" : "") + "</summary>" +
+        "<dl>" + (c.fields || []).map(field).join("") + "</dl></details>";
     }).join("");
+  }
+
+  /* An extractor's kinds take their colour from the hue chronicle.json gives them. */
+  function hueVars(hue) {
+    if (hue === "kept") return ["var(--kept-text)", "var(--kept)"];
+    if (hue === "ink" || !hue) return ["var(--ink-2)", "var(--baseline)"];
+    return ["var(--" + hue + ")", "var(--" + hue + ")"];
+  }
+  function kindStyles(kinds) {
+    var css = (kinds || []).filter(function (k) { return !CORE[k.name] && /^[a-z][a-z-]*$/.test(k.name); }).map(function (k) {
+      var v = hueVars(k.hue);
+      return ".k." + k.name + " { color: " + v[0] + "; border-color: " + v[1] + "; }";
+    });
+    if (CARDS && CARDS.kind) {
+      var hue = ((kinds || []).filter(function (k) { return k.name === CARDS.kind; })[0] || {}).hue;
+      css.push(".chr-ex { --card-hue: " + hueVars(hue)[1] + "; }");
+    }
+    var st = document.createElement("style");
+    st.textContent = css.join("\n");
+    document.head.appendChild(st);
   }
 
   function render() {
@@ -300,16 +338,16 @@
     var msg;
     if (state.view === "story") msg = storyN + " story event" + (storyN === 1 ? "" : "s") + " · " + (allN - storyN) + " more untagged in Timeline";
     else if (state.view === "timeline") msg = allN + " event" + (allN === 1 ? "" : "s") + " (every dated heading)";
-    else msg = data.experiments.length + " experiment" + (data.experiments.length === 1 ? "" : "s");
+    else msg = ((CARDS && CARDS.items.length) || 0) + " · " + ((CARDS && CARDS.label) || "cards").toLowerCase();
     meta.textContent = msg;
     document.getElementById("now").hidden = state.view !== "story";
     document.getElementById("story").hidden = state.view !== "story";
     document.getElementById("timeline").hidden = state.view !== "timeline";
-    document.getElementById("experiments").hidden = state.view !== "experiments";
-    document.getElementById("filters").hidden = state.view === "experiments";
+    document.getElementById("cards").hidden = state.view !== "cards";
+    document.getElementById("filters").hidden = state.view === "cards";
     if (state.view === "story") renderStory();
     else if (state.view === "timeline") renderTimeline();
-    else renderExperiments();
+    else renderCards();
   }
 
   function initFilters() {
@@ -336,17 +374,26 @@
       var b = e.target.closest("[data-tab]");
       if (!b) return;
       state.view = b.dataset.tab;
-      history.replaceState(null, "", "?view=" + state.view + (state.q ? "&q=" + encodeURIComponent(state.q) : ""));
+      var view = state.view === "cards" && CARDS ? CARDS.view : state.view;
+      history.replaceState(null, "", "?view=" + view + (state.q ? "&q=" + encodeURIComponent(state.q) : ""));
       render();
     });
     Promise.all([
-      fetch("/content/chronicle.json", { credentials: "same-origin", cache: "no-store" })
+      fetch(u("/content/chronicle.json"), { credentials: "same-origin", cache: "no-store" })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }),
-      fetch("/content/catalog.json", { credentials: "same-origin", cache: "no-store" })
+      fetch(u("/content/catalog.json"), { credentials: "same-origin", cache: "no-store" })
         .then(function (r) { return r.ok ? r.json() : null; })
         .catch(function () { return null; }),
     ]).then(function (pair) {
       data = pair[0];
+      data.kinds = data.kinds || [];
+      ALL_KINDS = data.kinds.filter(function (k) { return k.name !== "entry"; }).map(function (k) { return k.name; }).concat(["entry"]);
+      data.kinds.forEach(function (k) { if (k.story) STORY_KINDS[k.name] = 1; });
+      CARDS = data.cards && data.cards.items ? data.cards : null;
+      var tab = document.getElementById("cards-tab");
+      if (CARDS) { tab.hidden = false; tab.textContent = CARDS.label; }
+      if (state.view === "cards" && !CARDS) state.view = "story";
+      kindStyles(data.kinds);
       initFilters();
       renderNow(pair[1]);
       render();
@@ -355,8 +402,10 @@
     });
     var params = new URLSearchParams(location.search);
     if (params.get("q")) { input.value = params.get("q"); state.q = input.value; }
-    if (params.get("view") && document.querySelector('[data-tab="' + params.get("view") + '"]')) {
-      state.view = params.get("view");
+    /* ?view=story|timeline, or the name the extractor gives its cards (e.g. ?view=releases) */
+    var v = params.get("view");
+    if (v) {
+      state.view = (v === "story" || v === "timeline") ? v : "cards";
       document.querySelector('[data-hbtabs]').dataset.active = state.view;
     }
   });

@@ -33,7 +33,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from . import __version__, annotations
-from . import chronicle, config, ladder
+from . import chronicle, config
 from .book_nav import _books, _href_of, _title, groups
 from .paths import Repo, home_page, home_shell_page, load_repo
 
@@ -239,7 +239,7 @@ def make_handler(repo: Repo):
                         return
                     self._send(200, page_file.read_bytes(), "text/html; charset=utf-8", body)
                     return
-                if home and home != "dashboard":
+                if home:
                     # a content page is the front door — redirect to its canonical URL so its
                     # own relative links and the backlinks index (keyed on canonical hrefs) hold
                     page = home_page(repo)
@@ -250,10 +250,6 @@ def make_handler(repo: Repo):
                     self.send_header("Location", _href_of(repo, page))
                     self.send_header("Content-Length", "0")
                     self.end_headers()
-                    return
-                dash = repo.shell / "dashboard.html"
-                if home == "dashboard" and ladder.enabled(repo) and dash.is_file():
-                    self._send(200, dash.read_bytes(), "text/html; charset=utf-8", body)
                     return
                 self._send(200, _landing(repo), "text/html; charset=utf-8", body)
                 return

@@ -2,13 +2,13 @@
 
 **When.** Many things with the same fields: results per benchmark, works in a cluster, milestones with dates. If there are two rows, it is a comparison; if the fields differ per row, it is a list.
 
-**The move.** Put the field the reader sorts by in the first column and keep it short — a slug, an id, a date. Chips for anything categorical (`v-*` verdicts, `ev-*` evidence, `st-*` status) so the eye can count without reading. Numbers right-justified in their own column with the unit in the header, not in every cell. In a lab, a number's finding id sits beside it as an ownership stamp: `<span class="own">F-28</span>`.
+**The move.** Put the field the reader sorts by in the first column and keep it short — a slug, an id, a date. Chips for anything categorical (`v-*` verdicts, `ev-*` evidence, `st-*` status) so the eye can count without reading. Numbers right-justified in their own column with the unit in the header, not in every cell. Where a number has an id in the repo's record, the id sits beside it as an ownership stamp: `<span class="own">R-28</span>`.
 
 ```html
 <table>
 <tr><th>Design</th><th>EBMC</th><th>sby</th><th>Lemmas</th><th>Verdict</th></tr>
 <tr><td class="mono">gulwani_cegar1_5</td><td>timeout</td><td>proved</td><td style="text-align:right">2</td>
-    <td><span class="v v-kept">CLOSED</span> <span class="own">F-31</span></td></tr>
+    <td><span class="v v-kept">CLOSED</span> <span class="own">R-31</span></td></tr>
 <tr><td class="mono">fifo_vis</td><td>proved</td><td>proved</td><td style="text-align:right">0</td>
     <td><span class="v v-unt">FLOOR</span></td></tr>
 </table>

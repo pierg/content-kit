@@ -13,7 +13,7 @@
 
 ## Alt text and captions
 
-`alt` says what the picture shows for a reader who cannot see it — the finding, not "a bar chart". The caption says what to look *for*. In a lab, a figure that carries a number carries the finding id in the caption: `<span class="own">F-29</span>`.
+`alt` says what the picture shows for a reader who cannot see it — the result, not "a bar chart". The caption says what to look *for*. A figure that carries a number carries its source in the caption: `<span class="own">R-29</span>`.
 
 ## Sizing
 

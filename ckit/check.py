@@ -2,7 +2,8 @@
 
   1. the repo declares the engine version it was checked against, and it is this one
   2. the vendored shell is present
-  3. `home`, if set, is either `"dashboard"` or an existing page under the content directory
+  3. every extension point kit.json declares holds (config.problems), and `home`, if set, is an
+     existing page under the content directory or a declared shell page
   4. the committed indices equal discovery — a stale catalog / search index / backlinks / nav
      fails, it is not silently rewritten (`ckit lint` or `ckit nav` regenerates; commit the result)
   5. lint — form, genre, annotations
@@ -50,7 +51,7 @@ def run(repo: Repo) -> int:
         return 1
 
     home = repo.cfg.get("home")
-    if home and home != "dashboard" and home_page(repo) is None and home_shell_page(repo) is None:
+    if home and home_page(repo) is None and home_shell_page(repo) is None:
         print(
             f'kit.json "home" ({home!r}) does not resolve to a page under {repo.rel(repo.content)} — '
             'point it at an existing file, a directory with an index.html, or a declared shell page.',

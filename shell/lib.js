@@ -434,7 +434,6 @@
     }).join("");
     var bits = [
       '<div class="hb-side-section">' +
-        (catalog.dashboard ? '<a class="hb-side-lib" href="' + hbUrl("/shell/dashboard.html") + '" title="The record as a status board">Dashboard</a> ' : '') +
         extra +
         '<a class="hb-side-lib" href="' + hbUrl("/") + '">Library</a> ' +
         '<a class="hb-side-search" href="' + hbUrl("/shell/search.html") + '" title="Search all content">Search</a>' +

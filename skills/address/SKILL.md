@@ -37,5 +37,5 @@ A human read a page in the browser, selected passages, and left comments. They w
 - **Never delete a thread, never hand-edit a sidecar.** State moves through `ckit annotations`; a withdrawn thread is the human's move, not yours.
 - **Reply as yourself.** `--author "agent:<model or session name>"`, so the record shows who acted.
 - **A page-level thread (no quote) is about the page as a whole** — its shape, its genre, its status. Answer it at that level.
-- **When a thread asks for a number, the number cites a finding** — or the answer is that no finding licenses it yet, and the thread stays open with that reply.
+- **When a thread asks for a number, the number cites its source** — in a repo whose layer keeps a record, the row that licenses it — or the answer is that nothing licenses it yet, and the thread stays open with that reply.
 - **One commit per page** unless the threads cross pages. The reader annotated pages; give them page-sized changes to review.
