@@ -719,6 +719,19 @@ def main(argv: list[str]) -> int:
         planted += 2
         shutil.rmtree(ytmp, ignore_errors=True)
 
+        # --- the theme is imported first in the cascade, so a base rule a theme extends with a
+        #     modifier class must not set a colour — or it silently undoes the theme's .lane-x,
+        #     .hb-kind-x, … (this is how lab-kit's story badge and a theme's lanes keep their colour)
+        css = (KIT_SRC / "shell" / "lib.css").read_text(encoding="utf-8")
+        for base in (".hb .lane", ".hb .v", ".hb .ev", ".hb .st", ".hb .hb-kind"):
+            m = re.search(r"^" + re.escape(base) + r" \{([^}]*)\}", css, re.M)
+            if not m:
+                failures.append(f"lib.css has no base rule {base!r} to guard")
+            elif re.search(r"(?<![\w-])(?:color|border-color|border)\s*:", m.group(1)):
+                failures.append(f"lib.css {base} sets a colour (or the border shorthand, which resets it): "
+                                "a theme's modifier class would lose to it")
+            planted += 1
+
         # --- the version pin is load-bearing
         cfg = json.loads((repo.root / "kit.json").read_text())
         cfg["ckit"] = "0.0.0"

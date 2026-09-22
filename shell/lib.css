@@ -10,7 +10,10 @@
    ========================================================================== */
 
 /* The repo's own names for these hues and its own widget classes (kit.json "theme"),
-   served beside this file as /shell/theme.css — an empty stylesheet when none is declared. */
+   served beside this file as /shell/theme.css — an empty stylesheet when none is declared.
+   An import comes first in the cascade, so every base rule below that a theme may extend
+   with a modifier class (.lane, .v, .ev, .st, .hb-kind) sets a border's width and style but
+   never its colour: a theme's .lane-x or .hb-kind-x must not be undone by the base rule. */
 @import url("theme.css");
 
 html:has(body.hb) { margin: 0; }
@@ -102,7 +105,7 @@ html:has(body.hb) { margin: 0; }
 .hb .idx td, .hb .idx th { padding: 3px 10px 3px 0; }
 .hb .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 760px) { .hb .cols { grid-template-columns: 1fr; } }
-.hb .lane { border: 1.5px solid; border-radius: 10px; padding: 10px 14px; background: var(--page); }
+.hb .lane { border-width: 1.5px; border-style: solid; border-radius: 10px; padding: 10px 14px; background: var(--page); }
 .hb .lane h4 { margin: 2px 0 6px; }
 .hb .lane-teal { border-color: var(--teal); }
 .hb .lane-indigo { border-color: var(--indigo); }
@@ -141,7 +144,7 @@ html:has(body.hb) { margin: 0; }
 
 /* ------------------------------------------------------------ verdict chips */
 .hb .v { display: inline-block; font-size: 11.5px; font-weight: 700; border-radius: 5px;
-         padding: 1px 7px; border: 1.5px solid; background: var(--surface-1); white-space: nowrap; }
+         padding: 1px 7px; border-width: 1.5px; border-style: solid; background: var(--surface-1); white-space: nowrap; }
 .hb .v-kept { color: var(--kept-text); border-color: var(--kept); }
 .hb .v-disc { color: var(--ink-1); border-color: var(--discarded); }
 .hb .v-rej  { color: var(--rejected); border-color: var(--rejected); }
@@ -150,7 +153,7 @@ html:has(body.hb) { margin: 0; }
 
 /* ----------------------------------------------------------- evidence chips */
 .hb .ev { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px;
-          padding: 1px 9px; border: 1.5px solid; white-space: nowrap; }
+          padding: 1px 9px; border-width: 1.5px; border-style: solid; white-space: nowrap; }
 .hb .ev-m { color: var(--kept-text); border-color: var(--kept); }      /* MEASURED — ran live   */
 .hb .ev-b { color: var(--azure); border-color: var(--azure); }             /* BUILT — landed        */
 .hb .ev-d { color: var(--ink-1); border-color: var(--discarded); }     /* DESIGNED — not run    */
@@ -163,7 +166,7 @@ html:has(body.hb) { margin: 0; }
 
 /* --------------------------------------------------------- census status */
 .hb .st { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px;
-          padding: 1px 9px; border: 1.5px solid; white-space: nowrap; }
+          padding: 1px 9px; border-width: 1.5px; border-style: solid; white-space: nowrap; }
 .hb .st-done { color: var(--kept-text); border-color: var(--kept); }      /* ADDRESSED → anchor  */
 .hb .st-plan { color: var(--azure); border-color: var(--azure); }             /* PLANNED → chapter   */
 .hb .st-open { color: var(--ink-1); border-color: var(--discarded); }     /* OPEN · standing     */
@@ -242,8 +245,9 @@ html:has(body.hb) { margin: 0; }
 .hb ul[data-backlinks] li { margin: 4px 0; }
 .hb .hb-kind { font: 700 10px ui-monospace, Menlo, monospace; text-transform: uppercase;
                letter-spacing: 0.05em; padding: 1px 6px; border-radius: 3px;
-               border: 1px solid; margin-right: 6px; vertical-align: 1px;
-               color: var(--ink-2); border-color: var(--baseline); }  /* any genre, until styled */
+               border-width: 1px; border-style: solid; margin-right: 6px; vertical-align: 1px; }
+/* any genre until something styles it — at zero specificity, so a theme's kind colour wins */
+:where(.hb) :where(.hb-kind) { color: var(--ink-2); border-color: var(--baseline); }
 .hb .hb-kind-book    { color: var(--teal);  border-color: var(--teal); }
 .hb .hb-kind-entry   { color: var(--azure);    border-color: var(--azure); }
 .hb .hb-kind-concept { color: var(--violet);  border-color: var(--violet); }
