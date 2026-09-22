@@ -91,4 +91,3 @@
                  padding: 2px 6px; border: 1.5px solid var(--grid); color: var(--ink-3); }
 .hb .cbar span.on { border-color: var(--kept); color: var(--kept-text); }
 .hb .cbar span.ho { border-style: dashed; }
-
