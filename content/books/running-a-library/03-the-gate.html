@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The gate — Running a library</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+/* long paths and keys wrap on a narrow screen instead of widening the page */
+td.mono, td code { overflow-wrap: anywhere; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="gate, ckit check, lint, indices, fixtures, annotations">
+</head>
+<body class="hb">
+<main>
+
+<h1>The gate</h1>
+<p class="sub"><b>Status: LIVE</b> — you leave knowing what <code>ckit check</code> runs, in what order, what each failure looks like, and why it never fixes anything for you.</p>
+
+<h2 id="s1">§1 · Six stages, in order</h2>
+
+<p>The <a class="defn-link" href="/content/concepts/gate/">gate</a> is <code>ckit check</code>. <code>make check</code> runs it after one more step, <code>make kit-verify</code>, which you met with the pin. Here is what it does, in the order it does it:</p>
+
+<table>
+<tr><th>Stage</th><th>Holds when</th><th>Fails like</th></tr>
+<tr><td>1 · pin</td><td><code>kit.json</code> declares the engine version that is running</td><td class="mono">engine mismatch: kit.json declares ckit 0.3.2, this engine is 0.4.0.</td></tr>
+<tr><td>2 · shell</td><td>the shell's <code>lib.css</code> is where <code>kit.json</code> says the shell is</td><td class="mono">no vendored shell at kit/shell — run `ckit init` here</td></tr>
+<tr><td>3 · declarations</td><td>every extension <code>kit.json</code> declares holds, and <code>home</code>, if set, names a page that exists</td><td class="mono">kit.json theme: 'assets/theme.css' does not exist</td></tr>
+<tr><td>4 · indices</td><td>every generated file equals what the content would generate now</td><td class="mono">indices out of date — run `ckit nav` (or `ckit lint`) and commit the result</td></tr>
+<tr><td>5 · lint</td><td>every page passes its form and its genre's checks, and every annotation sidecar validates</td><td class="mono">note has &lt;h2&gt; sections — a note is one claim; promote it</td></tr>
+<tr><td>6 · books</td><td>every book passes the node verifier</td><td class="mono">book verify failed: content/books/…</td></tr>
+</table>
+
+<p>The first stage that fails stops the run, prints what is wrong and exits 1. Nothing is rewritten, nothing needs the network, and the same command gives the same answer in CI. When every stage holds you see:</p>
+
+<pre><code>$ ckit check
+content lint clean — 2 file(s)
+content check ok</code></pre>
+
+<p>The book verifier, stage 6, reads each book's pages with node: it checks that structural tags are balanced, runs every inline script against a stub of the page, and follows every relative link and <code>#anchor</code> between the book's pages. The gate refuses to skip it: if the library has a <code>content/books/</code> directory and node is not installed, the gate fails and says so.</p>
+
+<details class="check">
+<summary>Check-yourself: you fix the one problem the gate reported, run it again, and it reports a different one. Did your fix break something?</summary>
+<div class="ans">Probably not. The gate stops at the first failing stage, so the later stages never ran. Fixing stale indices, for example, lets the lint run for the first time, and it reports what it finds.</div>
+</details>
+
+<h2 id="s2">§2 · Stale indices</h2>
+
+<p>Some files under <code>content/</code> are generated from the pages: <code>catalog.json</code> (the sidebar and landing page), <code>search-index.json</code>, <code>backlinks.json</code> (who links to whom), a <code>nav.json</code> for each book, <code>chronicle.json</code> when the library declares a record, and whatever a generator the library registers writes. They are committed, because the served site reads them as they are.</p>
+
+<p>Two commands treat them differently, on purpose. <code>ckit lint</code> regenerates them. <code>ckit check</code> only compares:</p>
+
+<pre><code>$ ckit check
+indices out of date — run `ckit nav` (or `ckit lint`) and commit the result:
+  content/catalog.json
+  content/search-index.json
+  content/backlinks.json</code></pre>
+
+<p>If the gate rewrote them instead, a commit that forgot to regenerate would pass, and the committed files would still be wrong for everyone who checked the repository out. Failing puts the fix in the commit that caused the problem. The habit is short: after writing, run <code>ckit lint</code>, then commit the pages together with every file it reports it refreshed.</p>
+
+<details class="check">
+<summary>Check-yourself: you change the <code>&lt;title&gt;</code> of a chapter. Which generated files go stale?</summary>
+<div class="ans">At least the book's <code>nav.json</code> (it lists chapter titles) and <code>search-index.json</code>; <code>backlinks.json</code> too if the chapter links to other pages, since it records the citing page's title. You do not need to work it out: run <code>ckit lint</code> and commit what it wrote.</div>
+</details>
+
+<h2 id="s3">§3 · What the lint reads</h2>
+
+<p>The lint reads each page's source and applies two sets of rules. The <b>form</b> rules are the same for every page:</p>
+
+<ul>
+<li>No raw hex colour anywhere in the page. Colours come from the shell's tokens.</li>
+<li>No <code>var&#40;--name)</code> that neither the shell, the library's theme, nor the page itself declares. An undeclared token renders as nothing, silently.</li>
+<li>Every class that looks like shell vocabulary (starting <code>sw-</code>, <code>lane-</code>, <code>v-</code>, <code>ev-</code>, <code>st-</code>, <code>hb-</code>) is one the shell or the library defines.</li>
+<li>The page loads <code>/shell/lib.css</code>.</li>
+<li>The page lives under a genre. A page anywhere else under <code>content/</code> is an error.</li>
+</ul>
+
+<pre><code>content/notes/swifts-follow-weather.html: unknown shell class 'sw-sky'
+content/notes/swifts-follow-weather.html:14: unknown token var&#40;--sky) — not a shell token; name it in the repo's theme (kit.json "theme") or declare it on the page</code></pre>
+
+<p>The <b>genre</b> rules are the ones a page's genre switches on:</p>
+
+<table>
+<tr><th>Check</th><th>Catches</th><th>Core genres using it</th></tr>
+<tr><td class="mono">status</td><td>a first <code>&lt;p class="sub"&gt;</code> without a status word</td><td>all</td></tr>
+<tr><td class="mono">max_words</td><td>a page over its bound</td><td>note 400 · concept 1500 · hub 1500</td></tr>
+<tr><td class="mono">no_h2</td><td>sections in a page that is one claim</td><td>note</td></tr>
+<tr><td class="mono">require_defn</td><td>no <code>blockquote.defn</code> with a <code>.defn-name</code></td><td>concept</td></tr>
+<tr><td class="mono">no_forward_refs</td><td>a link to a later chapter without <code>data-fwd</code></td><td>chapter</td></tr>
+<tr><td class="mono">require_meta_status</td><td>no <code>active</code>, <code>shipped</code> or <code>paused</code> lifecycle meta</td><td>project</td></tr>
+<tr><td class="mono">require_sections</td><td>declared <code>&lt;h2&gt;</code> ids missing or out of order</td><td>none; for genres a library adds</td></tr>
+</table>
+
+<p>One consequence of reading source text: a code sample on a page is read too. A hex colour, an unknown <code>class=&quot;…&quot;</code> or an undeclared <code>var&#40;--…)</code> inside a <code>&lt;pre&gt;</code> fails exactly like one in the page itself. When a page has to show one, escape the character the lint keys on: <code>&amp;#35;</code> for the <code>&#35;</code>, <code>&amp;quot;</code> for the quotes, <code>&amp;#40;</code> for the parenthesis. The reader sees the same text. Structural checks, on the other hand, read only what a reader is served: a section that exists only inside an HTML comment does not count.</p>
+
+<details class="check">
+<summary>Check-yourself: your page uses <code>style="color: var&#40;--sky)"</code> and fails. Name two fixes.</summary>
+<div class="ans">Use one of the shell's hues instead (<code>var(--azure)</code>, say), or declare <code>--sky</code> in the library's theme, or on the page itself if only that page uses it.</div>
+</details>
+
+<h2 id="s4">§4 · The fixture rule</h2>
+
+<p>How do you know a check works? Not by reading it. The engine answers with its own gate, <code>ckit selftest</code>: it builds a scratch library, scaffolds one page of every core genre (each must lint clean), then plants one page designed to break each check, and fails unless every planted problem is reported by name. The engine repository's <code>make check</code> runs that, plus an end-to-end run that installs the kit into a scratch repository and drives every command.</p>
+
+<p>The rule behind it is short: a check ships with a fixture designed to break it, or it is not a check. The engine holds itself to it. When your library adds a check of its own (the last chapter shows how), hold yours to it too: plant a page that should fail, watch it fail by name, then delete the plant. Nothing in the engine can force that on your check. That part is discipline. <a href="/content/notes/the-design-law.html">The design law</a> says why it matters.</p>
+
+<details class="check">
+<summary>Check-yourself: you write a check that no note may contain "TODO". What are its fixtures?</summary>
+<div class="ans">A note with TODO in its prose, which must be reported by name; and a note with TODO only inside an HTML comment, which must pass, because a check should read what a reader is served. Without the first you do not know it fires; without the second you do not know it fires only when it should.</div>
+</details>
+
+<h2 id="s5">§5 · Annotations, anchored</h2>
+
+<p>Readers can leave notes on a rendered page, stored in a sidecar file beside it; the next chapter covers the whole loop. The gate's part is this. Every sidecar must be well-formed: version 1, the page it names is the page beside it, thread ids unique, states valid, a declined thread carrying its reason. And every <b>open</b> thread's quoted passage must still be on its page:</p>
+
+<pre><code>content/notes/swifts-follow-weather.annotations.json: thread t-20260922-7b8ecb has a STALE anchor — 'arrive with the first warm front' is no longer on the page</code></pre>
+
+<p>That message means the page was edited around an unanswered note. Answer the thread in the same change, and the gate is green again. Threads that are no longer open are not checked this way: acting on a note usually changes the words it quoted.</p>
+
+<details class="check">
+<summary>Check-yourself: an addressed thread quotes a sentence you have just deleted. Does the gate fail?</summary>
+<div class="ans">No. Only open threads' quotes are held to the page. The addressed thread's reply records what was done, and its quote is history.</div>
+</details>
+
+<p class="anchors">Sources / related: <a href="/content/books/running-a-library/02-genres-and-voice.html">02 · Genres and voice</a> · <a class="defn-link" href="/content/concepts/gate/">gate</a> · <a class="defn-link" href="/content/concepts/annotation/">annotation</a> · the engine's <code>ckit/check.py</code>, <code>ckit/lint.py</code> and <code>ckit/selftest.py</code>.</p>
+
+</main>
+</body>
+</html>

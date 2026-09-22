@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genres and voice — Running a library</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+/* long paths and keys wrap on a narrow screen instead of widening the page */
+td.mono, td code { overflow-wrap: anywhere; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="genre, voice, ckit new, status, promotion">
+</head>
+<body class="hb">
+<main>
+
+<h1>Genres and voice</h1>
+<p class="sub"><b>Status: LIVE</b> — you leave able to decide what a page is, scaffold it, write it so it reads like the rest of its kind, and say in its first line whether it is still true.</p>
+
+<h2 id="s1">§1 · Decide what the page is</h2>
+
+<p>Before the first sentence, decide what kind of page you are writing, because the answer decides where the file goes, how it is built and how it should read. That kind is the page's <a class="defn-link" href="/content/concepts/genre/">genre</a>. There are nine in the core:</p>
+
+<table>
+<tr><th>Genre</th><th>Write one when you have…</th><th>It lands at</th></tr>
+<tr><td>note</td><td>one claim and its reason, in a few paragraphs</td><td class="mono">content/notes/&lt;slug&gt;.html</td></tr>
+<tr><td>concept</td><td>a term other pages keep needing, pinned down once</td><td class="mono">content/concepts/&lt;slug&gt;/index.html</td></tr>
+<tr><td>entry</td><td>a dense one-page read: a deep dive, a reading of a paper</td><td class="mono">content/entries/&lt;slug&gt;/index.html</td></tr>
+<tr><td>chapter</td><td>one step of a sequence someone reads in order</td><td class="mono">content/books/&lt;book&gt;/NN-name.html</td></tr>
+<tr><td>book</td><td>a sequence of chapters that needs a map</td><td class="mono">content/books/&lt;book&gt;/index.html</td></tr>
+<tr><td>hub</td><td>a cluster of pages someone arriving cold must find their way through</td><td class="mono">content/hubs/&lt;slug&gt;.html</td></tr>
+<tr><td>project</td><td>a piece of work whose state changes, dated</td><td class="mono">content/projects/&lt;slug&gt;/index.html</td></tr>
+<tr><td>paper</td><td>a paper to frame: abstract, submission state, where the source is</td><td class="mono">content/papers/&lt;slug&gt;/index.html</td></tr>
+<tr><td>related</td><td>other people's work on your question, summarised neutrally</td><td class="mono">content/related/&lt;slug&gt;.html</td></tr>
+</table>
+
+<p>Choose by what the page is, not by how long it will be. A page explaining your club's counting method to a new member is an entry if it stands alone, and a chapter if it is one step in a sequence they read in order. Length follows from the choice.</p>
+
+<details class="check">
+<summary>Check-yourself: you want a page listing what other clubs have published on counting methods, and what you make of it. Which genre?</summary>
+<div class="ans">Related: their work in a neutral table, one row per work, and what you make of it in a separate, clearly marked section at the end.</div>
+</details>
+
+<h2 id="s2">§2 · <code>ckit new</code> and the voice card</h2>
+
+<p>Never start a page from a blank file. <code>ckit new &lt;genre&gt; &lt;slug&gt;</code> copies the genre's <a class="defn-link" href="/content/concepts/skeleton/">skeleton</a> to where the genre says it lives, and prints the genre's voice card:</p>
+
+<pre><code>$ ckit new note swifts-follow-weather --title "Swifts follow the weather"
+created content/notes/swifts-follow-weather.html
+note — assertive, unhedged, one claim
+  reader:    knows the domain
+  forbidden: sections, scaffolding, growing past a few paragraphs — promote to an entry
+  checked:   status=True, max_words=400, no_h2=True</code></pre>
+
+<p>The card has four lines, and each tells you something different. The first is the <b>register</b>: how the page sounds. <b>Reader</b> is who you are writing for, and so what you may assume. <b>Forbidden</b> is the moves that make a page stop being this genre. <b>Checked</b> is the part of all that the gate enforces; everything else is on you.</p>
+
+<p>Slugs are lowercase words joined by dashes. A chapter's slug is its book and its numbered name, and the book has to exist first:</p>
+
+<pre><code>$ ckit new chapter field-guide/03-gulls
+no book at content/books/field-guide — `ckit new book field-guide` first</code></pre>
+
+<p><code>ckit genres</code> lists every genre the library knows, including any the library adds itself.</p>
+
+<details class="check">
+<summary>Check-yourself: which line of the voice card will the gate never check for you?</summary>
+<div class="ans">The register and the reader. The gate checks the proxies listed under <i>checked</i> (a word bound, no sections, a status line); whether the page sounds assertive and suits a reader who knows the domain is judged by whoever reads it.</div>
+</details>
+
+<h2 id="s3">§3 · Write in the voice</h2>
+
+<p>Here is one subject, the flyway swifts use to reach the reservoir, written for two genres:</p>
+
+<div class="cols">
+<div class="lane lane-azure"><h4>As a note</h4>
+<p>Watch the flyway, not the calendar. Swifts reach us when the weather all along their route lets them, so a cold week over Spain means a late week here, whatever the date says last year.</p>
+<p class="muted">One claim, stated as true, with its reason in the same breath. No sections, no "in this note".</p></div>
+<div class="lane lane-violet"><h4>As a concept</h4>
+<p><b>FLYWAY</b> — A flyway is the set of routes a population of migratory birds uses between its breeding and wintering grounds, together with the stopover sites along them.</p>
+<p class="muted">Impersonal and timeless. It would be as true in ten years, and it says nothing about this spring.</p></div>
+</div>
+
+<p>Each genre also has moves that break it. A note that hedges ("it may perhaps be that…") or grows headings has stopped being a note. A concept whose definition cites a running count ("the flyway currently carries about 400 swifts a day") will be wrong next week; the count can go below the definition, cited, but never inside it. A hub that explains instead of pointing is an entry in disguise. A chapter that links to a later chapter breaks the promise that the reader needs only what came before; when a look ahead is deliberate, the link carries <code>data-fwd</code> to say so.</p>
+
+<p>Every genre's register, reader and forbidden moves are written out in <code>kit/genres/GENRES.md</code>. Read the entry for your genre before you write, not after.</p>
+
+<details class="check">
+<summary>Check-yourself: a concept's definition says "the reservoir flyway currently carries about 400 swifts a day". What is wrong, and where does the number go?</summary>
+<div class="ans">The definition depends on a running count, so it stops being true when the count changes. Define the term without it; if the count matters, give it below the definition with its source, the line of the log it came from.</div>
+</details>
+
+<h2 id="s4">§4 · Status in the first line</h2>
+
+<p>Every page's first <code>&lt;p class="sub"&gt;</code> says whether the page is still true, in one of six words. The gate checks that the word is there:</p>
+
+<pre><code>content/notes/swifts-follow-weather.html: no status in the opening line — the first &lt;p class="sub"&gt; must say one of LIVE · HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT</code></pre>
+
+<p>Which word is right is your call. These are the conventions:</p>
+
+<table>
+<tr><th>Status</th><th>Tells the reader</th></tr>
+<tr><td>LIVE</td><td>maintained, and true now</td></tr>
+<tr><td>DRAFT</td><td>being written; do not rely on it yet</td></tr>
+<tr><td>PARKED</td><td>paused on purpose; true as of when it stopped, and may resume</td></tr>
+<tr><td>FROZEN</td><td>fixed at a moment on purpose, such as a paper at submission, and not revised</td></tr>
+<tr><td>HISTORICAL</td><td>was true; kept as an account of how things were</td></tr>
+<tr><td>RETIRED</td><td>no longer in use; kept so links still resolve, and pointing at what replaced it</td></tr>
+</table>
+
+<details class="check">
+<summary>Check-yourself: last year's survey method was replaced this spring, but old pages still link to its how-to. What status does the how-to get?</summary>
+<div class="ans">RETIRED, with a link in its first line to the page that replaced it. The old links keep working, and nobody following one mistakes the old method for the current one.</div>
+</details>
+
+<h2 id="s5">§5 · Promotion, and defining once</h2>
+
+<p>Pages change kind as they grow, and the lint tells you when. A note that has sprouted sections says so:</p>
+
+<pre><code>content/notes/swifts-follow-weather.html: note has &lt;h2&gt; sections — a note is one claim; promote it</code></pre>
+
+<p>Promote it: move it to <code>content/entries/&lt;slug&gt;/index.html</code> and rewrite it in an entry's register. The usual path is note, then entry, then chapter, as the scope grows from a claim to an argument to a step in a course. Do not stretch a page to fit a genre it has outgrown.</p>
+
+<p>Terms get the same treatment. The second time a term needs explaining anywhere in the library, it becomes a concept: its own page, with a <code>blockquote.defn</code> that states it once. Every other mention becomes a link to it:</p>
+
+<pre><code>&lt;a class=&quot;defn-link&quot; href=&quot;/content/concepts/flyway/&quot;&gt;flyway&lt;/a&gt;</code></pre>
+
+<p>The shell shows the definition when a reader hovers the link, the way this book's own <a class="defn-link" href="/content/concepts/skeleton/">skeleton</a> link does. That is why a concept's definition has to make sense on its own, with no page around it.</p>
+
+<details class="check">
+<summary>Check-yourself: two notes each spend a paragraph explaining what a stopover site is. What do you do?</summary>
+<div class="ans">Write <code>content/concepts/stopover-site/index.html</code> with one definition of record, then replace both paragraphs with a <code>defn-link</code> to it. The explanation now lives in one place, and a correction there reaches every page.</div>
+</details>
+
+<p class="anchors">Sources / related: <a href="/content/books/running-a-library/01-install.html">01 · Install a library</a> · <a class="defn-link" href="/content/concepts/genre/">genre</a> · <a class="defn-link" href="/content/concepts/skeleton/">skeleton</a> · <a href="/content/notes/twins-drift.html">Twins drift</a> · the kit's <code>genres/GENRES.md</code>.</p>
+
+</main>
+</body>
+</html>

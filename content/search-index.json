@@ -1,5 +1,139 @@
 [
   {
+    "title": "Install a library — Running a library",
+    "sub": "Status: LIVE — you leave with the engine on your machine, a repository with the kit in it, a gate that passes, and its pages open in your browser.",
+    "defn": "PIN — definition of record A library's pin is two records of what it was checked against: the engine version in kit.json (the \"ckit\" key), which ckit check compares with the engine running it, and a hash of the vendored kit/ in kit/PIN, which make kit-verify recomputes. Either mismatch fails; neither changes except on purpose.",
+    "headings": [
+      "§1 · The engine",
+      "§2 · ckit init",
+      "§3 · The repository layout",
+      "§4 · make check, make docs, make site"
+    ],
+    "tags": [
+      "install",
+      "uv",
+      "ckit init",
+      "layout",
+      "make"
+    ],
+    "kind": "book",
+    "href": "/content/books/running-a-library/01-install.html"
+  },
+  {
+    "title": "Genres and voice — Running a library",
+    "sub": "Status: LIVE — you leave able to decide what a page is, scaffold it, write it so it reads like the rest of its kind, and say in its first line whether it is still true.",
+    "defn": "",
+    "headings": [
+      "§1 · Decide what the page is",
+      "§2 · ckit new and the voice card",
+      "§3 · Write in the voice",
+      "§4 · Status in the first line",
+      "§5 · Promotion, and defining once"
+    ],
+    "tags": [
+      "genre",
+      "voice",
+      "ckit new",
+      "status",
+      "promotion"
+    ],
+    "kind": "book",
+    "href": "/content/books/running-a-library/02-genres-and-voice.html"
+  },
+  {
+    "title": "The gate — Running a library",
+    "sub": "Status: LIVE — you leave knowing what ckit check runs, in what order, what each failure looks like, and why it never fixes anything for you.",
+    "defn": "",
+    "headings": [
+      "§1 · Six stages, in order",
+      "§2 · Stale indices",
+      "§3 · What the lint reads",
+      "§4 · The fixture rule",
+      "§5 · Annotations, anchored"
+    ],
+    "tags": [
+      "gate",
+      "ckit check",
+      "lint",
+      "indices",
+      "fixtures",
+      "annotations"
+    ],
+    "kind": "book",
+    "href": "/content/books/running-a-library/03-the-gate.html"
+  },
+  {
+    "title": "The review loop — Running a library",
+    "sub": "Status: LIVE — you leave able to leave notes on a rendered page, find them from any agent session later, and close each one with a reply the reader can check.",
+    "defn": "",
+    "headings": [
+      "§1 · Annotate in the browser",
+      "§2 · The sidecar",
+      "§3 · ckit annotations",
+      "§4 · /address",
+      "§5 · What the gate holds you to"
+    ],
+    "tags": [
+      "review",
+      "annotations",
+      "sidecar",
+      "address",
+      "ckit annotations"
+    ],
+    "kind": "book",
+    "href": "/content/books/running-a-library/04-the-review-loop.html"
+  },
+  {
+    "title": "Extending the kit — Running a library",
+    "sub": "Status: LIVE — you leave able to add a genre, a check, a generated file, a chronicle extractor or a shell page through kit.json; to read how a layer installs itself; to move a 0.3 library across; and to publish a library under a path.",
+    "defn": "",
+    "headings": [
+      "§1 · Ten keys",
+      "§2 · Genres",
+      "§3 · Checks",
+      "§4 · Generators",
+      "§5 · Chronicle extractors",
+      "§6 · Shell pages, links, refs, theme, classes, indices",
+      "§7 · How a layer installs itself",
+      "§8 · Moving a 0.3 library across"
+    ],
+    "tags": [
+      "extension points",
+      "kit.json",
+      "genres",
+      "checks",
+      "generators",
+      "chronicle",
+      "theme",
+      "layers",
+      "migration",
+      "export"
+    ],
+    "kind": "book",
+    "href": "/content/books/running-a-library/05-extending.html"
+  },
+  {
+    "title": "Running a library",
+    "sub": "Status: LIVE — five chapters that take a repository from nothing to a gated, reviewable library of pages, for whoever sets one up and keeps it in order, human or agent.",
+    "defn": "",
+    "headings": [
+      "The chapters",
+      "How to read it",
+      "What you need",
+      "Cited by"
+    ],
+    "tags": [
+      "guide",
+      "install",
+      "genres",
+      "gate",
+      "review",
+      "extending"
+    ],
+    "kind": "book",
+    "href": "/content/books/running-a-library/"
+  },
+  {
     "title": "Annotation",
     "sub": "Status: LIVE — definition of record. A reader's note on a rendered page, kept in a file beside it, so that review needs no session to be open on either side.",
     "defn": "ANNOTATION — definition of record An annotation is a thread a reader attaches to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup, and it moves through four states: open, addressed, declined and withdrawn. Nothing needs",

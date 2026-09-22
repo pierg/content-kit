@@ -50,7 +50,13 @@
     }
   ],
   "papers": [],
-  "books": [],
+  "books": [
+    {
+      "slug": "running-a-library",
+      "title": "Running a library",
+      "href": "/content/books/running-a-library/"
+    }
+  ],
   "projects": [],
   "hubs": [
     {

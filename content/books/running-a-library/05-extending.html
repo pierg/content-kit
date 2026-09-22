@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extending the kit — Running a library</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+/* long paths and keys wrap on a narrow screen instead of widening the page */
+td.mono, td code { overflow-wrap: anywhere; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="extension points, kit.json, genres, checks, generators, chronicle, theme, layers, migration, export">
+</head>
+<body class="hb">
+<main>
+
+<h1>Extending the kit</h1>
+<p class="sub"><b>Status: LIVE</b> — you leave able to add a genre, a check, a generated file, a chronicle extractor or a shell page through <code>kit.json</code>; to read how a layer installs itself; to move a 0.3 library across; and to publish a library under a path.</p>
+
+<h2 id="s1">§1 · Ten keys</h2>
+
+<p>Everything a library adds to the engine, it declares in <code>kit.json</code>, under one of ten keys. Each key is an <a class="defn-link" href="/content/concepts/extension-point/">extension point</a>: the engine reads it on every run, and the gate checks every declaration before anything uses it.</p>
+
+<table>
+<tr><th>Key</th><th>Declares</th><th>So that</th></tr>
+<tr><td class="mono">genres</td><td>new genres, or overrides of core ones</td><td>a new kind of page is scaffolded, checked, catalogued and searchable</td></tr>
+<tr><td class="mono">checks</td><td>Python modules exposing <code>CHECKS</code> and <code>REPO_CHECKS</code></td><td>a genre can name a check the core lacks</td></tr>
+<tr><td class="mono">generators</td><td>Python modules exposing <code>generate(repo)</code></td><td>a file is generated and drift-checked like the indices</td></tr>
+<tr><td class="mono">chronicle.extractors</td><td>Python modules exposing <code>extract(root, cfg)</code></td><td>the chronicle reads a record format the core does not know</td></tr>
+<tr><td class="mono">shell_pages</td><td><code>{"name.html": "path"}</code></td><td>a page of your own is served in the shell, at <code>/shell/name.html</code></td></tr>
+<tr><td class="mono">links</td><td><code>[{"label", "href", "title"}]</code></td><td>links appear in the sidebar and on the landing page</td></tr>
+<tr><td class="mono">refs</td><td><code>[{"pattern", "href"}]</code></td><td>ids in page text become links</td></tr>
+<tr><td class="mono">theme</td><td>a stylesheet, or a list of them</td><td>the library names the shell's hues in its own vocabulary</td></tr>
+<tr><td class="mono">classes</td><td>extra class names</td><td>the lint accepts the classes the theme adds</td></tr>
+<tr><td class="mono">indices</td><td>extra JSON search indices under <code>content/</code></td><td>the search page merges them in</td></tr>
+</table>
+
+<p>Before adding one, ask where it belongs. If every library could use it, it is a mechanism and belongs in the engine; if it only makes sense for your kind of library, it belongs here, in your <code>kit.json</code>, or in a layer. That is <a href="/content/notes/the-placement-rule.html">the placement rule</a>.</p>
+
+<details class="check">
+<summary>Check-yourself: you misspell a theme's path in <code>kit.json</code>. When do you find out?</summary>
+<div class="ans">At the next <code>ckit check</code>, at stage three: <code>kit.json theme: '…' does not exist</code>. A declaration the engine silently ignored would be worse than none.</div>
+</details>
+
+<h2 id="s2">§2 · Genres</h2>
+
+<p>A genre is an object with the same fields the core genres have. The bird-watching library adds one page per sighting:</p>
+
+<pre><code>"genres": {
+  "sighting": { "dir": "sightings", "layout": "flat", "skeleton": "note.html",
+                "register": "dated, one bird, one place", "reader": "another watcher checking a record",
+                "forbidden": "undated sightings", "after": "hub", "label": "Sightings",
+                "checks": { "status": true, "max_words": 300 } },
+  "concept":  { "checks": { "max_words": 2000 } }
+}</code></pre>
+
+<p>The first entry adds a genre. <code>layout</code> is one of <code>flat</code> (<code>&lt;dir&gt;/&lt;slug&gt;.html</code>), <code>folder</code> (<code>&lt;dir&gt;/&lt;slug&gt;/index.html</code>, with any pages beside it sharing the genre), <code>book-index</code> or <code>book-page</code>. The skeleton is looked for among the shell's skeletons first, then from the repository root. <code>after</code> places its group in the sidebar, the landing page and the search filters (here, right after the hubs) and <code>label</code> names that group. The second entry overrides one check on a core genre, in plain sight, in the one file a reader would look.</p>
+
+<p><code>genres</code> can also be a list, merged in order, whose items are objects like this one or paths to JSON files holding one. That is how a layer ships its genres in a file of its own while the library keeps its overrides after it:</p>
+
+<pre><code>"genres": ["kit/birdlayer/genres.json", { "concept": { "checks": { "max_words": 2000 } } }]</code></pre>
+
+<p>A genre whose pages must all have the same sections uses the core check <code>require_sections</code>, a list of <code>&lt;h2&gt;</code> ids that must appear in that order. Extra sections are allowed; a missing or misplaced one is reported by its id.</p>
+
+<details class="check">
+<summary>Check-yourself: after declaring the <code>sighting</code> genre, what does <code>ckit new sighting 2026-05-03-swifts</code> create?</summary>
+<div class="ans"><code>content/sightings/2026-05-03-swifts.html</code>, copied from the note skeleton, with the sighting's voice card printed beside it. After <code>ckit lint</code>, a Sightings group follows the hubs in the sidebar.</div>
+</details>
+
+<h2 id="s3">§3 · Checks</h2>
+
+<p>A check the core does not have lives in a Python module you register under <code>checks</code>. The module exposes one or both of two tables:</p>
+
+<pre><code># ext/checks_birding.py
+import re
+
+PLACE = re.compile(r'&lt;meta name="place" content="[^"]+"')
+
+def require_place(ctx):
+    """Page check: a sighting names where it happened."""
+    return [] if PLACE.search(ctx.served) else [f"{ctx.rel}: a sighting needs &lt;meta name=\"place\" content=\"…\"&gt;"]
+
+def no_empty_sightings(repo):
+    """Repository check: run once per lint."""
+    d = repo.content / "sightings"
+    return [] if not d.is_dir() or any(d.glob("*.html")) else ["content/sightings/: declared but empty"]
+
+CHECKS = {"require_place": require_place}
+REPO_CHECKS = {"no_empty_sightings": no_empty_sightings}</code></pre>
+
+<pre><code>"checks": ["ext/checks_birding.py"],
+"genres": { "sighting": { "checks": { "require_place": true } } }</code></pre>
+
+<p>A <b>page check</b> runs wherever a genre names it, exactly like a core check, and receives a context: <code>ctx.page</code> (the file), <code>ctx.rel</code> (its path, for messages), <code>ctx.text</code> (the raw source), <code>ctx.served</code> (what a reader is served: comments, scripts and styles removed), <code>ctx.genre</code>, <code>ctx.arg</code> (the value the genre gave the check) and <code>ctx.repo</code> and <code>ctx.cfg</code>. A <b>repository check</b> gets the repository and runs once per lint. Both return a list of problems, each a string beginning with the path it is about; an empty list means clean.</p>
+
+<p>If a genre names a check that neither the core nor any registered module provides, the lint refuses to run:</p>
+
+<pre><code>genre 'sighting' names check 'require_place', which is not a core check and no module in kit.json `checks` provides — register the module that implements it, or drop the check from the genre</code></pre>
+
+<p>And hold the check to the fixture rule from the gate chapter: before you trust it, plant a page that breaks it and watch it fail by name.</p>
+
+<details class="check">
+<summary>Check-yourself: why does <code>require_place</code> search <code>ctx.served</code> rather than <code>ctx.text</code>?</summary>
+<div class="ans">So a place written only inside an HTML comment does not count. A check should pass on what the reader actually gets, not on markup that never renders.</div>
+</details>
+
+<h2 id="s4">§4 · Generators</h2>
+
+<p>A generator writes a file the library commits and the gate keeps current. It is a module with one function, registered under <code>generators</code>:</p>
+
+<pre><code># ext/gen_count.py
+def generate(repo):
+    pages = sorted((repo.content / "sightings").glob("*.html"))
+    return {"content/sightings.json": {"count": len(pages), "pages": [p.stem for p in pages]}}</code></pre>
+
+<p>It returns a map from repository-relative path to data: a string is written as it is, anything else as indented JSON. <code>ckit lint</code> writes the files alongside the core indices, and <code>ckit check</code> fails when one is stale, exactly as for the catalog. A generator may not write outside the repository, may not claim a file the engine generates itself, and may not claim a file another generator already writes.</p>
+
+<details class="check">
+<summary>Check-yourself: you add a sighting page but forget to run <code>ckit lint</code>. What does the gate say about <code>content/sightings.json</code>?</summary>
+<div class="ans">That it is out of date, in the same list as the catalog and the search index. Run <code>ckit lint</code> and commit it with the page.</div>
+</details>
+
+<h2 id="s5">§5 · Chronicle extractors</h2>
+
+<p>The <a class="defn-link" href="/content/concepts/chronicle/">chronicle</a> reads dated headings from the <a class="defn-link" href="/content/concepts/record/">record</a> on its own. When a library keeps history in a shape the core does not know, an extractor turns it into events:</p>
+
+<pre><code># ext/sightings_x.py
+KINDS = [{"name": "sighting", "hue": "teal", "story": False}]
+CARDS = {"view": "species", "label": "Species", "kind": "sighting", "empty": "No sightings yet."}
+
+def extract(root, cfg):
+    events, cards = [], []
+    for p in sorted((root / "content" / "sightings").glob("*.html")):
+        date, title = p.stem[:10], p.stem[11:].replace("-", " ")
+        href = f"/content/sightings/{p.name}"
+        events.append({"date": date, "kind": "sighting", "title": title, "href": href})
+        cards.append({"title": title, "href": href, "date": date,
+                      "fields": [{"label": "First seen", "text": date}]})
+    return {"events": events, "cards": cards}</code></pre>
+
+<pre><code>"record": ["log/2026.md"],
+"chronicle": { "sources": ["log/"], "extractors": ["ext/sightings_x.py"] }</code></pre>
+
+<p><code>extract</code> returns events and, optionally, cards. Every event needs a <code>date</code>, a <code>kind</code>, a <code>title</code> and an <code>href</code>, and its kind must be declared, either as a core tag or in some extractor's <code>KINDS</code>; each kind names a shell hue and whether the Story view shows it. <code>CARDS</code> names a third view of the chronicle page, one card per long-lived thing the history tracks (here, one per species first seen); only one extractor may supply cards. An event of an undeclared kind fails the lint by name.</p>
+
+<details class="check">
+<summary>Check-yourself: with <code>"story": False</code>, where does a sighting appear on the chronicle page?</summary>
+<div class="ans">In the Timeline view, which shows every event, and as a card in the Species view. Not in Story, which shows only the kinds marked for it.</div>
+</details>
+
+<h2 id="s6">§6 · Shell pages, links, refs, theme, classes, indices</h2>
+
+<p>The remaining six keys change what the reader sees.</p>
+
+<pre><code>"shell_pages": { "board.html": "ext/board.html" },
+"links":       [ { "label": "Board", "href": "/shell/board.html", "title": "This season at a glance" } ],
+"refs":        [ { "pattern": "S-\\d+", "href": "/shell/record.html?p=log/2026.md#{id}" } ],
+"theme":       "assets/theme.css",
+"classes":     ["sw-marsh", "sw-moor"],
+"indices":     ["content/club-index.json"]</code></pre>
+
+<ul>
+<li><b>shell_pages</b> serve a file of your own at <code>/shell/&lt;name&gt;</code>, beside the search page and the chronicle, and export it with the site. A name may not shadow one of the shell's own files. <code>home</code> may name a shell page, which then becomes the library's front door.</li>
+<li><b>links</b> sit at the top of the sidebar and on the landing page.</li>
+<li><b>refs</b> turn ids that match a pattern into links wherever they appear in a page's text, inline code included; text inside <code>&lt;pre&gt;</code>, links and headings is left alone. The pattern may use only non-capturing groups, because the whole match is the id, and the <code>href</code> must contain <code>{id}</code>.</li>
+<li><b>theme</b> is served as <code>/shell/theme.css</code>, which the shell's stylesheet imports first. It maps your own names onto the shell's hues, and may style widgets only your pages use:</li>
+</ul>
+
+<pre><code>/* assets/theme.css */
+.hb { --marsh: var(--teal); --moor: var(--amber); }
+.hb .sw-marsh { color: var(--marsh); font-weight: 700; }
+.hb .sw-moor  { color: var(--moor);  font-weight: 700; }</code></pre>
+
+<ul>
+<li><b>classes</b> registers the class names the theme adds under a shell prefix (<code>sw-</code>, <code>lane-</code>, <code>v-</code>, <code>ev-</code>, <code>st-</code>, <code>hb-</code>), so the lint accepts them on your pages.</li>
+<li><b>indices</b> are extra search indices, JSON files under <code>content/</code>, that the search page fetches and merges with the library's own.</li>
+</ul>
+
+<details class="check">
+<summary>Check-yourself: your theme defines <code>--marsh</code> and a class <code>sw-marsh</code>, but you forget the <code>classes</code> key. What fails, and what does not?</summary>
+<div class="ans">Every page using <code>class=&quot;sw-marsh&quot;</code> fails the lint as an unknown shell class. A page using <code>var(--marsh)</code> passes, because the theme declares the token.</div>
+</details>
+
+<h2 id="s7">§7 · How a layer installs itself</h2>
+
+<p>A <b>layer</b> is a repository of conventions for one kind of library, installed on top of the kit through the same ten keys. Two exist: <a href="https://github.com/pierg/lab-kit">lab-kit</a>, the record discipline for research run by agents, and <a href="https://github.com/pierg/folio">folio</a>, a personal library with topics, a journal and flashcard revision. The engine knows neither.</p>
+
+<p>An installer is given only <code>ckit</code>, and does four things:</p>
+
+<ol>
+<li><b>Runs <code>ckit init</code></b> on the repository, so the kit is vendored and the engine pinned before anything else.</li>
+<li><b>Copies its own rules beside the kit</b>, under its own directory in <code>kit/</code>: its genre file, skeletons, check modules, shell pages. When it needs one of the kit's own files (a template, the migration theme), it asks <code>ckit where</code>, which prints the directory the engine vendors from, wherever the engine was installed.</li>
+<li><b>Registers them in <code>kit.json</code></b>: its genre file first in the <code>genres</code> list, its modules under <code>checks</code>, <code>generators</code> or <code>chronicle.extractors</code>, its pages under <code>shell_pages</code>.</li>
+<li><b>Adds its line to <code>kit/PIN</code></b>, <code>source &lt;name&gt; &lt;url&gt; &lt;ref&gt;</code>, and recomputes the hash with <code>bash kit/verify.sh --repin</code>, so the layer's files are covered by <code>make kit-verify</code> too.</li>
+</ol>
+
+<p>The pieces are built to allow this. <code>ckit init</code> touches only its own paths under <code>kit/</code> and keeps every other kit's <code>source</code> line when it re-pins, so re-running it never erases a layer. <code>make kit-sync</code> re-vendors every kit in <code>kit/PIN</code>, in order: content-kit through <code>ckit init</code>, every other kit by running the <code>install.sh</code> at the root of its checkout with the repository as argument. It finds each checkout through an environment variable named after the kit (<code>$CONTENT_KIT</code> for this one), the path recorded in the pin if it exists, <code>ckit where</code> for content-kit, or a sibling directory of the same name.</p>
+
+<details class="check">
+<summary>Check-yourself: after a layer is installed, you re-run <code>ckit init .</code> to take a new engine. What happens to the layer's files and its pin line?</summary>
+<div class="ans">Both survive. <code>ckit init</code> re-vendors only its own directories, keeps the layer's <code>source</code> line, and re-hashes the whole of <code>kit/</code>, the layer's files included.</div>
+</details>
+
+<h2 id="s8">§8 · Moving a 0.3 library across</h2>
+
+<p>Version 0.4 renamed the config file, named the shell's colour tokens for their hues, and moved domain-specific widgets out of the shell. A library written against 0.3 moves across in a few steps:</p>
+
+<pre><code>uv tool install git+https://github.com/pierg/content-kit@v0.4.0
+git mv lab.json kit.json
+ckit init .</code></pre>
+
+<p><code>lab.json</code> is still read until 0.5, with one deprecation line per run, but <code>ckit init</code> is what re-vendors the kit and moves the pin to 0.4.0. If the pages use the old colour names (the set register <code>--reach --cert --target --slack --leak</code>, now <code>--teal --indigo --blue --amber --red</code>; the role register <code>--gen --judge --world</code>, now <code>--azure --violet --orange</code>) or the widgets that left the shell, a migration theme keeps them rendering exactly as before:</p>
+
+<pre><code>mkdir -p assets &amp;&amp; cp "$(ckit where)/templates/theme-fv.css" assets/theme.css</code></pre>
+
+<pre><code>"theme": "assets/theme.css",
+"classes": ["sw-reach", "sw-cert", "sw-target", "sw-slack", "sw-leak", "sw-gen", "sw-judge", "sw-world",
+            "lane-reach", "lane-cert", "lane-target", "lane-slack", "lane-leak", "lane-gen", "lane-judge", "lane-world"]</code></pre>
+
+<p><code>theme-fv.css</code> maps each old name onto its hue and carries the removed widgets verbatim. The engine's selftest serves it to a page written in the old vocabulary and proves that page lints clean, so the path is tested, not just described. Then regenerate the indices (their shape changed in 0.4), run the gate, and commit:</p>
+
+<pre><code>ckit lint &amp;&amp; make check</code></pre>
+
+<details class="check">
+<summary>Check-yourself: after the move, a page still uses the old role token for the actor that decides. Without the migration theme, what does the lint say, and what is the lasting fix?</summary>
+<div class="ans">That the token is unknown: nothing declares it any more. The migration theme declares it again; the lasting fix is to rewrite the page with the hue it now maps to, <code>--violet</code>, and drop the old name.</div>
+</details>
+
+<h2 id="s9">§9 · Publishing under a path</h2>
+
+<p><code>ckit export</code> writes the library as static files any host can serve:</p>
+
+<pre><code>ckit export --out dist --base /birding/</code></pre>
+
+<p>Into <code>dist/</code> go: an <code>index.html</code> (the landing page; or a redirect to the <code>home</code> page, when <code>home</code> names one; or the shell page <code>home</code> names), the shell without its skeletons, <code>theme.css</code> and every declared shell page, the content tree with its generated indices, the record files, and a <code>.nojekyll</code> so GitHub Pages serves every path as it is. Annotation sidecars stay home: review happens against the served repository, not the published copy.</p>
+
+<p><code>--base</code> is for a site served under a path, such as a GitHub project site. The export prefixes every root-absolute <code>href</code>, <code>src</code>, <code>action</code> and <code>poster</code> attribute, and every root-absolute CSS <code>url()</code>, in the exported HTML and CSS, so <code>/shell/lib.css</code> becomes <code>/birding/shell/lib.css</code>. JSON indices and scripts are left alone: the shell works out its base from the address of its own script, so nothing else needs configuring. The source tree is never touched.</p>
+
+<p>Two refusals protect you. The export will not write inside the content, the shell or <code>kit/</code>, and it will not replace a non-empty directory it did not write itself. <code>make site BASE=/birding/</code> runs the same export into <code>dist/</code>. To preview a site built for a path, export it into a directory of that name and serve its parent with any static server:</p>
+
+<pre><code>ckit export --out preview/birding --base /birding/
+python3 -m http.server -d preview       # then open http://localhost:8000/birding/</code></pre>
+
+<p>This library is published the same way: its CI gates the pages with <code>ckit check</code>, exports them with <code>--base</code> set to the repository's name, and deploys the result to GitHub Pages.</p>
+
+<details class="check">
+<summary>Check-yourself: after exporting with <code>--base /birding/</code>, why do the links inside <code>content/catalog.json</code> still start with <code>/content/</code>, and why does the sidebar still work?</summary>
+<div class="ans">JSON is not rewritten. The shell reads its base from the address it loaded <code>lib.js</code> from (<code>/birding/shell/lib.js</code>) and prefixes every URL it builds from the catalog with it.</div>
+</details>
+
+<p class="anchors">Sources / related: <a href="/content/books/running-a-library/04-the-review-loop.html">04 · The review loop</a> · <a class="defn-link" href="/content/concepts/extension-point/">extension point</a> · the kit's <code>CHANGELOG.md</code> (0.4.0) and the engine's <code>ckit/config.py</code>, <code>ckit/plugins.py</code>, <code>ckit/chronicle.py</code>, <code>ckit/export.py</code> and <code>ckit/init.py</code>.</p>
+
+</main>
+</body>
+</html>

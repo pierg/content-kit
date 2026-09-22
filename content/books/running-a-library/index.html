@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Running a library</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="guide, install, genres, gate, review, extending">
+</head>
+<body class="hb">
+<main>
+
+<h1>Running a library</h1>
+<p class="sub"><b>Status: LIVE</b> — five chapters that take a repository from nothing to a gated, reviewable library of pages, for whoever sets one up and keeps it in order, human or agent.</p>
+
+<h2 id="map">The chapters</h2>
+<p>The order follows the life of a library: it has to exist before it has pages, it has pages before anything checks them, it is checked before anyone reviews it, and it is worth extending only once the core is familiar.</p>
+<ol>
+<li><a href="/content/books/running-a-library/01-install.html"><b>Install a library</b></a> — the engine on your machine, the kit in your repository, and the four commands you will run every day. Everything after assumes a library exists.</li>
+<li><a href="/content/books/running-a-library/02-genres-and-voice.html"><b>Genres and voice</b></a> — choosing what a page is, scaffolding it, writing it in the right register, and saying whether it is still true. The first thing you do in a library is write a page.</li>
+<li><a href="/content/books/running-a-library/03-the-gate.html"><b>The gate</b></a> — what <code>ckit check</code> runs, in order, what each failure looks like, and why none is ever fixed for you. It comes after writing because its messages only make sense once you have pages to break.</li>
+<li><a href="/content/books/running-a-library/04-the-review-loop.html"><b>The review loop</b></a> — a reader's notes in the browser, a file beside the page, and an agent answering them later. It needs the gate, because the gate is what keeps notes attached to the text they are about.</li>
+<li><a href="/content/books/running-a-library/05-extending.html"><b>Extending the kit</b></a> — the ten <code>kit.json</code> keys through which a library adds genres, checks, generated files and shell pages; how a layer installs itself; moving a 0.3 library across; publishing under a path. Last, because every extension reuses a mechanism the earlier chapters teach.</li>
+</ol>
+
+<h2 id="how">How to read it</h2>
+<p>In order. Each chapter assumes only the ones before it, and every section ends with a check-yourself: open it after you have answered in your head. Terms with a dashed underline are <a class="defn-link" href="/content/concepts/genre/">concepts</a>; hover one to read its definition without leaving the chapter.</p>
+<p>The examples follow one small library about bird-watching, so that the same pages and the same log carry through from the first chapter to the last. Every command output shown was produced by running the command.</p>
+
+<h2 id="needs">What you need</h2>
+<p>A terminal, git, Python 3.10 or newer, and node. <code>uv</code> makes installing the engine one line; without it you clone the repository instead. Node runs the book verifier, and the gate asks for it whenever the library has a <code>content/books/</code> directory, which <code>ckit init</code> always creates, so have it installed from the start.</p>
+
+<h2 id="backlinks">Cited by</h2>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>

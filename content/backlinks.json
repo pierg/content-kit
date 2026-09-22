@@ -1,6 +1,11 @@
 {
   "/content/books/running-a-library/": [
     {
+      "title": "Install a library — Running a library",
+      "href": "/content/books/running-a-library/01-install.html",
+      "kind": "book"
+    },
+    {
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
@@ -8,12 +13,32 @@
   ],
   "/content/books/running-a-library/01-install.html": [
     {
+      "title": "Genres and voice — Running a library",
+      "href": "/content/books/running-a-library/02-genres-and-voice.html",
+      "kind": "book"
+    },
+    {
+      "title": "Running a library",
+      "href": "/content/books/running-a-library/",
+      "kind": "book"
+    },
+    {
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",
       "kind": "hub"
     }
   ],
   "/content/books/running-a-library/02-genres-and-voice.html": [
+    {
+      "title": "Running a library",
+      "href": "/content/books/running-a-library/",
+      "kind": "book"
+    },
+    {
+      "title": "The gate — Running a library",
+      "href": "/content/books/running-a-library/03-the-gate.html",
+      "kind": "book"
+    },
     {
       "title": "Genre",
       "href": "/content/concepts/genre/",
@@ -32,6 +57,16 @@
   ],
   "/content/books/running-a-library/03-the-gate.html": [
     {
+      "title": "Running a library",
+      "href": "/content/books/running-a-library/",
+      "kind": "book"
+    },
+    {
+      "title": "The review loop — Running a library",
+      "href": "/content/books/running-a-library/04-the-review-loop.html",
+      "kind": "book"
+    },
+    {
       "title": "Gate",
       "href": "/content/concepts/gate/",
       "kind": "concept"
@@ -44,6 +79,16 @@
   ],
   "/content/books/running-a-library/04-the-review-loop.html": [
     {
+      "title": "Extending the kit — Running a library",
+      "href": "/content/books/running-a-library/05-extending.html",
+      "kind": "book"
+    },
+    {
+      "title": "Running a library",
+      "href": "/content/books/running-a-library/",
+      "kind": "book"
+    },
+    {
       "title": "Annotation",
       "href": "/content/concepts/annotation/",
       "kind": "concept"
@@ -55,6 +100,11 @@
     }
   ],
   "/content/books/running-a-library/05-extending.html": [
+    {
+      "title": "Running a library",
+      "href": "/content/books/running-a-library/",
+      "kind": "book"
+    },
     {
       "title": "Chronicle",
       "href": "/content/concepts/chronicle/",
@@ -78,6 +128,16 @@
   ],
   "/content/concepts/annotation/": [
     {
+      "title": "The gate — Running a library",
+      "href": "/content/books/running-a-library/03-the-gate.html",
+      "kind": "book"
+    },
+    {
+      "title": "The review loop — Running a library",
+      "href": "/content/books/running-a-library/04-the-review-loop.html",
+      "kind": "book"
+    },
+    {
       "title": "Gate",
       "href": "/content/concepts/gate/",
       "kind": "concept"
@@ -89,6 +149,11 @@
     }
   ],
   "/content/concepts/chronicle/": [
+    {
+      "title": "Extending the kit — Running a library",
+      "href": "/content/books/running-a-library/05-extending.html",
+      "kind": "book"
+    },
     {
       "title": "Extension point",
       "href": "/content/concepts/extension-point/",
@@ -111,6 +176,11 @@
     }
   ],
   "/content/concepts/extension-point/": [
+    {
+      "title": "Extending the kit — Running a library",
+      "href": "/content/books/running-a-library/05-extending.html",
+      "kind": "book"
+    },
     {
       "title": "Chronicle",
       "href": "/content/concepts/chronicle/",
@@ -144,6 +214,16 @@
   ],
   "/content/concepts/gate/": [
     {
+      "title": "Install a library — Running a library",
+      "href": "/content/books/running-a-library/01-install.html",
+      "kind": "book"
+    },
+    {
+      "title": "The gate — Running a library",
+      "href": "/content/books/running-a-library/03-the-gate.html",
+      "kind": "book"
+    },
+    {
       "title": "Annotation",
       "href": "/content/concepts/annotation/",
       "kind": "concept"
@@ -176,6 +256,16 @@
   ],
   "/content/concepts/genre/": [
     {
+      "title": "Genres and voice — Running a library",
+      "href": "/content/books/running-a-library/02-genres-and-voice.html",
+      "kind": "book"
+    },
+    {
+      "title": "Running a library",
+      "href": "/content/books/running-a-library/",
+      "kind": "book"
+    },
+    {
       "title": "Annotation",
       "href": "/content/concepts/annotation/",
       "kind": "concept"
@@ -203,6 +293,11 @@
   ],
   "/content/concepts/record/": [
     {
+      "title": "Extending the kit — Running a library",
+      "href": "/content/books/running-a-library/05-extending.html",
+      "kind": "book"
+    },
+    {
       "title": "Chronicle",
       "href": "/content/concepts/chronicle/",
       "kind": "concept"
@@ -214,6 +309,11 @@
     }
   ],
   "/content/concepts/skeleton/": [
+    {
+      "title": "Genres and voice — Running a library",
+      "href": "/content/books/running-a-library/02-genres-and-voice.html",
+      "kind": "book"
+    },
     {
       "title": "Extension point",
       "href": "/content/concepts/extension-point/",
@@ -244,6 +344,11 @@
   ],
   "/content/notes/the-design-law.html": [
     {
+      "title": "The gate — Running a library",
+      "href": "/content/books/running-a-library/03-the-gate.html",
+      "kind": "book"
+    },
+    {
       "title": "Gate",
       "href": "/content/concepts/gate/",
       "kind": "concept"
@@ -256,6 +361,11 @@
   ],
   "/content/notes/the-placement-rule.html": [
     {
+      "title": "Extending the kit — Running a library",
+      "href": "/content/books/running-a-library/05-extending.html",
+      "kind": "book"
+    },
+    {
       "title": "Extension point",
       "href": "/content/concepts/extension-point/",
       "kind": "concept"
@@ -267,6 +377,11 @@
     }
   ],
   "/content/notes/twins-drift.html": [
+    {
+      "title": "Genres and voice — Running a library",
+      "href": "/content/books/running-a-library/02-genres-and-voice.html",
+      "kind": "book"
+    },
     {
       "title": "content-kit",
       "href": "/content/hubs/content-kit.html",

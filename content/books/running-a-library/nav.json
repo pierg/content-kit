@@ -1,0 +1,42 @@
+{
+  "homeLabel": "Running a library",
+  "homeHref": "index.html",
+  "chapters": [
+    {
+      "file": "index.html",
+      "label": "Hub",
+      "title": "Running a library",
+      "status": "landed"
+    },
+    {
+      "file": "01-install.html",
+      "label": "01 Install",
+      "title": "Install a library — Running a library",
+      "status": "landed"
+    },
+    {
+      "file": "02-genres-and-voice.html",
+      "label": "02 Genres And Voice",
+      "title": "Genres and voice — Running a library",
+      "status": "landed"
+    },
+    {
+      "file": "03-the-gate.html",
+      "label": "03 The Gate",
+      "title": "The gate — Running a library",
+      "status": "landed"
+    },
+    {
+      "file": "04-the-review-loop.html",
+      "label": "04 The Review Loop",
+      "title": "The review loop — Running a library",
+      "status": "landed"
+    },
+    {
+      "file": "05-extending.html",
+      "label": "05 Extending",
+      "title": "Extending the kit — Running a library",
+      "status": "landed"
+    }
+  ]
+}
