@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gate</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+.fig-gate text { font-size: 13px; }
+.fig-gate .t3 { font-size: 11px; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="gate, check, lint, ci">
+</head>
+<body class="hb">
+<main>
+
+<h1>Gate</h1>
+<p class="sub"><b>Status: LIVE</b> — definition of record. The one command that decides whether a library may land, and why it reports instead of repairing.</p>
+
+<figure class="fig-gate" aria-label="The six stages of ckit check, run in order; the first failure stops the gate">
+<svg viewBox="0 0 700 170" role="img" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
+    </marker>
+  </defs>
+  <rect x="10" y="30" width="100" height="62" rx="9" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="60" y="56" text-anchor="middle" style="font-weight: 700">pin</text>
+  <text x="60" y="76" text-anchor="middle" class="t3">kit.json = engine</text>
+  <rect x="124" y="30" width="100" height="62" rx="9" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="174" y="56" text-anchor="middle" style="font-weight: 700">shell</text>
+  <text x="174" y="76" text-anchor="middle" class="t3">lib.css present</text>
+  <rect x="238" y="30" width="100" height="62" rx="9" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="288" y="56" text-anchor="middle" style="font-weight: 700">declarations</text>
+  <text x="288" y="76" text-anchor="middle" class="t3">kit.json holds</text>
+  <rect x="352" y="30" width="100" height="62" rx="9" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="402" y="56" text-anchor="middle" style="font-weight: 700">indices</text>
+  <text x="402" y="76" text-anchor="middle" class="t3">equal discovery</text>
+  <rect x="466" y="30" width="100" height="62" rx="9" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="516" y="56" text-anchor="middle" style="font-weight: 700">lint</text>
+  <text x="516" y="76" text-anchor="middle" class="t3">pages · sidecars</text>
+  <rect x="580" y="30" width="100" height="62" rx="9" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="630" y="56" text-anchor="middle" style="font-weight: 700">books</text>
+  <text x="630" y="76" text-anchor="middle" class="t3">node verifies</text>
+  <path d="M110 61 L122 61" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-k)"/>
+  <path d="M224 61 L236 61" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-k)"/>
+  <path d="M338 61 L350 61" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-k)"/>
+  <path d="M452 61 L464 61" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-k)"/>
+  <path d="M566 61 L578 61" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-k)"/>
+  <path d="M10 118 L680 118" style="stroke: var(--rejected); stroke-width: 1.5; stroke-dasharray: 4 4"/>
+  <text x="345" y="112" text-anchor="middle" class="t3">any stage fails → the problems are printed, exit 1, nothing is rewritten</text>
+  <text x="630" y="146" text-anchor="middle" style="font-weight: 700; fill: var(--kept-text)">content check ok</text>
+  <text x="630" y="162" text-anchor="middle" class="t3">all six hold</text>
+</svg>
+<figcaption><b>Six stages, in order, and the first failure stops the run.</b> Every stage reads files; none writes one. That is what makes the result the same on a laptop and in CI.</figcaption>
+</figure>
+
+<blockquote class="defn" id="gate">
+<span class="defn-name">GATE — definition of record</span><br>
+The gate is the command <code>ckit check</code>, run before anything lands. It fails when the engine version the repository pins differs from the engine running, when the shell is missing, when a <code>kit.json</code> declaration does not hold, when a generated index differs from what the content would generate, when a page breaks its form or its <a class="defn-link" href="/content/concepts/genre/">genre</a>'s checks, when an open <a class="defn-link" href="/content/concepts/annotation/">annotation</a> has lost its quoted passage, or when a book does not verify. It reports every problem and repairs none.
+</blockquote>
+
+<h3>Why it matters</h3>
+
+<p>A rule nothing checks is a suggestion, and suggestions drift. The gate is where a library's rules stop being suggestions: it is fast (seconds), it needs no network, and it is the same command locally and in CI, so a page that passes on one machine passes on every machine.</p>
+
+<p>It never rewrites. <code>ckit lint</code> regenerates the indices (the catalog, the search index, the backlinks, each book's navigation, the chronicle when a record is declared, and whatever a registered generator writes); <code>ckit check</code> only compares them with what the content would produce now. A commit that changed a title and forgot to regenerate is caught at the commit that caused it, not silently repaired later on someone else's machine.</p>
+
+<p>In a library, <code>make check</code> runs one more thing first: <code>make kit-verify</code>, which hashes the vendored <code>kit/</code> and compares it with the hash in <code>kit/PIN</code>, so an in-place edit of the shared rules fails too.</p>
+
+<h3>Worked example</h3>
+
+<p>In a bird-watching library, an author scaffolds a note and a concept and runs the gate straight away:</p>
+
+<pre><code>$ ckit check
+indices out of date — run `ckit nav` (or `ckit lint`) and commit the result:
+  content/catalog.json
+  content/search-index.json
+  content/backlinks.json</code></pre>
+
+<p>Exit status 1. The two new pages are not in the catalog yet. <code>ckit lint</code> writes the three files, the author commits them with the pages, and the gate passes:</p>
+
+<pre><code>$ ckit check
+content lint clean — 2 file(s)
+content check ok</code></pre>
+
+<h3>Common trap</h3>
+
+<div class="note note-warn">
+<b>Running <code>ckit lint</code> and calling it checked.</b> Lint regenerates the indices before it reports, so it can never find them stale; it also skips the engine pin, the declarations and the book verifier. Lint is the author's tool while writing. The gate is <code>ckit check</code> (or <code>make check</code>, which adds the kit's hash), and it is the only one whose green means anything to the next person.
+</div>
+
+<h3>Related concepts</h3>
+
+<p>The gate enforces each <a class="defn-link" href="/content/concepts/genre/">genre</a>'s checks, holds open <a class="defn-link" href="/content/concepts/annotation/">annotations</a> to their passages, keeps the <a class="defn-link" href="/content/concepts/chronicle/">chronicle</a> current, and runs whatever a repository registers through an <a class="defn-link" href="/content/concepts/extension-point/">extension point</a>. Every check in it is held to <a href="/content/notes/the-design-law.html">the design law</a>.</p>
+
+<h3>Source of record</h3>
+
+<p>The chapter <a href="/content/books/running-a-library/03-the-gate.html">The gate</a> walks each stage with its failure messages. The engine's own statement is the docstring of <code>ckit/check.py</code>.</p>
+
+<h3>Used in</h3>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>

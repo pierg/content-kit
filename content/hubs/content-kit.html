@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>content-kit</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="content-kit, overview, start here">
+</head>
+<body class="hb">
+<main>
+
+<h1>content-kit</h1>
+<p class="sub"><b>Status: LIVE</b> — a page contract for agent-written knowledge: where a page goes, how it reads, what checks it, and how a person reviews it in the browser. Start here.</p>
+
+<h2 id="take">Current take</h2>
+
+<p>Agents can already write a library's pages. What they do not do unaided is keep those pages <b>belonging</b>: in the right place, in the right voice, passing a check anyone can rerun, and open to review by someone reading the rendered page rather than a diff. content-kit is the smallest set of mechanisms that makes that hold. A <a class="defn-link" href="/content/concepts/genre/">genre</a> carries a structure and a voice; a <a class="defn-link" href="/content/concepts/gate/">gate</a> checks what can be checked and says plainly what cannot; one shell gives every page the same vocabulary; an <a class="defn-link" href="/content/concepts/annotation/">annotation</a> lets a reader's note wait in a file until an agent answers it.</p>
+
+<p>It is not a site generator. Pages are HTML written by their author and served exactly as written, with no build in between, and that choice is argued, costs included, in <a href="/content/entries/why-hand-authored-html/">Why hand-authored HTML</a>. It holds itself to one law: <a href="/content/notes/the-design-law.html">a rule nothing checks is a suggestion</a>. This site is itself a content-kit library, gated by the same command it documents.</p>
+
+<pre><code>uv tool install git+https://github.com/pierg/content-kit@v0.4.0
+ckit init my-library --name "My library" &amp;&amp; cd my-library
+ckit new concept feedback-loop --title "Feedback loop"
+ckit lint &amp;&amp; make check &amp;&amp; make docs</code></pre>
+
+<h2 id="map">Map</h2>
+
+<h3>Learn it</h3>
+<table>
+<tr><th>Page</th><th>Why follow it</th></tr>
+<tr><td><a href="/content/books/running-a-library/">Running a library</a></td><td>The whole path in five chapters, one example library throughout. Start here if you will set one up.</td></tr>
+<tr><td><a href="/content/books/running-a-library/01-install.html">01 · Install a library</a></td><td>The engine, <code>ckit init</code>, the layout, and the <code>make</code> targets you run daily. Ends with a green gate.</td></tr>
+<tr><td><a href="/content/books/running-a-library/02-genres-and-voice.html">02 · Genres and voice</a></td><td>Choosing, scaffolding and writing a page so it reads like its kind. What you do most days.</td></tr>
+<tr><td><a href="/content/books/running-a-library/03-the-gate.html">03 · The gate</a></td><td>Every stage of <code>ckit check</code> and what its failures look like. Read before your first red run.</td></tr>
+<tr><td><a href="/content/books/running-a-library/04-the-review-loop.html">04 · The review loop</a></td><td>Notes in the browser, a file beside the page, an agent answering later. Review that needs no session on either side.</td></tr>
+<tr><td><a href="/content/books/running-a-library/05-extending.html">05 · Extending the kit</a></td><td>The ten <code>kit.json</code> keys, layers, the 0.3 migration and publishing under a path. For when the core is not enough.</td></tr>
+</table>
+
+<h3>The vocabulary</h3>
+<table>
+<tr><th>Concept</th><th>Why follow it</th></tr>
+<tr><td><a class="defn-link" href="/content/concepts/genre/">Genre</a></td><td>The idea everything else hangs on: the path decides the kind, the kind decides the voice and the checks.</td></tr>
+<tr><td><a class="defn-link" href="/content/concepts/skeleton/">Skeleton</a></td><td>Why a page never starts blank, and the one thing the gate cannot catch about it.</td></tr>
+<tr><td><a class="defn-link" href="/content/concepts/gate/">Gate</a></td><td>What "green" means here, and why the gate reports but never repairs.</td></tr>
+<tr><td><a class="defn-link" href="/content/concepts/annotation/">Annotation</a></td><td>Review without a session: a quote, a file, four states.</td></tr>
+<tr><td><a class="defn-link" href="/content/concepts/record/">Record</a></td><td>Where a library keeps how it got here, so pages only have to say where it is.</td></tr>
+<tr><td><a class="defn-link" href="/content/concepts/chronicle/">Chronicle</a></td><td>The timeline nobody writes: generated from the record's dated headings.</td></tr>
+<tr><td><a class="defn-link" href="/content/concepts/extension-point/">Extension point</a></td><td>How a library adds genres, checks and pages without forking the kit.</td></tr>
+</table>
+
+<h3>The reasoning</h3>
+<table>
+<tr><th>Page</th><th>Why follow it</th></tr>
+<tr><td><a href="/content/entries/why-hand-authored-html/">Why hand-authored HTML</a></td><td>The least conventional decision, with what each claim rests on and what it costs. Read it if you expected markdown.</td></tr>
+<tr><td><a href="/content/notes/the-design-law.html">The design law</a></td><td>Why every rule here either has a check with a fixture, or says it is judgment.</td></tr>
+<tr><td><a href="/content/notes/the-placement-rule.html">The placement rule</a></td><td>What belongs in the engine and what belongs in a layer. Read before proposing a feature.</td></tr>
+<tr><td><a href="/content/notes/twins-drift.html">Twins drift</a></td><td>Why a document exists in exactly one format, and when a copy is safe.</td></tr>
+<tr><td><a href="/content/related/prior-art.html">Prior art</a></td><td>The LLM wiki pattern, Diátaxis, Vale, Quartz, Hypothesis and others, neutrally, then how content-kit differs.</td></tr>
+</table>
+
+<h3>Around it</h3>
+<table>
+<tr><th>Where</th><th>Why follow it</th></tr>
+<tr><td><a href="https://github.com/pierg/content-kit">github.com/pierg/content-kit</a></td><td>The engine, the shell, the genres and this site's source. Issues and changes go here.</td></tr>
+<tr><td><a href="https://github.com/pierg/lab-kit">lab-kit</a></td><td>A layer: the record discipline for research run by agents.</td></tr>
+<tr><td><a href="https://github.com/pierg/folio">folio</a></td><td>A layer: a personal library with topics, a journal and flashcard revision.</td></tr>
+</table>
+
+<h2 id="open">Open questions</h2>
+<ul>
+<li><b>Is a proxy enough?</b> The gate checks a genre's shape (length, sections, a definition) and leaves its register to readers. Whether mechanical proxies make agent-written pages better than written guidance alone has not been measured, here or, as far as <a href="/content/related/prior-art.html">the prior art</a> shows, anywhere.</li>
+<li><b>Pages that restate the record.</b> A page that copies a fact from the <a class="defn-link" href="/content/concepts/record/">record</a> can go stale with the gate green; nothing yet compares a page's statements with the lines they came from. Today that is a writing rule, not a check.</li>
+<li><b>The paper itself.</b> The paper genre covers a paper's landing page. Its <code>.tex</code> source (status, figures, citations, the abstract matching the page) is outside the gate.</li>
+</ul>
+
+<h2 id="backlinks">Cited by</h2>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>

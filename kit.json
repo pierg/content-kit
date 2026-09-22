@@ -1,0 +1,10 @@
+{
+  "name": "content-kit",
+  "question": "How do agents write pages that keep belonging — in the right place, in the right voice, checked, and reviewable by a human in the browser?",
+  "content": "content",
+  "shell": "shell",
+  "host": "127.0.0.1",
+  "port": 5190,
+  "ckit": "0.4.0",
+  "home": "content/hubs/content-kit.html"
+}

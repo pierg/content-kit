@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skeleton</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+.fig-skel text { font-size: 13px; }
+.fig-skel .t3 { font-size: 11.5px; }
+.fig-skel .mono-t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="skeleton, scaffold, ckit new">
+</head>
+<body class="hb">
+<main>
+
+<h1>Skeleton</h1>
+<p class="sub"><b>Status: LIVE</b> — definition of record. The file a page of a genre starts from, so that it starts inside the contract.</p>
+
+<figure class="fig-skel" aria-label="ckit new copies a genre's skeleton to the path the genre names and prints the genre's voice card">
+<svg viewBox="0 0 680 210" role="img" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
+    </marker>
+  </defs>
+  <rect x="16" y="30" width="200" height="72" rx="10" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="116" y="56" text-anchor="middle" style="font-weight: 700">the concept skeleton</text>
+  <text x="116" y="78" text-anchor="middle" class="mono-t">skeletons/concept/index.html</text>
+  <path d="M216 66 L450 66" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-s)"/>
+  <text x="333" y="56" text-anchor="middle" class="mono-t">ckit new concept flyway</text>
+  <text x="333" y="86" text-anchor="middle" class="t3">copied, title set, nothing else</text>
+  <rect x="452" y="30" width="212" height="72" rx="10" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
+  <text x="558" y="56" text-anchor="middle" style="font-weight: 700">a new page</text>
+  <text x="558" y="78" text-anchor="middle" class="mono-t">concepts/flyway/index.html</text>
+  <path d="M333 96 L333 130" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-s)"/>
+  <rect x="190" y="132" width="286" height="60" rx="10" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5; stroke-dasharray: 5 4"/>
+  <text x="333" y="157" text-anchor="middle" style="font-weight: 700">the voice card, printed</text>
+  <text x="333" y="177" text-anchor="middle" class="t3">register · reader · forbidden · checked</text>
+</svg>
+<figcaption><b>The structure lands in the file; the voice lands in front of the author.</b> The skeleton gives the page its parts in order. The voice card, printed beside it, is the reminder of how those parts must read.</figcaption>
+</figure>
+
+<blockquote class="defn" id="skeleton">
+<span class="defn-name">SKELETON — definition of record</span><br>
+A skeleton is the starting file of a <a class="defn-link" href="/content/concepts/genre/">genre</a>: an HTML page that already links the shell, carries a status line, holds the genre's parts in their order, and says in placeholder prose what goes in each. <code>ckit new &lt;genre&gt; &lt;slug&gt;</code> copies it to the path the genre names, and the author replaces every placeholder.
+</blockquote>
+
+<h3>Why it matters</h3>
+
+<p>The cheapest way to keep a page inside the contract is to start it there. A skeleton already loads <code>/shell/lib.css</code> and <code>/shell/lib.js</code>, already has a first <code>&lt;p class="sub"&gt;</code> with a status word, and already has the definition block a concept needs or the backlinks list a related page ends with. The author begins with a page that passes the <a class="defn-link" href="/content/concepts/gate/">gate</a> and has to write their way out of it, rather than beginning from a blank file and writing their way in.</p>
+
+<p>This is tested, not assumed: the engine's selftest scaffolds one page of every core genre through <code>ckit new</code> and fails if any of them does not lint clean.</p>
+
+<h3>Worked example</h3>
+
+<p>In a bird-watching library:</p>
+
+<pre><code>$ ckit new concept flyway --title "Flyway"
+created content/concepts/flyway/index.html
+concept — impersonal, present tense, timeless
+  reader:    has met the term and wants it pinned down
+  forbidden: a definition that depends on a running result — the defn must survive the results changing
+  checked:   status=True, max_words=1500, require_defn=True</code></pre>
+
+<p>The new file has <code>Flyway</code> in its <code>&lt;title&gt;</code> and <code>&lt;h1&gt;</code>, an opening figure slot, a <code>blockquote.defn</code> with a placeholder definition, and sections for a worked example, the common trap, related concepts and a backlinks list. The author fills each in the concept's register, deletes what the concept does not need, and keeps the definition block, which the gate requires.</p>
+
+<p>A folder genre's skeleton may bring files with it: a new entry arrives with a <code>source.json</code> beside it, for an entry that reads an external paper. An entry that does not can delete it.</p>
+
+<h3>Common trap</h3>
+
+<div class="note note-warn">
+<b>Leaving a placeholder standing.</b> The skeleton's own text passes the lint (that is the point of it), so a page whose status line still promises "one-line orientation" passes the gate too. The gate cannot tell placeholder prose from finished prose. Every sentence a skeleton brings is an instruction to replace it.
+</div>
+
+<h3>Related concepts</h3>
+
+<p>Every <a class="defn-link" href="/content/concepts/genre/">genre</a> names its skeleton. A genre a repository declares through an <a class="defn-link" href="/content/concepts/extension-point/">extension point</a> names one too: the engine looks for it among the shell's skeletons first, then from the repository root, so a layer can ship its skeletons beside its genre file.</p>
+
+<h3>Source of record</h3>
+
+<p>Scaffolding a page and reading its voice card are in the chapter <a href="/content/books/running-a-library/02-genres-and-voice.html">Genres and voice</a>. The skeletons themselves live in the shell, under <code>skeletons/</code>.</p>
+
+<h3>Used in</h3>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>

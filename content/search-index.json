@@ -1,0 +1,156 @@
+[
+  {
+    "title": "Annotation",
+    "sub": "Status: LIVE — definition of record. A reader's note on a rendered page, kept in a file beside it, so that review needs no session to be open on either side.",
+    "defn": "ANNOTATION — definition of record An annotation is a thread a reader attaches to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup, and it moves through four states: open, addressed, declined and withdrawn. Nothing needs",
+    "headings": [
+      "Why it matters",
+      "Worked example",
+      "Common trap",
+      "Related concepts"
+    ],
+    "tags": [
+      "annotation",
+      "review",
+      "sidecar",
+      "W3C web annotation"
+    ],
+    "kind": "concept",
+    "href": "/content/concepts/annotation/"
+  },
+  {
+    "title": "Chronicle",
+    "sub": "Status: LIVE — definition of record. The timeline of a repository, generated from its record, so that nobody writes history twice.",
+    "defn": "CHRONICLE — definition of record The chronicle is a timeline generated from the record. Every heading in a record file that opens with a date becomes an event; a bracketed tag after the date names the event's kind, and an untagged heading is a plain entry. Extractors a repository registers may add events, kinds and a set of cards. The result is written to content/chronicle.json by ckit lint, compa",
+    "headings": [
+      "Why it matters",
+      "Worked example",
+      "Common trap",
+      "Related concepts"
+    ],
+    "tags": [
+      "chronicle",
+      "timeline",
+      "record",
+      "generated index"
+    ],
+    "kind": "concept",
+    "href": "/content/concepts/chronicle/"
+  },
+  {
+    "title": "Extension point",
+    "sub": "Status: LIVE — definition of record. A declared place where a repository adds to the engine without changing it, and why each one is checked.",
+    "defn": "EXTENSION POINT — definition of record An extension point is one of the ten keys in kit.json through which a repository, or a layer installed into it, adds to what the engine does without changing the engine: genres, checks, generators, chronicle.extractors, shell_pages, links, refs, theme, classes and indices. The gate validates every declaration, and one that is malformed, points at nothing, or ",
+    "headings": [
+      "Why it matters",
+      "Worked example",
+      "Common trap",
+      "Related concepts"
+    ],
+    "tags": [
+      "extension point",
+      "kit.json",
+      "layer",
+      "plugin"
+    ],
+    "kind": "concept",
+    "href": "/content/concepts/extension-point/"
+  },
+  {
+    "title": "Gate",
+    "sub": "Status: LIVE — definition of record. The one command that decides whether a library may land, and why it reports instead of repairing.",
+    "defn": "GATE — definition of record The gate is the command ckit check, run before anything lands. It fails when the engine version the repository pins differs from the engine running, when the shell is missing, when a kit.json declaration does not hold, when a generated index differs from what the content would generate, when a page breaks its form or its genre's checks, when an open annotation has lost ",
+    "headings": [
+      "Why it matters",
+      "Worked example",
+      "Common trap",
+      "Related concepts"
+    ],
+    "tags": [
+      "gate",
+      "check",
+      "lint",
+      "ci"
+    ],
+    "kind": "concept",
+    "href": "/content/concepts/gate/"
+  },
+  {
+    "title": "Genre",
+    "sub": "Status: LIVE — definition of record. The kind of page a page is: where it lives decides how it is built, how it reads, and what the gate checks on it.",
+    "defn": "GENRE — definition of record A genre is the kind of page a page is, decided by where the page lives in the content tree. It carries a structure (a directory, a layout and a skeleton to start from), a voice (a register, an assumed reader and the moves that are forbidden) and the checks the gate runs on every page of that kind. A page that lives under no genre is an error, not a default.",
+    "headings": [
+      "Why it matters",
+      "Worked example",
+      "The core genres",
+      "Common trap"
+    ],
+    "tags": [
+      "genre",
+      "voice",
+      "structure",
+      "taxonomy"
+    ],
+    "kind": "concept",
+    "href": "/content/concepts/genre/"
+  },
+  {
+    "title": "Record",
+    "sub": "Status: LIVE — definition of record. The markdown files that say how the work got where it is, kept apart from the pages that say where it is now.",
+    "defn": "RECORD — definition of record The record is the set of markdown files a repository declares in kit.json under record (a field log, a decision log, a changelog): files that grow by appending and say how the work got where it is. The shell renders each one read-only at /shell/record.html?p=<path> and lists it in the sidebar. Pages under the content directory say where the work stands, and link into ",
+    "headings": [
+      "Why it matters",
+      "Worked example",
+      "Common trap",
+      "Related concepts"
+    ],
+    "tags": [
+      "record",
+      "log",
+      "history",
+      "markdown"
+    ],
+    "kind": "concept",
+    "href": "/content/concepts/record/"
+  },
+  {
+    "title": "Skeleton",
+    "sub": "Status: LIVE — definition of record. The file a page of a genre starts from, so that it starts inside the contract.",
+    "defn": "SKELETON — definition of record A skeleton is the starting file of a genre: an HTML page that already links the shell, carries a status line, holds the genre's parts in their order, and says in placeholder prose what goes in each. ckit new <genre> <slug> copies it to the path the genre names, and the author replaces every placeholder.",
+    "headings": [
+      "Why it matters",
+      "Worked example",
+      "Common trap",
+      "Related concepts"
+    ],
+    "tags": [
+      "skeleton",
+      "scaffold",
+      "ckit new"
+    ],
+    "kind": "concept",
+    "href": "/content/concepts/skeleton/"
+  },
+  {
+    "title": "content-kit",
+    "sub": "Status: LIVE — a page contract for agent-written knowledge: where a page goes, how it reads, what checks it, and how a person reviews it in the browser. Start here.",
+    "defn": "",
+    "headings": [
+      "Current take",
+      "Map",
+      "Open questions",
+      "Cited by",
+      "Learn it",
+      "The vocabulary",
+      "The reasoning",
+      "Around it"
+    ],
+    "tags": [
+      "content-kit",
+      "overview",
+      "start here"
+    ],
+    "kind": "hub",
+    "href": "/content/hubs/content-kit.html"
+  }
+]

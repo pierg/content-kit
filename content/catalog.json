@@ -1,0 +1,103 @@
+{
+  "groups": [
+    {
+      "key": "papers",
+      "label": "Papers",
+      "kind": "paper",
+      "layout": "folder"
+    },
+    {
+      "key": "books",
+      "label": "Books",
+      "kind": "book",
+      "layout": "folder"
+    },
+    {
+      "key": "projects",
+      "label": "Projects",
+      "kind": "project",
+      "layout": "folder"
+    },
+    {
+      "key": "hubs",
+      "label": "Hubs",
+      "kind": "hub",
+      "layout": "flat"
+    },
+    {
+      "key": "related",
+      "label": "Related",
+      "kind": "related",
+      "layout": "flat"
+    },
+    {
+      "key": "entries",
+      "label": "Entries",
+      "kind": "entry",
+      "layout": "folder"
+    },
+    {
+      "key": "notes",
+      "label": "Notes",
+      "kind": "note",
+      "layout": "flat"
+    },
+    {
+      "key": "concepts",
+      "label": "Concepts",
+      "kind": "concept",
+      "layout": "folder"
+    }
+  ],
+  "papers": [],
+  "books": [],
+  "projects": [],
+  "hubs": [
+    {
+      "slug": "content-kit",
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html"
+    }
+  ],
+  "related": [],
+  "entries": [],
+  "notes": [],
+  "concepts": [
+    {
+      "slug": "annotation",
+      "title": "Annotation",
+      "href": "/content/concepts/annotation/"
+    },
+    {
+      "slug": "chronicle",
+      "title": "Chronicle",
+      "href": "/content/concepts/chronicle/"
+    },
+    {
+      "slug": "extension-point",
+      "title": "Extension point",
+      "href": "/content/concepts/extension-point/"
+    },
+    {
+      "slug": "gate",
+      "title": "Gate",
+      "href": "/content/concepts/gate/"
+    },
+    {
+      "slug": "genre",
+      "title": "Genre",
+      "href": "/content/concepts/genre/"
+    },
+    {
+      "slug": "record",
+      "title": "Record",
+      "href": "/content/concepts/record/"
+    },
+    {
+      "slug": "skeleton",
+      "title": "Skeleton",
+      "href": "/content/concepts/skeleton/"
+    }
+  ],
+  "record": []
+}

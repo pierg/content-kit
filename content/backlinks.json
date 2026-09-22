@@ -1,0 +1,288 @@
+{
+  "/content/books/running-a-library/": [
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/books/running-a-library/01-install.html": [
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/books/running-a-library/02-genres-and-voice.html": [
+    {
+      "title": "Genre",
+      "href": "/content/concepts/genre/",
+      "kind": "concept"
+    },
+    {
+      "title": "Skeleton",
+      "href": "/content/concepts/skeleton/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/books/running-a-library/03-the-gate.html": [
+    {
+      "title": "Gate",
+      "href": "/content/concepts/gate/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/books/running-a-library/04-the-review-loop.html": [
+    {
+      "title": "Annotation",
+      "href": "/content/concepts/annotation/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/books/running-a-library/05-extending.html": [
+    {
+      "title": "Chronicle",
+      "href": "/content/concepts/chronicle/",
+      "kind": "concept"
+    },
+    {
+      "title": "Extension point",
+      "href": "/content/concepts/extension-point/",
+      "kind": "concept"
+    },
+    {
+      "title": "Record",
+      "href": "/content/concepts/record/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/concepts/annotation/": [
+    {
+      "title": "Gate",
+      "href": "/content/concepts/gate/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/concepts/chronicle/": [
+    {
+      "title": "Extension point",
+      "href": "/content/concepts/extension-point/",
+      "kind": "concept"
+    },
+    {
+      "title": "Gate",
+      "href": "/content/concepts/gate/",
+      "kind": "concept"
+    },
+    {
+      "title": "Record",
+      "href": "/content/concepts/record/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/concepts/extension-point/": [
+    {
+      "title": "Chronicle",
+      "href": "/content/concepts/chronicle/",
+      "kind": "concept"
+    },
+    {
+      "title": "Gate",
+      "href": "/content/concepts/gate/",
+      "kind": "concept"
+    },
+    {
+      "title": "Genre",
+      "href": "/content/concepts/genre/",
+      "kind": "concept"
+    },
+    {
+      "title": "Record",
+      "href": "/content/concepts/record/",
+      "kind": "concept"
+    },
+    {
+      "title": "Skeleton",
+      "href": "/content/concepts/skeleton/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/concepts/gate/": [
+    {
+      "title": "Annotation",
+      "href": "/content/concepts/annotation/",
+      "kind": "concept"
+    },
+    {
+      "title": "Chronicle",
+      "href": "/content/concepts/chronicle/",
+      "kind": "concept"
+    },
+    {
+      "title": "Extension point",
+      "href": "/content/concepts/extension-point/",
+      "kind": "concept"
+    },
+    {
+      "title": "Genre",
+      "href": "/content/concepts/genre/",
+      "kind": "concept"
+    },
+    {
+      "title": "Skeleton",
+      "href": "/content/concepts/skeleton/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/concepts/genre/": [
+    {
+      "title": "Annotation",
+      "href": "/content/concepts/annotation/",
+      "kind": "concept"
+    },
+    {
+      "title": "Extension point",
+      "href": "/content/concepts/extension-point/",
+      "kind": "concept"
+    },
+    {
+      "title": "Gate",
+      "href": "/content/concepts/gate/",
+      "kind": "concept"
+    },
+    {
+      "title": "Skeleton",
+      "href": "/content/concepts/skeleton/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/concepts/record/": [
+    {
+      "title": "Chronicle",
+      "href": "/content/concepts/chronicle/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/concepts/skeleton/": [
+    {
+      "title": "Extension point",
+      "href": "/content/concepts/extension-point/",
+      "kind": "concept"
+    },
+    {
+      "title": "Genre",
+      "href": "/content/concepts/genre/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/entries/why-hand-authored-html/": [
+    {
+      "title": "Annotation",
+      "href": "/content/concepts/annotation/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/notes/the-design-law.html": [
+    {
+      "title": "Gate",
+      "href": "/content/concepts/gate/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/notes/the-placement-rule.html": [
+    {
+      "title": "Extension point",
+      "href": "/content/concepts/extension-point/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/notes/twins-drift.html": [
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ],
+  "/content/related/prior-art.html": [
+    {
+      "title": "Annotation",
+      "href": "/content/concepts/annotation/",
+      "kind": "concept"
+    },
+    {
+      "title": "content-kit",
+      "href": "/content/hubs/content-kit.html",
+      "kind": "hub"
+    }
+  ]
+}

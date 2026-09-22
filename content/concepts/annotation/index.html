@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annotation</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+.fig-ann text { font-size: 13px; }
+.fig-ann .t3 { font-size: 11.5px; }
+.fig-ann .mono-t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="annotation, review, sidecar, W3C web annotation">
+</head>
+<body class="hb">
+<main>
+
+<h1>Annotation</h1>
+<p class="sub"><b>Status: LIVE</b> — definition of record. A reader's note on a rendered page, kept in a file beside it, so that review needs no session to be open on either side.</p>
+
+<figure class="fig-ann" aria-label="A reader writes a thread into the sidecar; an agent later reads it and replies; the gate checks open threads against the page">
+<svg viewBox="0 0 680 236" role="img" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
+    </marker>
+  </defs>
+  <rect x="16" y="28" width="178" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--orange); stroke-width: 2"/>
+  <text x="105" y="55" text-anchor="middle" style="font-weight: 700">a reader</text>
+  <text x="105" y="76" text-anchor="middle" class="t3">in the browser, any time</text>
+  <rect x="251" y="28" width="178" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="340" y="55" text-anchor="middle" style="font-weight: 700">the sidecar</text>
+  <text x="340" y="76" text-anchor="middle" class="mono-t">page.annotations.json</text>
+  <rect x="486" y="28" width="178" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--azure); stroke-width: 2"/>
+  <text x="575" y="55" text-anchor="middle" style="font-weight: 700">an agent</text>
+  <text x="575" y="76" text-anchor="middle" class="t3">any session, any clone, later</text>
+  <path d="M194 50 L249 50" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
+  <text x="222" y="42" text-anchor="middle" class="t3">writes</text>
+  <path d="M429 50 L484 50" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
+  <text x="457" y="42" text-anchor="middle" class="t3">reads</text>
+  <path d="M486 80 L431 80" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
+  <text x="457" y="110" text-anchor="middle" class="t3">replies, sets state</text>
+  <path d="M340 94 L340 150" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
+  <text x="352" y="127" class="t3">open threads</text>
+  <rect x="251" y="152" width="178" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--violet); stroke-width: 2"/>
+  <text x="340" y="179" text-anchor="middle" style="font-weight: 700">the gate</text>
+  <text x="340" y="200" text-anchor="middle" class="t3">is each quote still on the page?</text>
+</svg>
+<figcaption><b>Three actors who never meet.</b> The reader and the agent share nothing but a committed file; the gate is what stops the page from moving out from under an unanswered note.</figcaption>
+</figure>
+
+<blockquote class="defn" id="annotation">
+<span class="defn-name">ANNOTATION — definition of record</span><br>
+An annotation is a thread a reader attaches to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup, and it moves through four states: open, addressed, declined and withdrawn. Nothing needs to be running for it to survive; the file is the only channel between the reader and whoever acts on it.
+</blockquote>
+
+<h3>Why it matters</h3>
+
+<p>Review usually needs both parties present: a live comment tool, a pull request someone is watching, a chat. Pages written by agents are read later, by people whose time does not line up with any agent session. Putting the note in a file beside the page, in the repository, makes the note outlive both the reading and the session that will answer it, and makes the whole exchange part of the history.</p>
+
+<p>Anchoring by quote instead of by position is what lets a page keep changing while notes are pending. A CSS path breaks the moment a paragraph is added above; a quoted sentence is still findable as long as the sentence exists. The shape is the W3C Web Annotation <code>TextQuoteSelector</code>: the exact text, plus up to 32 characters before and after it to tell repeated passages apart.</p>
+
+<h3>Worked example</h3>
+
+<p>A reader of a bird-watching note selects "arrive with the first warm front" and asks which front. The engine writes <code>content/notes/swifts-follow-weather.annotations.json</code>:</p>
+
+<pre><code>{
+  "version": 1,
+  "page": "/content/notes/swifts-follow-weather.html",
+  "threads": [
+    {
+      "id": "t-20260922-7b8ecb",
+      "created": "2026-09-22T20:43:59Z",
+      "author": "sam",
+      "state": "open",
+      "target": {
+        "type": "TextQuoteSelector",
+        "exact": "arrive with the first warm front",
+        "prefix": "",
+        "suffix": ""
+      },
+      "body": "Which front? Say how you would see it on a forecast.",
+      "replies": []
+    }
+  ]
+}</code></pre>
+
+<p>Days later an agent runs <code>ckit annotations list</code>, rewrites the sentence to name the front, and replies in the thread with <code>--state addressed</code>. The reply says what changed. The thread stays in the file, with its reply, for good.</p>
+
+<table>
+<tr><th>State</th><th>Means</th><th>Whose move</th></tr>
+<tr><td>open</td><td>waiting for an answer; its quote must still be on the page</td><td>the reader opens it</td></tr>
+<tr><td>addressed</td><td>acted on; the reply says what changed</td><td>whoever acted</td></tr>
+<tr><td>declined</td><td>not acted on, for a stated reason; a declined thread without a reason fails the gate</td><td>whoever declined</td></tr>
+<tr><td>withdrawn</td><td>taken back</td><td>the reader</td></tr>
+</table>
+
+<h3>Common trap</h3>
+
+<div class="note note-warn">
+<b>Editing the page before answering the notes on it.</b> An open thread's quote is load-bearing. Rewrite that sentence first and the <a class="defn-link" href="/content/concepts/gate/">gate</a> goes red:
+<pre><code>content/notes/swifts-follow-weather.annotations.json: thread t-20260922-7b8ecb has a STALE anchor — 'arrive with the first warm front' is no longer on the page</code></pre>
+A dropped comment is not a resolved one. Address the thread (or decline it, with the reason) in the same change that rewrites its passage. Once a thread is no longer open its anchor is history and is not checked: acting on a note usually changes the text it quoted.
+</div>
+
+<h3>Related concepts</h3>
+
+<p>Annotations are validated by the <a class="defn-link" href="/content/concepts/gate/">gate</a> and live beside pages of every <a class="defn-link" href="/content/concepts/genre/">genre</a>. The argument that quote anchoring needs the served text to equal the source text is in <a href="/content/entries/why-hand-authored-html/">Why hand-authored HTML</a>; the standard and the tool this borrows from are on <a href="/content/related/prior-art.html">Prior art</a>.</p>
+
+<h3>Source of record</h3>
+
+<p>The whole loop, from the ✎ Annotate button to the <code>/address</code> skill, is the chapter <a href="/content/books/running-a-library/04-the-review-loop.html">The review loop</a>. The engine's statement is the docstring of <code>ckit/annotations.py</code>.</p>
+
+<h3>Used in</h3>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>

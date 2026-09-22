@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genre</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+.fig-genre text { font-size: 13px; }
+.fig-genre .t3 { font-size: 11.5px; }
+.fig-genre .mono-t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="genre, voice, structure, taxonomy">
+</head>
+<body class="hb">
+<main>
+
+<h1>Genre</h1>
+<p class="sub"><b>Status: LIVE</b> — definition of record. The kind of page a page is: where it lives decides how it is built, how it reads, and what the gate checks on it.</p>
+
+<figure class="fig-genre" aria-label="A page's path selects its genre, and the genre carries a structure, a voice and a set of checks">
+<svg viewBox="0 0 680 230" role="img" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
+    </marker>
+  </defs>
+  <rect x="16" y="84" width="186" height="62" rx="10" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="109" y="110" text-anchor="middle" class="mono-t">content/notes/</text>
+  <text x="109" y="130" text-anchor="middle" class="mono-t">salt-early.html</text>
+  <path d="M202 115 L262 115" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-g)"/>
+  <text x="232" y="104" text-anchor="middle" class="t3">path</text>
+  <rect x="264" y="84" width="132" height="62" rx="10" style="fill: var(--surface-1); stroke: var(--ink-2); stroke-width: 1.5"/>
+  <text x="330" y="110" text-anchor="middle" style="font-weight: 700">genre</text>
+  <text x="330" y="130" text-anchor="middle" class="t2">note</text>
+  <path d="M396 105 L452 46" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-g)"/>
+  <path d="M396 115 L452 115" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-g)"/>
+  <path d="M396 125 L452 184" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-g)"/>
+  <text x="424" y="96" text-anchor="middle" class="t3">carries</text>
+  <rect x="454" y="20" width="210" height="52" rx="10" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
+  <text x="559" y="41" text-anchor="middle" style="font-weight: 700">structure</text>
+  <text x="559" y="60" text-anchor="middle" class="t3">a flat file, from the note skeleton</text>
+  <rect x="454" y="89" width="210" height="52" rx="10" style="fill: var(--surface-1); stroke: var(--indigo); stroke-width: 2"/>
+  <text x="559" y="110" text-anchor="middle" style="font-weight: 700">voice</text>
+  <text x="559" y="129" text-anchor="middle" class="t3">assertive, unhedged, one claim</text>
+  <rect x="454" y="158" width="210" height="52" rx="10" style="fill: var(--surface-1); stroke: var(--amber); stroke-width: 2"/>
+  <text x="559" y="179" text-anchor="middle" style="font-weight: 700">checks</text>
+  <text x="559" y="198" text-anchor="middle" class="t3">status · at most 400 words · no h2</text>
+</svg>
+<figcaption><b>The path is the taxonomy.</b> Nothing on the page declares its kind: the directory it sits in selects the genre, and the genre brings the other three with it. Move the file and all three change.</figcaption>
+</figure>
+
+<blockquote class="defn" id="genre">
+<span class="defn-name">GENRE — definition of record</span><br>
+A genre is the kind of page a page is, decided by where the page lives in the content tree. It carries a structure (a directory, a layout and a <a class="defn-link" href="/content/concepts/skeleton/">skeleton</a> to start from), a voice (a register, an assumed reader and the moves that are forbidden) and the checks the <a class="defn-link" href="/content/concepts/gate/">gate</a> runs on every page of that kind. A page that lives under no genre is an error, not a default.
+</blockquote>
+
+<h3>Why it matters</h3>
+
+<p>An agent cannot usefully be told to "write well". It can be told that a page is a concept: impersonal, present tense, a definition first, no running result inside the definition. The genre turns a vague instruction into a specific one, and it does so before the first sentence is written, because choosing where the file goes is the first act of writing it.</p>
+
+<p>Classifying by path rather than by a field inside the page removes a disagreement before it can happen. A page cannot claim to be a note while sitting among the concepts; there is no front matter to fall out of step with the file's location. The same table that classifies pages also builds the sidebar, the landing page and the search filters, so a genre a repository adds shows up everywhere a core one does.</p>
+
+<p>Part of the voice is checkable and is checked: a word bound, a ban on sections, a required definition, a status line, a forbidden forward link. The rest (register, reader) is judged by whoever reads the page. Each genre's rules say which is which.</p>
+
+<h3>Worked example</h3>
+
+<p>A cooking library has a note at <code>content/notes/salt-early.html</code> claiming that meat salted a day ahead browns better than meat salted at the pan. It is one claim with its reason, under 400 words, and it passes.</p>
+
+<p>Then the author adds a section on salt types and another on timing for fish. The lint answers with the genre's own rule:</p>
+
+<pre><code>content/notes/salt-early.html: note has &lt;h2&gt; sections — a note is one claim; promote it</code></pre>
+
+<p>The fix is not to delete the headings. The page has become an entry, so it moves to <code>content/entries/salt-early/index.html</code>, where sections are expected and the register is analytical. If "dry brine" then needs explaining on a second page, it becomes a concept of its own, and both pages link to it instead of explaining it twice.</p>
+
+<h3>The core genres</h3>
+
+<table>
+<tr><th>Genre</th><th>Lives at</th><th>Checked</th></tr>
+<tr><td>note</td><td class="mono">notes/&lt;slug&gt;.html</td><td>status · 400 words · no h2</td></tr>
+<tr><td>concept</td><td class="mono">concepts/&lt;slug&gt;/index.html</td><td>status · 1500 words · a definition</td></tr>
+<tr><td>entry</td><td class="mono">entries/&lt;slug&gt;/index.html</td><td>status</td></tr>
+<tr><td>chapter</td><td class="mono">books/&lt;book&gt;/NN-name.html</td><td>status · no forward links</td></tr>
+<tr><td>book</td><td class="mono">books/&lt;book&gt;/index.html</td><td>status</td></tr>
+<tr><td>hub</td><td class="mono">hubs/&lt;slug&gt;.html</td><td>status · 1500 words</td></tr>
+<tr><td>project</td><td class="mono">projects/&lt;slug&gt;/index.html</td><td>status · a lifecycle meta</td></tr>
+<tr><td>paper</td><td class="mono">papers/&lt;slug&gt;/index.html</td><td>status</td></tr>
+<tr><td>related</td><td class="mono">related/&lt;slug&gt;.html</td><td>status</td></tr>
+</table>
+<p class="wcap">Paths are under the content directory. Four layouts cover them all: flat, folder, book index and book page. A repository adds or overrides genres in <code>kit.json</code>.</p>
+
+<h3>Common trap</h3>
+
+<div class="note note-warn">
+<b>Taking the checks for the voice.</b> The lint checks proxies (length, sections, a definition, a status word), so a page can pass every one of them and still read in the wrong register: a hub that explains, a concept that argues, a note that hedges. Green says the page has the genre's shape. Whether it has the genre's voice is a reader's judgment, which is why the voice is written down for every genre and printed when the page is scaffolded.
+</div>
+
+<h3>Related concepts</h3>
+
+<p>A genre starts every page from its <a class="defn-link" href="/content/concepts/skeleton/">skeleton</a>, is enforced by the <a class="defn-link" href="/content/concepts/gate/">gate</a>, and can be added to through an <a class="defn-link" href="/content/concepts/extension-point/">extension point</a>.</p>
+
+<h3>Source of record</h3>
+
+<p>The long form, with the voice of each genre and how promotion works, is the chapter <a href="/content/books/running-a-library/02-genres-and-voice.html">Genres and voice</a>. The kit's own statement of every genre's register, reader and forbidden moves is <code>genres/GENRES.md</code>, and the machine spec the engine checks is <code>ckit/genres.json</code>.</p>
+
+<h3>Used in</h3>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>

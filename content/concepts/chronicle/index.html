@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chronicle</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+.fig-chr text { font-size: 13px; }
+.fig-chr .t3 { font-size: 11.5px; }
+.fig-chr .mono-t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="chronicle, timeline, record, generated index">
+</head>
+<body class="hb">
+<main>
+
+<h1>Chronicle</h1>
+<p class="sub"><b>Status: LIVE</b> — definition of record. The timeline of a repository, generated from its record, so that nobody writes history twice.</p>
+
+<figure class="fig-chr" aria-label="A dated heading in a record file becomes an event, which the chronicle page shows in the Story and Timeline views, and in a Cards view when an extractor supplies cards">
+<svg viewBox="0 0 680 236" role="img" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
+    </marker>
+  </defs>
+  <rect x="16" y="84" width="212" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="122" y="110" text-anchor="middle" class="mono-t">## 2026-04-12 — [decision]</text>
+  <text x="122" y="130" text-anchor="middle" class="mono-t">count only birds seen</text>
+  <path d="M228 117 L276 117" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-c)"/>
+  <text x="252" y="108" text-anchor="middle" class="t3">lint</text>
+  <rect x="278" y="84" width="170" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--amber); stroke-width: 2"/>
+  <text x="363" y="110" text-anchor="middle" style="font-weight: 700">an event</text>
+  <text x="363" y="130" text-anchor="middle" class="t3">date · kind · title · link</text>
+  <path d="M448 104 L500 52" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-c)"/>
+  <path d="M448 117 L500 117" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-c)"/>
+  <path d="M448 130 L500 182" style="stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 4 4" marker-end="url(#arrow-c)"/>
+  <rect x="502" y="22" width="162" height="56" rx="10" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="583" y="45" text-anchor="middle" style="font-weight: 700">Story</text>
+  <text x="583" y="64" text-anchor="middle" class="t3">tagged kinds, by month</text>
+  <rect x="502" y="89" width="162" height="56" rx="10" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <text x="583" y="112" text-anchor="middle" style="font-weight: 700">Timeline</text>
+  <text x="583" y="131" text-anchor="middle" class="t3">every dated heading</text>
+  <rect x="502" y="156" width="162" height="56" rx="10" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5; stroke-dasharray: 5 4"/>
+  <text x="583" y="179" text-anchor="middle" style="font-weight: 700">Cards</text>
+  <text x="583" y="198" text-anchor="middle" class="t3">from an extractor</text>
+</svg>
+<figcaption><b>Written once, in the record; shown three ways.</b> The heading is the only thing anyone types. The event, its link back to the heading, and every view of it are generated.</figcaption>
+</figure>
+
+<blockquote class="defn" id="chronicle">
+<span class="defn-name">CHRONICLE — definition of record</span><br>
+The chronicle is a timeline generated from the <a class="defn-link" href="/content/concepts/record/">record</a>. Every heading in a record file that opens with a date becomes an event; a bracketed tag after the date names the event's kind, and an untagged heading is a plain entry. Extractors a repository registers may add events, kinds and a set of cards. The result is written to <code>content/chronicle.json</code> by <code>ckit lint</code>, compared by <code>ckit check</code>, rendered at <code>/shell/chronicle.html</code>, and never authored.
+</blockquote>
+
+<h3>Why it matters</h3>
+
+<p>A repository's history is already written down, in its logs, one dated heading at a time. A separate timeline page would be a second copy of it, and second copies drift. Generating the timeline makes it an index like the catalog or the search index: it cannot disagree with the files it points at, and the <a class="defn-link" href="/content/concepts/gate/">gate</a> fails if the committed copy is older than the record.</p>
+
+<p>The tag is what lets the timeline be read. A year of log headings is too many to scan; the Story view shows only the tagged ones, grouped by month, with each summary (the first paragraph under the heading) as prose. The Timeline view shows everything, for the reader who wants the whole trail.</p>
+
+<h3>Worked example</h3>
+
+<p>From the bird-watching log on the <a class="defn-link" href="/content/concepts/record/">record</a> page, <code>ckit lint</code> writes two events:</p>
+
+<pre><code>{
+  "date": "2026-05-03",
+  "kind": "entry",
+  "title": "first swifts over the reservoir",
+  "summary": "Eleven at dusk, feeding low.",
+  "href": "/shell/record.html?p=log/2026.md#2026-05-03-first-swifts-over-the-reservoir",
+  "source": "log/2026.md",
+  "links": []
+},
+{
+  "date": "2026-04-12",
+  "kind": "decision",
+  "title": "count only birds seen, not heard",
+  …
+}</code></pre>
+
+<p>The decision appears in Story and Timeline; the untagged sighting only in Timeline. A heading counts when it is level two to four and reads <code>date — title</code>, the date as <code>YYYY-MM-DD</code> (optionally with a <code>THH:MMZ</code> time). A tag nobody declared fails loud rather than quietly becoming an entry:</p>
+
+<pre><code>log/2026.md:11: unknown chronicle tag [sighting] — one of pivot · kill · decision · lesson · instrument · result (or a kind an extractor declares)</code></pre>
+
+<table>
+<tr><th>Kind</th><th>Conventionally marks</th><th>Shown in</th></tr>
+<tr><td><span class="sw-orange">pivot</span></td><td>a change of direction</td><td>Story, Timeline</td></tr>
+<tr><td><span class="sw-red">kill</span></td><td>something deliberately stopped</td><td>Story, Timeline</td></tr>
+<tr><td><span class="sw-violet">decision</span></td><td>a choice made, with its reason</td><td>Story, Timeline</td></tr>
+<tr><td><span class="sw-amber">lesson</span></td><td>something learned</td><td>Story, Timeline</td></tr>
+<tr><td><span class="sw-azure">instrument</span></td><td>a change to the tools or the method</td><td>Story, Timeline</td></tr>
+<tr><td>result</td><td>an outcome</td><td>Story, Timeline</td></tr>
+<tr><td class="muted">entry</td><td>an untagged dated heading</td><td>Timeline</td></tr>
+</table>
+<p class="wcap">The six core tags, each drawn in its own hue on the chronicle page. The meanings are the conventions a repository keeps; the engine only knows the names. An extractor may declare more kinds, each with a hue and whether Story shows it.</p>
+
+<h3>Common trap</h3>
+
+<div class="note note-warn">
+<b>Keeping a history page by hand.</b> A hub or a project page that lists "what happened when" is a second timeline, written in present tense and never updated when the log gains a correction. Say the state on the page, and link to the chronicle or to the record line for how it got there.
+</div>
+
+<h3>Related concepts</h3>
+
+<p>The chronicle is built from the <a class="defn-link" href="/content/concepts/record/">record</a>, checked by the <a class="defn-link" href="/content/concepts/gate/">gate</a> like every generated index, and extended by chronicle extractors, one kind of <a class="defn-link" href="/content/concepts/extension-point/">extension point</a>.</p>
+
+<h3>Source of record</h3>
+
+<p>Writing an extractor, with its <code>KINDS</code> and <code>CARDS</code>, is covered in the chapter <a href="/content/books/running-a-library/05-extending.html">Extending the kit</a>. The engine's statement, including the event schema, is the docstring of <code>ckit/chronicle.py</code>.</p>
+
+<h3>Used in</h3>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>

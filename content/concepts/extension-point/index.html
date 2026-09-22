@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extension point</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+.fig-ext text { font-size: 13px; }
+.fig-ext .t3 { font-size: 11.5px; }
+.fig-ext .mono-t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="extension point, kit.json, layer, plugin">
+</head>
+<body class="hb">
+<main>
+
+<h1>Extension point</h1>
+<p class="sub"><b>Status: LIVE</b> — definition of record. A declared place where a repository adds to the engine without changing it, and why each one is checked.</p>
+
+<figure class="fig-ext" aria-label="The ten kit.json extension points, grouped by the part of the kit they reach first: the gate, the generated indices, the shell">
+<svg viewBox="0 0 680 236" role="img" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
+    </marker>
+  </defs>
+  <rect x="16" y="86" width="150" height="64" rx="10" style="fill: var(--surface-1); stroke: var(--ink-2); stroke-width: 1.5"/>
+  <text x="91" y="113" text-anchor="middle" style="font-weight: 700">kit.json</text>
+  <text x="91" y="133" text-anchor="middle" class="t3">ten declared keys</text>
+  <path d="M166 106 L262 50" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-e)"/>
+  <path d="M166 118 L262 118" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-e)"/>
+  <path d="M166 130 L262 186" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-e)"/>
+  <rect x="264" y="20" width="400" height="60" rx="10" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
+  <text x="280" y="44" style="font-weight: 700">what is checked</text>
+  <text x="280" y="66" class="mono-t">genres · checks · classes</text>
+  <rect x="264" y="88" width="400" height="60" rx="10" style="fill: var(--surface-1); stroke: var(--indigo); stroke-width: 2"/>
+  <text x="280" y="112" style="font-weight: 700">what is generated</text>
+  <text x="280" y="134" class="mono-t">generators · chronicle.extractors · indices</text>
+  <rect x="264" y="156" width="400" height="60" rx="10" style="fill: var(--surface-1); stroke: var(--amber); stroke-width: 2"/>
+  <text x="280" y="180" style="font-weight: 700">what the reader sees</text>
+  <text x="280" y="202" class="mono-t">theme · shell_pages · links · refs</text>
+</svg>
+<figcaption><b>Ten keys, three reaches.</b> Each key is felt first in one part of the kit (genres also build the sidebar, and links and refs travel through the catalog), and every one is validated by the gate before anything uses it.</figcaption>
+</figure>
+
+<blockquote class="defn" id="extension-point">
+<span class="defn-name">EXTENSION POINT — definition of record</span><br>
+An extension point is one of the ten keys in <code>kit.json</code> through which a repository, or a layer installed into it, adds to what the engine does without changing the engine: <code>genres</code>, <code>checks</code>, <code>generators</code>, <code>chronicle.extractors</code>, <code>shell_pages</code>, <code>links</code>, <code>refs</code>, <code>theme</code>, <code>classes</code> and <code>indices</code>. The <a class="defn-link" href="/content/concepts/gate/">gate</a> validates every declaration, and one that is malformed, points at nothing, or names a check no module provides fails it by name.
+</blockquote>
+
+<h3>Why it matters</h3>
+
+<p>Every library eventually needs something the core does not have: a genre for its own kind of page, a rule only its pages must follow, a page of its own in the shell. Without a declared place to put that, the choices are to fork the kit or to keep the rule in someone's head. An extension point is the third choice: the addition lives in the repository, in one file a reader would look at, and the engine loads it on every run.</p>
+
+<p>Validation is the other half. A declaration the engine quietly ignored would be worse than none, because the author would believe it was running. So a theme that does not exist, a shell page that would shadow one of the shell's own files, a reference pattern with a capturing group, or a genre naming a check nobody implements each stops the gate with a message naming the key.</p>
+
+<h3>Worked example</h3>
+
+<p>A bird-watching library wants a page per sighting, each naming where it happened. It declares a genre and the check that holds it:</p>
+
+<pre><code>"genres": {
+  "sighting": { "dir": "sightings", "layout": "flat", "skeleton": "note.html",
+                "register": "dated, one bird, one place", "reader": "another watcher checking a record",
+                "forbidden": "undated sightings", "after": "hub", "label": "Sightings",
+                "checks": { "status": true, "require_place": true } }
+},
+"checks": ["ext/checks_birding.py"]</code></pre>
+
+<pre><code># ext/checks_birding.py
+import re
+
+PLACE = re.compile(r'&lt;meta name="place" content="[^"]+"')
+
+def require_place(ctx):
+    return [] if PLACE.search(ctx.served) else [f"{ctx.rel}: a sighting needs &lt;meta name=\"place\" content=\"…\"&gt;"]
+
+CHECKS = {"require_place": require_place}</code></pre>
+
+<p>Before the module was registered, the lint refused to run at all:</p>
+
+<pre><code>genre 'sighting' names check 'require_place', which is not a core check and no module in kit.json `checks` provides — register the module that implements it, or drop the check from the genre</code></pre>
+
+<p>With it registered, <code>ckit new sighting 2026-05-03-swifts</code> scaffolds a page, the Sightings group appears in the sidebar right after the hubs, and the new page fails by name until it says where the swifts were.</p>
+
+<h3>Common trap</h3>
+
+<div class="note note-warn">
+<b>Editing the vendored kit instead of declaring.</b> Changing a file under <code>kit/</code> is quicker than adding a key, and it makes this repository's rules silently different from every other's. The pin catches it:
+<pre><code>kit: VENDORED COPY HAS DRIFTED FROM ITS PIN</code></pre>
+The change belongs upstream if it is a mechanism every library needs, and in <code>kit.json</code> if it is this library's own.
+</div>
+
+<h3>Related concepts</h3>
+
+<p>Extension points add <a class="defn-link" href="/content/concepts/genre/">genres</a> (with their <a class="defn-link" href="/content/concepts/skeleton/">skeletons</a>), checks for the <a class="defn-link" href="/content/concepts/gate/">gate</a>, and extractors for the <a class="defn-link" href="/content/concepts/chronicle/">chronicle</a>. Which additions belong in a repository or a layer, and which belong in the engine, is <a href="/content/notes/the-placement-rule.html">the placement rule</a>.</p>
+
+<h3>Source of record</h3>
+
+<p>Every key, with its shape and a working example, is in the chapter <a href="/content/books/running-a-library/05-extending.html">Extending the kit</a>. The engine's statements are the docstrings of <code>ckit/config.py</code> and <code>ckit/plugins.py</code>.</p>
+
+<h3>Used in</h3>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>

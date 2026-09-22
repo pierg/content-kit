@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Record</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+.fig-rec text { font-size: 13px; }
+.fig-rec .t3 { font-size: 11.5px; }
+</style>
+<script src="/shell/lib.js" defer></script>
+<meta name="tags" content="record, log, history, markdown">
+</head>
+<body class="hb">
+<main>
+
+<h1>Record</h1>
+<p class="sub"><b>Status: LIVE</b> — definition of record. The markdown files that say how the work got where it is, kept apart from the pages that say where it is now.</p>
+
+<figure class="fig-rec" aria-label="Pages under content say where the work is and link into the record; the record says how it got there and feeds the chronicle">
+<svg viewBox="0 0 680 230" role="img" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
+    </marker>
+  </defs>
+  <rect x="16" y="24" width="230" height="86" rx="10" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
+  <text x="131" y="52" text-anchor="middle" style="font-weight: 700">content/</text>
+  <text x="131" y="74" text-anchor="middle" class="t2">where the work is now</text>
+  <text x="131" y="94" text-anchor="middle" class="t3">HTML pages, rewritten as it moves</text>
+  <rect x="434" y="24" width="230" height="86" rx="10" style="fill: var(--surface-1); stroke: var(--indigo); stroke-width: 2"/>
+  <text x="549" y="52" text-anchor="middle" style="font-weight: 700">the record</text>
+  <text x="549" y="74" text-anchor="middle" class="t2">how it got here</text>
+  <text x="549" y="94" text-anchor="middle" class="t3">markdown, appended, dated</text>
+  <path d="M246 60 L432 60" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-r)"/>
+  <text x="339" y="52" text-anchor="middle" class="t3">links into, never copies</text>
+  <path d="M549 110 L549 150" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-r)"/>
+  <text x="560" y="135" class="t3">dated headings</text>
+  <rect x="434" y="152" width="230" height="62" rx="10" style="fill: var(--surface-1); stroke: var(--amber); stroke-width: 2"/>
+  <text x="549" y="178" text-anchor="middle" style="font-weight: 700">the chronicle</text>
+  <text x="549" y="198" text-anchor="middle" class="t3">generated, never authored</text>
+  <text x="131" y="160" text-anchor="middle" class="t3">each record file renders read-only at</text>
+  <text x="131" y="180" text-anchor="middle" class="t3">/shell/record.html?p=&lt;path&gt;</text>
+</svg>
+<figcaption><b>Two volatilities, two homes.</b> A page is revised in place; a record file only grows. Pages point at the record, and the chronicle is built from it, so nothing about the past is ever retyped into the present.</figcaption>
+</figure>
+
+<blockquote class="defn" id="record">
+<span class="defn-name">RECORD — definition of record</span><br>
+The record is the set of markdown files a repository declares in <code>kit.json</code> under <code>record</code> (a field log, a decision log, a changelog): files that grow by appending and say how the work got where it is. The shell renders each one read-only at <code>/shell/record.html?p=&lt;path&gt;</code> and lists it in the sidebar. Pages under the content directory say where the work stands, and link into the record rather than copy from it.
+</blockquote>
+
+<h3>Why it matters</h3>
+
+<p>A library mixes content that changes at different speeds. A concept holds for years; a decision log gains a line a week. Put a week's fact into a year's page and the page is wrong the next week, with nothing to say so. Keeping the record in its own files, and letting pages only point at it, means a fact about the past has one home and every reader reaches the same copy.</p>
+
+<p>The record stays markdown on purpose: it is written quickly, often by hand, in the order things happen, and it is read far less than it is written. It is not a genre and the lint does not hold it to one. What the engine does with it is render it in the shell, list its files in the sidebar, copy them into an exported site, and build the <a class="defn-link" href="/content/concepts/chronicle/">chronicle</a> from its dated headings. That a file is only ever appended to is a convention of the people keeping it; the engine does not enforce it.</p>
+
+<h3>Worked example</h3>
+
+<p>A bird-watching library keeps one log per year and declares it:</p>
+
+<pre><code>"record": ["log/2026.md"]</code></pre>
+
+<pre><code># Field log 2026 — LIVE
+
+## 2026-04-12 — [decision] count only birds seen, not heard
+
+Heard-only records made the spring totals incomparable with last year's, so from today a bird counts once someone has seen it.
+
+### 2026-05-03 — first swifts over the reservoir
+
+Eleven at dusk, feeding low.</code></pre>
+
+<p>The sidebar gains a Record group with "Field log 2026 — LIVE" in it (the title is the file's first heading). A chapter about counting method does not restate the rule and its date; it says the club counts only birds seen and links the reason, <code>/shell/record.html?p=log/2026.md#2026-04-12-count-only-birds-seen-not-heard</code>, where the rule was decided.</p>
+
+<p><code>record</code> names files a reader should browse. A repository whose record is a whole directory names that directory under <code>chronicle.sources</code> instead, which the chronicle sweeps but the sidebar does not list; when <code>chronicle.sources</code> is absent the chronicle falls back to <code>record</code>.</p>
+
+<h3>Common trap</h3>
+
+<div class="note note-warn">
+<b>Transcribing the record into a page.</b> Copying "eleven swifts on 3 May" into a concept or a hub feels helpful and is how pages go stale: the log gets a correction, the page does not, and no check compares the two. A page that needs a fact from the record cites the line that holds it. Every number carries its source, and is taken from that source rather than from another page.
+</div>
+
+<h3>Related concepts</h3>
+
+<p>The <a class="defn-link" href="/content/concepts/chronicle/">chronicle</a> is the timeline generated from the record. A repository with its own record conventions reads them through an extractor, one kind of <a class="defn-link" href="/content/concepts/extension-point/">extension point</a>.</p>
+
+<h3>Source of record</h3>
+
+<p>Declaring a record and extending what the chronicle reads from it is covered in the chapter <a href="/content/books/running-a-library/05-extending.html">Extending the kit</a>. The engine's statement is the docstring of <code>ckit/chronicle.py</code>.</p>
+
+<h3>Used in</h3>
+<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
+
+</main>
+</body>
+</html>
