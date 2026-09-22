@@ -23,6 +23,7 @@
 .chr-modes { display: flex; gap: 6px; margin: 14px 0 6px; flex-wrap: wrap; }
 .chr-modes .tbtn.active { border-color: var(--violet); color: var(--violet); }
 .chr-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 6px; }
+.chr-filters[hidden] { display: none; }
 .fchip { font: 600 11.5px ui-monospace, Menlo, monospace; padding: 3px 10px; border-radius: 999px;
          border: 1.5px solid var(--baseline); background: var(--surface-1); color: var(--ink-2); cursor: pointer;
          letter-spacing: 0.03em; text-transform: uppercase; }
@@ -201,7 +202,7 @@
         var text = buf.join(" ").replace(/[`*_]+/g, "").replace(/\s+/g, " ").trim();
         if (text.length > 320) text = text.slice(0, 317) + "…";
         var el = document.getElementById("now");
-        el.hidden = false;
+        el.hidden = state.view !== "story";  /* the banner belongs to the Story view */
         el.innerHTML =
           '<div class="chr-now">' +
             '<div class="chr-now-label">Right now</div>' +

@@ -38,7 +38,8 @@ and optionally
 
 Its events are merged, validated and sorted with the generic ones; an event whose kind neither
 the core nor an extractor declares fails loud. Cards are one per long-lived thing the record
-tracks (a release, a pre-registered experiment), rendered as a third view named by `CARDS`.
+tracks (a release, a pre-registered experiment), rendered as a third view named by `CARDS`, in
+the order the extractor returns them.
 
 Schema (content/chronicle.json):
     kinds[]:  name · hue · story                 — the core kinds, then each extractor's
@@ -226,7 +227,7 @@ def _cards(mod, items: list, where: str) -> dict:
         c.setdefault("fields", [])
     return {"view": str(spec["view"]), "label": str(spec["label"]),
             "kind": str(spec.get("kind") or ""), "empty": str(spec.get("empty") or ""),
-            "items": sorted(items, key=lambda c: (c.get("date") or "", c["title"]), reverse=True)}
+            "items": items}  # in the extractor's order: it knows its vocabulary's natural order
 
 
 def build(repo: Repo) -> dict:

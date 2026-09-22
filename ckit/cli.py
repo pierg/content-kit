@@ -157,9 +157,9 @@ def main(argv: list[str] | None = None) -> int:
         from . import new
         return new.main(rest)
     if cmd == "genres":
-        from .genres import load_genres
+        from .genres import load_genres, ordered
         from .paths import load_repo
-        for g in load_genres(load_repo()).values():
+        for g in ordered(load_genres(load_repo())):
             print(f"{g.name:9s} {g.dir + '/':11s} {g.layout:11s} {g.register}")
         return 0
     if cmd == "serve":

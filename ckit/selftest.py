@@ -180,7 +180,8 @@ def main(argv: list[str]) -> int:
             "def extract(root, cfg):\n"
             "    return {'events': [{'date': '2026-09-04', 'kind': 'release', 'title': 'R1 shipped', 'href': '/shell/record.html?p=r1.md'}],\n"
             "            'cards': [{'title': 'R1', 'href': '/shell/record.html?p=r1.md', 'date': '2026-09-04', 'status': 'SHIPPED',\n"
-            "                       'fields': [{'label': 'Notes', 'text': 'the first'}, {'label': 'Fixes', 'items': [], 'empty': 'none'}]}]}\n",
+            "                       'fields': [{'label': 'Notes', 'text': 'the first'}, {'label': 'Fixes', 'items': [], 'empty': 'none'}]},\n"
+            "                      {'title': 'R0', 'href': '/shell/record.html?p=r0.md', 'date': '2026-09-09', 'fields': []}]}\n",
             encoding="utf-8")
         cfg = json.loads((repo.root / "kit.json").read_text())
         cfg["record"] = ["record/lab.md"]
@@ -199,8 +200,8 @@ def main(argv: list[str]) -> int:
         if rel_kind.get("hue") != "teal" or rel_kind.get("story") is not True:
             failures.append(f"an extractor kind keeps its declared hue and joins the Story view: {rel_kind}")
         cards = chron.get("cards") or {}
-        if cards.get("view") != "releases" or [c["title"] for c in cards.get("items") or []] != ["R1"]:
-            failures.append(f"the extractor's cards must reach chronicle.json under its view: {cards}")
+        if cards.get("view") != "releases" or [c["title"] for c in cards.get("items") or []] != ["R1", "R0"]:
+            failures.append(f"the extractor's cards must reach chronicle.json under its view, in its order: {cards}")
         planted += 2
         if not any(e["summary"].startswith("Why it changed") for e in chron["events"]):
             failures.append("event summary not taken from the paragraph under the heading")
