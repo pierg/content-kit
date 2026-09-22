@@ -5,8 +5,9 @@
     ckit lint --no-nav
 
 Form (every page):
-  1. no raw hex colors — use the shell's .hb tokens
-  2. classes that look like shell vocabulary are actually in the allowlist
+  1. no raw hex colors — use the shell's .hb tokens; and no var(--x) that neither the shell, the
+     repo's theme nor the page itself declares
+  2. classes that look like shell vocabulary are in the allowlist (plus kit.json `classes`)
   3. every page loads /shell/lib.css
   4. no reference to the retired book.js / book.css
 
@@ -50,7 +51,14 @@ NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
 DEFN_NAME = re.compile(r'class="[^"]*\bdefn-name\b', re.I)
 
 # Classes that claim to be shell vocabulary — must be known.
-SHELLISH = re.compile(r"^(?:ev-|v-|st-|sw-|hb-|hb$|own$)")
+SHELLISH = re.compile(r"^(?:ev-|v-|st-|sw-|lane-|hb-|hb$|own$)")
+
+# The shell's hues, in two registers (lib.css): set, then role. `.sw-<hue>` and `.lane-<hue>`.
+HUES = ("teal", "indigo", "blue", "amber", "red", "azure", "violet", "orange")
+
+# `var(--name)` with no fallback, and a custom property declared anywhere (`--name:`).
+VAR_USE = re.compile(r"var\(\s*(--[A-Za-z0-9_-]+)\s*\)")
+VAR_DECL = re.compile(r"(--[A-Za-z0-9_-]+)\s*:")
 
 ALLOWED = {
     # root / chrome
@@ -62,20 +70,14 @@ ALLOWED = {
     "ev", "ev-m", "ev-b", "ev-d", "ev-o",
     "v", "v-kept", "v-disc", "v-rej", "v-unt", "v-gen",
     "st", "st-done", "st-plan", "st-open",
-    "sw-reach", "sw-cert", "sw-target", "sw-slack", "sw-leak",
-    "sw-gen", "sw-judge", "sw-world",
+    *(f"sw-{h}" for h in HUES),
     # lanes / motifs
-    "lane", "lane-reach", "lane-cert", "lane-judge", "lane-gen",
-    "lane-world", "lane-kept", "lane-baseline",
+    "lane", *(f"lane-{h}" for h in HUES), "lane-kept", "lane-baseline",
     "twin", "twin-tag", "twin-row", "twin-k",
     "split", "split-tag", "note", "note-warn",
     # widget primitives
-    "tbtn", "on", "cyc", "prow", "cur", "skip", "nrow", "drawer", "hyp",
-    "cell", "cellrow", "vline", "reach", "inS", "cap", "bad", "cti", "dead",
-    "tag", "lbl", "gate", "gline", "g", "pass", "fail", "flat", "stop",
-    "lchip", "new", "cbar", "ho", "mtable",
+    "tbtn", "on", "cyc", "prow", "cur", "skip", "run", "viol", "drawer", "hyp", "mtable",
     "wcap", "wcap-sm", "wcap-md", "wcap-lg",
-    "k", "d", "r", "c", "sel", "run", "viol",
     # injected by lib.js rather than authored in HTML
     "hb-nav", "hb-home", "hb-foot",
     "hb-has-shell", "hb-no-side", "hb-stage", "hb-side", "hb-side-open",
@@ -86,6 +88,28 @@ ALLOWED = {
     "hb-kind-hub", "hb-kind-note", "hb-kind-project", "hb-kind-page",
     "hb-kind-paper", "hb-kind-related",
 }
+
+
+def known_tokens(repo: Repo) -> set[str]:
+    """Every custom property the vendored shell and the repo's theme declare."""
+    out: set[str] = set()
+    for p in [repo.shell / "lib.css", *config.theme_files(repo)]:
+        if p.is_file():
+            out |= set(VAR_DECL.findall(p.read_text(encoding="utf-8", errors="replace")))
+    return out
+
+
+def _tokens(rel: str, text: str, known: set[str]) -> list[str]:
+    """A `var(--x)` the shell, the theme and the page itself all leave undeclared renders as
+    nothing at all — silently. It is almost always a token from another repo's vocabulary."""
+    here = known | set(VAR_DECL.findall(text))
+    out: list[str] = []
+    for m in VAR_USE.finditer(text):
+        if m.group(1) not in here:
+            line = text.count("\n", 0, m.start()) + 1
+            out.append(f"{rel}:{line}: unknown token var({m.group(1)}) — not a shell token; name it in "
+                       "the repo's theme (kit.json \"theme\") or declare it on the page")
+    return out
 
 
 def allowed_classes(repo: Repo, genres: dict[str, Genre]) -> set[str]:
@@ -247,10 +271,12 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
 
 
 def lint_file(repo: Repo, path: Path, genres: dict[str, Genre],
-              provided: dict | None = None, allowed: set[str] | None = None) -> list[str]:
+              provided: dict | None = None, allowed: set[str] | None = None,
+              tokens: set[str] | None = None) -> list[str]:
     rel = repo.rel(path)
     text = path.read_text(encoding="utf-8", errors="replace")
     probs = _form(rel, text, allowed if allowed is not None else allowed_classes(repo, genres))
+    probs.extend(_tokens(rel, text, tokens if tokens is not None else known_tokens(repo)))
     g = classify(repo, path, genres)
     if g is None:
         known = ", ".join(sorted({x.dir for x in genres.values()}))
@@ -278,10 +304,11 @@ def run(repo: Repo, paths: list[Path] | None = None, *, nav: bool = True) -> tup
     genres = load_genres(repo)
     page_checks, repo_checks = plugin_checks(repo, genres)
     allowed = allowed_classes(repo, genres)
+    tokens = known_tokens(repo)
     files = iter_pages(repo, paths)
     probs: list[str] = []
     for f in files:
-        probs.extend(lint_file(repo, f, genres, page_checks, allowed))
+        probs.extend(lint_file(repo, f, genres, page_checks, allowed, tokens))
     for name, fn in repo_checks.items():
         got = fn(repo) or []
         if not isinstance(got, list):

@@ -39,7 +39,7 @@
           { left: "\\[", right: "\\]", display: true  }
         ],
         throwOnError: false,
-        errorColor: "var(--leak)",
+        errorColor: "var(--red)",
         ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
         ignoredClasses: ["defn-name"]
       };

@@ -12,9 +12,9 @@
 <div class="split">
   <span class="split-tag">SLIPPERY DISTINCTION</span>
   <div class="cols">
-    <div class="lane lane-judge"><h4>The judge</h4>
+    <div class="lane lane-violet"><h4>The judge</h4>
       <p>Decides. Never proposes. Frozen for the whole run.</p></div>
-    <div class="lane lane-gen"><h4>The search loop</h4>
+    <div class="lane lane-azure"><h4>The search loop</h4>
       <p>Proposes. Never decides. May change every round.</p></div>
   </div>
 </div>

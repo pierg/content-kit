@@ -1,0 +1,93 @@
+/* theme-fv.css — the pre-0.4 formal-verification vocabulary as a theme.
+
+   content-kit 0.4 names its hues for what they are (teal, indigo, …) and keeps only generic
+   widgets. A repo whose pages use the old domain names keeps rendering identically by serving
+   this file as its theme (kit.json "theme") and registering the class names below under
+   kit.json "classes":
+
+     sw-reach sw-cert sw-target sw-slack sw-leak sw-gen sw-judge sw-world
+     lane-reach lane-cert lane-target lane-slack lane-leak lane-gen lane-judge lane-world
+
+   The selftest serves it to a page that uses var(--reach) and sw-reach and proves it lints
+   clean — the migration path is tested, not described. */
+
+.hb {
+  --reach: var(--teal);
+  --cert: var(--indigo);
+  --target: var(--blue);
+  --slack: var(--amber);
+  --leak: var(--red);
+  --gen: var(--azure);
+  --judge: var(--violet);
+  --world: var(--orange);
+}
+
+/* swatches and lane borders under the old names */
+.hb .sw-reach { color: var(--reach); font-weight: 700; }
+.hb .sw-cert { color: var(--cert); font-weight: 700; }
+.hb .sw-target { color: var(--target); font-weight: 700; }
+.hb .sw-slack { color: var(--slack); font-weight: 700; }
+.hb .sw-leak { color: var(--leak); font-weight: 700; }
+.hb .sw-gen { color: var(--gen); font-weight: 700; }
+.hb .sw-judge { color: var(--judge); font-weight: 700; }
+.hb .sw-world { color: var(--world); font-weight: 700; }
+.hb .lane-reach { border-color: var(--reach); }
+.hb .lane-cert { border-color: var(--cert); }
+.hb .lane-target { border-color: var(--target); }
+.hb .lane-slack { border-color: var(--slack); }
+.hb .lane-leak { border-color: var(--leak); }
+.hb .lane-gen { border-color: var(--gen); }
+.hb .lane-judge { border-color: var(--judge); }
+.hb .lane-world { border-color: var(--world); }
+
+/* the formal-verification widgets that left lib.css in 0.4, verbatim */
+
+/* node / exam picker row */
+.hb .nrow { display: flex; gap: 3px; flex-wrap: wrap; margin: 10px 0; }
+.hb .nrow button { font: 700 10.5px ui-monospace, Menlo, monospace; padding: 5px 7px;
+                   border: 1.5px solid var(--grid); border-radius: 6px; background: var(--surface-1);
+                   color: var(--ink-2); cursor: pointer; }
+.hb .nrow button.k { border-color: var(--kept); color: var(--kept-text); }
+.hb .nrow button.d { border-color: var(--discarded); }
+.hb .nrow button.r { border-color: var(--rejected); color: var(--rejected); }
+.hb .nrow button.c { border-color: var(--cert); color: var(--cert); }
+.hb .nrow button.sel { border-width: 3px; }
+
+/* state-band explorer cells (M11, rot lab, …) */
+.hb .cellrow { display: flex; gap: 2px; flex-wrap: wrap; margin: 12px 0 4px; }
+.hb .cell { width: 30px; height: 40px; border: 1.5px solid var(--grid); border-radius: 5px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font: 600 11px ui-monospace, Menlo, monospace; color: var(--ink-3); position: relative; }
+.hb .cell.reach { background: color-mix(in srgb, var(--reach) 16%, transparent);
+                  border-color: var(--reach); color: var(--ink-1); }
+.hb .cell.inS, .hb .cell.cap { box-shadow: inset 0 3px 0 var(--cert); }
+.hb .cell.bad { border-color: var(--target); }
+.hb .cell.bad .lbl { color: var(--target); font-weight: 800; }
+.hb .cell.cti, .hb .cell.dead { border-color: var(--leak); border-width: 2.5px; }
+.hb .cell .tag { font-size: 8px; line-height: 1.1; }
+.hb .vline { padding: 3px 0; }
+
+/* gate pipeline chips */
+.hb .gline, .hb .lanebar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+.hb .lanebar { gap: 4px; }
+.hb .gate, .hb .g { font: 700 11px ui-monospace, Menlo, monospace; border: 1.5px solid var(--grid);
+                    border-radius: 6px; padding: 3px 9px; color: var(--ink-3); }
+.hb .g { padding: 5px 10px; }
+.hb .gate.pass, .hb .g.pass { border-color: var(--kept); color: var(--kept-text); }
+.hb .gate.fail, .hb .g.fail { border-color: var(--rejected); color: var(--rejected); }
+.hb .gate.flat { border-color: var(--discarded); color: var(--ink-1); }
+.hb .gate.skip, .hb .g.skip { opacity: 0.4; }
+.hb .g.stop { border-color: var(--untested); color: var(--untested); }
+
+/* lemma chips + conversion bars */
+.hb .lchip { display: inline-block; font: 600 11.5px ui-monospace, Menlo, monospace;
+             border: 1.5px solid var(--cert); color: var(--cert); border-radius: 6px;
+             padding: 2px 8px; margin: 2px 4px 2px 0; }
+.hb .lchip.dead { border-color: var(--leak); color: var(--leak); text-decoration: line-through; }
+.hb .lchip.new { border-color: var(--kept); color: var(--kept-text); }
+.hb .cbar { display: flex; gap: 3px; margin: 6px 0; flex-wrap: wrap; }
+.hb .cbar span { font: 700 10.5px ui-monospace, Menlo, monospace; border-radius: 4px;
+                 padding: 2px 6px; border: 1.5px solid var(--grid); color: var(--ink-3); }
+.hb .cbar span.on { border-color: var(--kept); color: var(--kept-text); }
+.hb .cbar span.ho { border-style: dashed; }
+

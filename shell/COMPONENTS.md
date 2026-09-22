@@ -14,7 +14,7 @@ chapter's HTML (`<style>`). Book chapter order is discovered into `nav.json`
 ```
 
 Chrome (`lib.js`):
-- **Side** — library catalog from `/content/catalog.json` (papers / books / projects / stories / hubs / related / entries / notes / concepts)
+- **Side** — library catalog from `/content/catalog.json`: one group per genre that owns a directory, in the genre table's order (core: papers / books / projects / hubs / related / entries / notes / concepts), then the record; the repo's kit.json `links` sit beside Library · Search · Chronicle at the top
 - **Top** — chapter strip + on-this-page TOC from the book's `nav.json`
 - **Footer** — prev/next chapter
 
@@ -27,18 +27,31 @@ argument. The PDF is a link field unless explicitly vendored.
 
 ## Color registers
 
-Two registers — **never mixed in one figure**:
+Two registers — **never mixed in one figure**. The hues are named for what they are; what they mean is the page's business, said once in its legend.
 
 | Register | Tokens | Use |
 |---|---|---|
-| **SET** | `--reach`, `--cert`, `--target`, `--slack`, `--leak` | Geometry of sets |
-| **ROLE** | `--gen`, `--judge`, `--world` | Loop actors |
+| **SET** | `--teal`, `--indigo`, `--blue`, `--amber`, `--red` | the parts of one picture: sets, regions, layers |
+| **ROLE** | `--azure`, `--violet`, `--orange` | the actors of one process: who proposes, who decides, what changes |
 
-Verdict colors: `--kept`, `--discarded`, `--rejected`, `--untested`.
+Verdict colors: `--kept`, `--discarded`, `--rejected`, `--untested`. Ink and surface: `--ink-1` `--ink-2` `--ink-3`, `--surface-1`, `--page`, `--grid`, `--baseline`, `--ring`. Links and chrome use azure; definitions and laws use violet.
 
-Swatches: `sw-reach` · `sw-cert` · `sw-target` · `sw-slack` · `sw-leak` · `sw-gen` · `sw-judge` · `sw-world`.
+Swatches: `sw-teal` · `sw-indigo` · `sw-blue` · `sw-amber` · `sw-red` · `sw-azure` · `sw-violet` · `sw-orange`.
 
-Lane borders: `lane lane-reach` (also `lane-cert`, `lane-judge`, `lane-gen`, `lane-world`, `lane-kept`, `lane-baseline`).
+Lane borders: `lane lane-<hue>` for any hue above, plus `lane-kept` and `lane-baseline`.
+
+A `var(--x)` that neither this shell, the repo's theme nor the page itself declares fails the lint: it would render as nothing.
+
+## Themes — a repo's own names
+
+A repo whose pages speak a domain's vocabulary maps it onto the hues in a stylesheet declared as kit.json `"theme"` (one path or a list), served as `/shell/theme.css` and imported at the top of `lib.css` — an empty stylesheet when none is declared:
+
+```css
+.hb { --glacier: var(--teal); --alarm: var(--red); }
+.hb .sw-glacier { color: var(--glacier); font-weight: 700; }
+```
+
+Class names the theme adds under a shell prefix (`sw-`, `lane-`, `v-`, `ev-`, `st-`, `hb-`) are registered in kit.json `"classes"` so the lint accepts them. Widgets that only one body of pages uses live in its theme too. `ckit/fixtures/theme-fv.css` is a worked example: the formal-verification vocabulary this shell carried before 0.4, and the widgets that left with it.
 
 ## Definition of record
 
@@ -114,11 +127,14 @@ page. Empty message shows if nothing cites this page yet.
 
 ## Search
 
-The `/shell/search.html` page (engine chrome, not a content page) filters `/content/search-index.json` live. Every
+The `/shell/search.html` page (engine chrome, not a content page) filters `/content/search-index.json` live, merged with every extra index kit.json `"indices"` declares (a folio's federated catalog of sibling repos, say). Every
 page in the library appears — indexed by title, `.sub` line, headings, `defn`
-blockquote, and `<meta name="tags">`. Filter chips let the reader narrow by kind
-(paper / book / project / hub / related / entry / note / concept). Add `<meta name="tags" content="…">`
+blockquote, and `<meta name="tags">`. Filter chips let the reader narrow by kind — one per catalog group, then `page`. Add `<meta name="tags" content="…">`
 to any page to make it findable by tag.
+
+## References
+
+Ids a repo declares in kit.json `"refs"` (`{"pattern": "Q-\\d+", "href": "/shell/record.html?p=QUESTIONS.md#{id}"}`) become links wherever they appear in a page's text — inline `<code>` included; `<pre>`, links, headings, and a qualified id (`other:Q-3`) left alone — and a heading in the record that opens with one gets it as a stable anchor.
 
 ## Check-yourself / flashcards
 
@@ -144,13 +160,9 @@ Reusable across books (in `lib.css`):
 
 | Class | Role |
 |---|---|
-| `.cyc` | cycle / step chips |
-| `.prow` | listing row |
-| `.nrow` + buttons | node/exam picker |
-| `.drawer` | detail panel |
-| `.cellrow` / `.cell` | state-band explorer |
-| `.gate` / `.g` + `.gline` | gate pipeline |
-| `.lchip` · `.cbar` | lemma chips · conversion bars |
+| `.cyc` | cycle / step chips (`.cur` · `.run` · `.viol`) |
+| `.prow` | listing row (`.cur` · `.skip`) |
+| `.drawer` | detail panel (`.hyp` for a quoted hypothesis) |
 | `.mtable` | key column bold |
 | `.wcap` · `.wcap-sm` · `.wcap-md` · `.wcap-lg` | caption sizes |
 

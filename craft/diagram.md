@@ -4,7 +4,7 @@
 
 **The medium.** Hand-authored inline SVG inside a `<figure>`. Inline, so the shell's tokens apply and dark mode works; hand-authored, so every element is deliberate and the source is diffable. No raster screenshots of diagrams, no diagram-as-a-service.
 
-**The register.** One color register per figure. Sets and their geometry → SET (`--reach --cert --target --slack --leak`). Actors in a loop → ROLE (`--gen --judge --world`). Tokens go through `style="fill: var(--reach)"` or a class in the page's `<style>`, never as a bare presentation attribute (`fill="var(…)"` does not resolve) and never as a hex value.
+**The register.** One color register per figure. Sets and their geometry → SET (`--teal --indigo --blue --amber --red`). Actors in a loop → ROLE (`--azure --violet --orange`). Tokens go through `style="fill: var(--teal)"` or a class in the page's `<style>`, never as a bare presentation attribute (`fill="var(…)"` does not resolve) and never as a hex value.
 
 ## Skeleton
 
@@ -16,10 +16,10 @@
       <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
     </marker>
   </defs>
-  <rect x="40" y="70" width="200" height="80" rx="10" style="fill: var(--surface-1); stroke: var(--gen); stroke-width: 2"/>
+  <rect x="40" y="70" width="200" height="80" rx="10" style="fill: var(--surface-1); stroke: var(--azure); stroke-width: 2"/>
   <text x="140" y="105" text-anchor="middle" style="font-weight: 700">search loop</text>
   <text x="140" y="126" text-anchor="middle" class="t2">proposes lemmas</text>
-  <rect x="400" y="70" width="200" height="80" rx="10" style="fill: var(--surface-1); stroke: var(--judge); stroke-width: 2"/>
+  <rect x="400" y="70" width="200" height="80" rx="10" style="fill: var(--surface-1); stroke: var(--violet); stroke-width: 2"/>
   <text x="500" y="105" text-anchor="middle" style="font-weight: 700">judge</text>
   <text x="500" y="126" text-anchor="middle" class="t2">decides, never proposes</text>
   <path d="M240 100 L398 100" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow)"/>
@@ -35,7 +35,7 @@
 
 ## Rules
 
-Every box has a noun. Every arrow has a verb, written on it. A state space shows which states are reachable (`--reach`) versus inside the certificate (`--cert`) versus violating (`--leak`) — and never colors an actor with a set token. Legends live in the caption when three or fewer, in a small key under the figure otherwise.
+Every box has a noun. Every arrow has a verb, written on it. A state space shows which states are reachable (`--teal`) versus inside the certificate (`--indigo`) versus violating (`--red`) — and never colors an actor with a set token. Legends live in the caption when three or fewer, in a small key under the figure otherwise.
 
 ## Do not
 

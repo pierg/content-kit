@@ -17,7 +17,7 @@ Craft is guidance, not a gate: the lint checks that the vocabulary is the shell'
 
 **Show, then tell.** A relationship is a diagram, a set of options is a comparison, a sequence is a timeline. Prose is for what cannot be shown: rationale, trade-offs, open questions.
 
-**One register per figure.** The shell has two color registers — SET (`--reach --cert --target --slack --leak`) for geometry of sets, ROLE (`--gen --judge --world`) for actors in a loop — and a figure uses one of them. Mixing them makes a reader decode two legends at once.
+**One register per figure.** The shell has two color registers — SET (`--teal --indigo --blue --amber --red`) for geometry of sets, ROLE (`--azure --violet --orange`) for actors in a loop — and a figure uses one of them. Mixing them makes a reader decode two legends at once.
 
 **Nothing overflows.** A nested grid or flex child needs `min-width: 0` and `minmax(0, 1fr)` tracks, or a long monospace token pushes the whole page sideways. The shell's `.cols` already does this; a page-local grid must too. Wrap or truncate long unbreakable text deliberately; never let it decide the layout.
 

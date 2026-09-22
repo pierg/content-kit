@@ -21,8 +21,10 @@ from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
-from . import __version__, annotations as ann, book_nav, check, genres, lint, new, serve
-from .paths import KIT_SRC, Repo, load_repo
+import re
+
+from . import __version__, annotations as ann, book_nav, check, config, genres, lint, new, serve
+from .paths import KIT_SRC, PACKAGE_DIR, Repo, load_repo
 
 CLEAN = {
     "note": "a-note",
@@ -341,6 +343,11 @@ def main(argv: list[str]) -> int:
         plant("notes/noshell.html", _page("No shell").replace('<link rel="stylesheet" href="/shell/lib.css">', ""),
               'missing href="/shell/lib.css"')
         plant("notes/badclass.html", _page("Bad class", '<span class="hb-bogus">x</span>'), "unknown shell class")
+        plant("notes/badtoken.html", _page("Bad token", '<p style="color: var(--nope)">x</p>'),
+              "unknown token var(--nope)")
+        # a token the page declares itself, or one used with a fallback, is fine
+        _write(repo, "notes/owntoken.html", _page("Own token",
+               '<p style="--mine: var(--teal); color: var(--mine); border-color: var(--nope2, currentColor)">x</p>'))
         plant("notes/nostatus.html", _page("No status", sub="Just a lede."), "no status")
         plant("notes/sections.html", _page("Sections", "<h2>One</h2><p>x</p>"), "<h2>")
         plant("notes/long.html", _page("Long", "<p>" + "word " * 450 + "</p>"), "over the 400")
@@ -387,6 +394,10 @@ def main(argv: list[str]) -> int:
         for rel, needle, _ in cases:
             _expect(probs, rel, needle, failures)
             planted += 1
+        if any("owntoken" in p for p in probs):
+            failures.append("a token the page declares, or one with a fallback, must not be reported: "
+                            + " | ".join(p for p in probs if "owntoken" in p))
+        planted += 1
         if any("03-fine.html" in p for p in probs):
             failures.append("a declared (data-fwd) forward reference must not be reported")
         planted += 1
@@ -611,6 +622,47 @@ def main(argv: list[str]) -> int:
         planted += 1
         shutil.rmtree(xtmp, ignore_errors=True)
         repo = load_repo(tmp / "repo")
+
+        # --- the hues are neutral; a repo's own names live in its theme. The pre-0.4 formal-
+        #     verification vocabulary, served as a theme (ckit/fixtures/theme-fv.css) with its
+        #     class names registered, makes a page written in it lint clean; without it, each
+        #     old name is reported. No skeleton or craft page may use a domain token.
+        old = ("reach", "cert", "target", "slack", "leak", "gen", "judge", "world")
+        xtmp, xrepo = _scratch()
+        fv_page = _page("Old vocabulary",
+                        '<p style="color: var(--reach)"><span class="sw-reach">Reach</span></p>'
+                        '<div class="lane lane-leak"><div class="cellrow"><div class="cell reach">1</div></div></div>')
+        _write(xrepo, "notes/fv.html", fv_page)
+        with redirect_stdout(io.StringIO()):
+            probs5, _ = lint.run(xrepo, nav=False)
+        for needle in ("unknown token var(--reach)", "unknown shell class 'sw-reach'",
+                       "unknown shell class 'lane-leak'"):
+            _expect(probs5, "notes/fv.html", needle, failures)
+            planted += 1
+        (xrepo.root / "assets").mkdir()
+        shutil.copy(PACKAGE_DIR / "fixtures" / "theme-fv.css", xrepo.root / "assets" / "theme.css")
+        xcfg = json.loads((xrepo.root / "kit.json").read_text())
+        xcfg["theme"] = "assets/theme.css"
+        xcfg["classes"] = [f"{kind}-{o}" for kind in ("sw", "lane") for o in old]
+        (xrepo.root / "kit.json").write_text(json.dumps(xcfg))
+        xrepo = load_repo(xrepo.root)
+        with redirect_stdout(io.StringIO()):
+            probs5, _ = lint.run(xrepo, nav=False)
+        if probs5:
+            failures.append("theme-fv.css with its classes registered must make the old vocabulary lint clean: "
+                            + " | ".join(probs5))
+        served = config.theme_css(xrepo).decode()
+        if "--reach: var(--teal)" not in served or ".hb .cell.reach" not in served:
+            failures.append("the served theme must carry the mapped names and the moved widgets")
+        planted += 2
+        shutil.rmtree(xtmp, ignore_errors=True)
+        domain = re.compile(r"--(?:" + "|".join(old) + r")(?![\w-])|\b(?:sw|lane)-(?:" + "|".join(old) + r")\b")
+        for f in sorted([*(KIT_SRC / "shell" / "skeletons").rglob("*.html"), *(KIT_SRC / "craft").glob("*.md"),
+                         KIT_SRC / "shell" / "lib.css", KIT_SRC / "shell" / "COMPONENTS.md"]):
+            m = domain.search(f.read_text(encoding="utf-8"))
+            if m:
+                failures.append(f"{f.relative_to(KIT_SRC)} uses the domain token {m.group(0)!r} — the shell's hues are neutral")
+        planted += 1
 
         # --- the version pin is load-bearing
         cfg = json.loads((repo.root / "kit.json").read_text())

@@ -10,19 +10,19 @@
 .search-input { width: 100%; padding: 12px 14px; font: 16px/1.4 system-ui, -apple-system, sans-serif;
                 background: var(--surface-1); color: var(--ink-1);
                 border: 1.5px solid var(--baseline); border-radius: 10px; }
-.search-input:focus { outline: 2px solid var(--judge); border-color: var(--judge); }
+.search-input:focus { outline: 2px solid var(--violet); border-color: var(--violet); }
 .search-meta { color: var(--ink-3); font-size: 12px; margin: 8px 2px 12px; }
 .filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; }
 .fchip { font: 600 12px ui-monospace, Menlo, monospace; padding: 3px 10px;
          border-radius: 999px; border: 1.5px solid var(--baseline);
          background: var(--surface-1); color: var(--ink-2); cursor: pointer;
          letter-spacing: 0.03em; text-transform: uppercase; }
-.fchip.on { border-color: var(--judge); color: var(--judge); background: color-mix(in srgb, var(--judge) 8%, var(--surface-1)); }
+.fchip.on { border-color: var(--violet); color: var(--violet); background: color-mix(in srgb, var(--violet) 8%, var(--surface-1)); }
 .hits { list-style: none; padding: 0; margin: 0; }
 .hit  { padding: 12px 0; border-bottom: 1px solid var(--grid); }
 .hit .title { font-weight: 700; font-size: 15px; }
 .hit .title a { color: var(--ink-1); }
-.hit .title a:hover { color: var(--gen); text-decoration: none; }
+.hit .title a:hover { color: var(--azure); text-decoration: none; }
 /* the kind badge takes its colour from the shared .hb-kind-<genre> rule (lib.css, or a layer's theme) */
 .hb .hit .kind { font: 700 10.5px ui-monospace, Menlo, monospace; text-transform: uppercase;
              letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px; border-width: 1px; border-style: solid;
@@ -30,7 +30,7 @@
 .hit .origin { font: 10.5px ui-monospace, Menlo, monospace; color: var(--ink-3); margin-left: 8px; }
 .hit .sub  { color: var(--ink-2); font-size: 13px; margin: 4px 0; }
 .hit .snip { color: var(--ink-3); font-size: 12.5px; font-family: ui-monospace, Menlo, monospace; margin: 4px 0; }
-.hit .snip mark { background: color-mix(in srgb, var(--judge) 22%, transparent); color: var(--ink-1); border-radius: 2px; padding: 0 2px; }
+.hit .snip mark { background: color-mix(in srgb, var(--violet) 22%, transparent); color: var(--ink-1); border-radius: 2px; padding: 0 2px; }
 .hit .href { color: var(--ink-3); font: 11.5px ui-monospace, Menlo, monospace; }
 .hit .tags { display: inline-flex; gap: 4px; margin-left: 8px; }
 .hit .tag  { font: 10.5px ui-monospace, Menlo, monospace; color: var(--ink-3);
