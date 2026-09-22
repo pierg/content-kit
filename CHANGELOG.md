@@ -22,6 +22,8 @@ The page contract stops knowing what a lab is. Everything a layer needs now reac
 
 - **Extension points in `kit.json`**, each validated by `ckit check` and each with a planted fixture that fails by name: `genres` (an object, or a list of objects and repo-relative JSON files, deep-merged in order; `after` and `label` place and name a genre's group), `checks` (modules exposing `CHECKS` and `REPO_CHECKS`; a genre naming a check nobody provides fails the gate), `generators` (modules whose files join the drift-checked indices), `chronicle.extractors` (now declaring their own `KINDS` and `CARDS`), `shell_pages`, `links`, `refs`, `theme`, `classes`, `indices`.
 - **The catalog is the genre table**: sidebar, landing page and search filters are derived from the loaded genres, so an extension genre appears everywhere a core one does.
+- **`<meta name="topic">`** reaches the search index and the catalog (as `topic`) when a page declares one; whether a topic is *required* is a layer's convention (folio's).
+- **An extra index may be an object** carrying its records under `records` (a federated index with its sources beside them).
 - **`ckit init`, `ckit where`, `ckit export`.** `export` writes a static site (landing page, shell, theme, shell pages, content, record files); `--base /<repo>/` serves it under a path such as a GitHub project site — the shell reads its base from its own URL, so nothing else needs configuring. `home` may name a shell page.
 - **Packaging**: `uv tool install git+https://github.com/pierg/content-kit@v0.4.0` gives a `ckit` that carries the kit as package data. `make check` proves it (`tests/wheel.sh`).
 - **The kit's own documentation**, written as a content-kit library in `content/`, published at <https://pierg.github.io/content-kit/>.
@@ -29,6 +31,9 @@ The page contract stops knowing what a lab is. Everything a layer needs now reac
 
 ### Fixed
 
+- The form checks read markup — tags, their attributes, style and script bodies — not the text a page shows, so a code sample or an issue number (`#abc123`) no longer trips the hex, class or token checks, and a commented-out tag is not read.
+- `ckit check` needs node only when there is a book to verify, not whenever `content/books/` exists.
+- The chronicle's "Right now" banner and kind filters stay in their own views.
 - The e2e suite runs on macOS (portable in-place `sed`); `verify.sh` no longer needs bash 4's `mapfile`.
 - `pyproject.toml` and `ckit.__version__` agree.
 
