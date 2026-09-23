@@ -16,8 +16,8 @@ Optional thin override: content/books/<slug>/book.json
   }
 
 Every catalog entry carries `created` and `updated` (YYYY-MM-DD) and the `sha` of what it covers
-(a page, or a whole book): a page whose bytes change gets today's date, an unchanged one keeps its
-dates, and one the catalog has never seen is dated from git history when there is any — so the
+(a page, or a whole book): a page whose text changes gets today's date, an unchanged one keeps its
+dates (whitespace does not count: a re-flowed page is unchanged), and one the catalog has never seen is dated from git history when there is any — so the
 dates are as stable as the pages, and `ckit check` fails on a page edited without `ckit lint`.
 
 Writes (committed artifacts; regenerate via `ckit nav` — lint does it too):
@@ -39,9 +39,7 @@ from pathlib import Path
 from . import chronicle, config, plugins
 from .genres import EXEMPT_PARTS, catalog_groups, load_genres
 from .paths import Repo
-from .text import (
-    DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TAGS_META_RE, TITLE_RE, TOPIC_META_RE, strip_tags, title_of,
-)
+from .text import DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TITLE_RE, meta_content, strip_tags, title_of
 
 NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
 HREF_RE = re.compile(r'href="(/content/[^"#?]*)(?:[#?][^"]*)?"', re.I)
@@ -63,22 +61,28 @@ def _read(p: Path) -> str:
     return p.read_text(encoding="utf-8", errors="replace")
 
 
-def _topic(p: Path) -> str | None:
+def topic_of(html: str) -> str | None:
     """A page's `<meta name="topic">` — a mechanism any content tree may use; a layer decides
     whether it is required (folio does)."""
+    return (meta_content(html, "topic") or "").strip() or None
+
+
+def tags_of(html: str) -> list[str]:
+    return [t.strip() for t in (meta_content(html, "tags") or "").split(",") if t.strip()]
+
+
+def _topic(p: Path) -> str | None:
     try:
-        m = TOPIC_META_RE.search(_read(p))
+        return topic_of(_read(p))
     except OSError:
         return None
-    return m.group(1).strip() or None if m else None
 
 
 def _tags(p: Path) -> list[str]:
     try:
-        m = TAGS_META_RE.search(_read(p))
+        return tags_of(_read(p))
     except OSError:
         return []
-    return [t.strip() for t in m.group(1).split(",") if t.strip()] if m else []
 
 
 def today() -> str:
@@ -86,14 +90,20 @@ def today() -> str:
     return os.environ.get("CKIT_TODAY") or datetime.now(timezone.utc).date().isoformat()
 
 
-def _sha(files: list[Path]) -> str:
-    """What an entry covers, hashed with line endings normalised — a checkout that turns LF into
-    CRLF (Windows autocrlf) must not re-date, or stale, every page."""
+_WS_BYTES = re.compile(rb"\s+")
+
+
+def _sha(files: list[Path], *, legacy: bool = False) -> str:
+    """What an entry covers, hashed with its whitespace collapsed: a page re-flowed, re-indented
+    or checked out with CRLF line endings says the same thing, so it keeps its dates (and is not
+    stale). `legacy` is the 0.5.0.dev0 hash (line endings only), read once so a catalog written
+    by it keeps its dates across the upgrade."""
     h = hashlib.sha1()
     for f in files:
         h.update(f.name.encode("utf-8"))
         h.update(b"\0")
-        h.update(f.read_bytes().replace(b"\r\n", b"\n"))
+        data = f.read_bytes().replace(b"\r\n", b"\n")
+        h.update(data if legacy else _WS_BYTES.sub(b" ", data).strip())
     return h.hexdigest()[:12]
 
 
@@ -167,7 +177,9 @@ def date_items(repo: Repo, entries: list[tuple[dict, list[Path]]]) -> None:
         files = [f for f in files if f.is_file()]
         sha = _sha(files)
         olds = [c[item["href"]] for c in prevs if item["href"] in c]
-        same = next((o for o in olds if o.get("sha") == sha and o.get("created") and o.get("updated")), None)
+        legacy = _sha(files, legacy=True) if olds else None
+        same = next((o for o in olds if o.get("sha") in (sha, legacy) and o.get("created") and o.get("updated")),
+                    None)
         born = sorted(str(o["created"]) for o in olds if o.get("created"))
         if same:
             created, updated = same["created"], same["updated"]
@@ -391,19 +403,18 @@ def _href_of(repo: Repo, p: Path) -> str:
 
 def _record(repo: Repo, p: Path, kinds: dict[str, str]) -> dict:
     text = _read(p)
-    tags_match = TAGS_META_RE.search(text)
-    topic = TOPIC_META_RE.search(text)
+    topic = topic_of(text)
     rec = {
         "title": _snippet(text, TITLE_RE) or _snippet(text, H1_RE) or p.stem,
         "sub": _snippet(text, SUB_RE, 240),
         "defn": _snippet(text, DEFN_RE, 400),
         "headings": _all(text, H2_RE) + _all(text, H3_RE, 4),
-        "tags": [t.strip() for t in tags_match.group(1).split(",")] if tags_match else [],
+        "tags": tags_of(text),
         "kind": _kind_of(repo, p.relative_to(repo.root), kinds),
         "href": _href_of(repo, p),
     }
-    if topic and topic.group(1).strip():
-        rec["topic"] = topic.group(1).strip()
+    if topic:
+        rec["topic"] = topic
     return rec
 
 

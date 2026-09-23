@@ -6,10 +6,12 @@
      existing page under the content directory or a declared shell page
   4. the committed indices equal discovery — a stale catalog / search index / backlinks / nav
      fails, it is not silently rewritten (`ckit lint` or `ckit nav` regenerates; commit the result)
-  5. lint — form, genre, annotations
+  5. lint — form (links, prose, tags included), genre, annotations
   6. every book verifies (node), when node is available
 
-Fail-loud, seconds-fast, no network. Identical locally and in CI — that is the point.
+1–3 are preconditions and stop the gate; 3's home and 4–6 all run and report, and the gate
+fails at the end on any of them — one run names every problem. Fail-loud, seconds-fast, no
+network. Identical locally and in CI — that is the point.
 """
 
 from __future__ import annotations
@@ -50,6 +52,10 @@ def run(repo: Repo) -> int:
         print("\n".join("  " + s for s in bad), file=sys.stderr)
         return 1
 
+    # From here on every stage runs and reports, and the gate fails at the end on any of them:
+    # one run names every problem, so an author (or an agent) fixes them in one pass instead of
+    # meeting them one stage at a time.
+    failed: list[str] = []
     home = repo.cfg.get("home")
     if home and home_page(repo) is None and home_shell_page(repo) is None:
         print(
@@ -57,19 +63,20 @@ def run(repo: Repo) -> int:
             'point it at an existing file, a directory with an index.html, or a declared shell page.',
             file=sys.stderr,
         )
-        return 1
+        failed.append("home")
 
     stale = book_nav.check(repo) if repo.content.is_dir() else []
     if stale:
         print("indices out of date — run `ckit nav` (or `ckit lint`) and commit the result:", file=sys.stderr)
         print("\n".join("  " + s for s in stale), file=sys.stderr)
-        return 1
+        failed.append("indices")
     probs, n = lint.run(repo, nav=False)
     if probs:
         print("\n".join(probs))
         print(f"\n{len(probs)} problem(s) in {n} file(s)")
-        return 1
-    print(f"content lint clean — {n} file(s)")
+        failed.append("lint")
+    else:
+        print(f"content lint clean — {n} file(s)")
 
     books = repo.content / "books"
     to_verify = [b for b in sorted(books.iterdir()) if (b / "index.html").is_file()] if books.is_dir() else []
@@ -77,14 +84,21 @@ def run(repo: Repo) -> int:
     if to_verify and not node:
         print(f"{len(to_verify)} book(s) to verify but node is not on PATH — install node to run the gate",
               file=sys.stderr)
-        return 1
+        failed.append("books")
+        to_verify = []
     env = {**os.environ, "CKIT_ROOT": str(repo.root)}
     for book in to_verify:
         r = subprocess.run([node, str(PACKAGE_DIR / "verify_book.mjs"), repo.rel(book)],
-                           cwd=repo.root, env=env)
+                           cwd=repo.root, env=env, capture_output=True, text=True)
+        sys.stdout.write(r.stdout)  # through Python's streams, so a caller capturing them gets it
+        sys.stderr.write(r.stderr)
         if r.returncode != 0:
             print(f"book verify failed: {repo.rel(book)}", file=sys.stderr)
-            return r.returncode
+            if "books" not in failed:
+                failed.append("books")
+    if failed:
+        print(f"content check failed: {' · '.join(failed)}", file=sys.stderr)
+        return 1
     print("content check ok")
     return 0
 

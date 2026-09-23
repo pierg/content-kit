@@ -22,6 +22,10 @@ ckit init "$TMP/repo" --name "Wheel" --quiet
 grep -q "^source content-kit https://github.com/pierg/content-kit v$(ckit version)$" "$TMP/repo/kit/PIN" \
   || fail "an installed engine must pin the release, got: $(grep '^source' "$TMP/repo/kit/PIN")"
 ( cd "$TMP/repo" && make check >/dev/null ) || fail "make check failed on a repo the installed engine initialised"
-( cd "$TMP/repo" && ckit new note first >/dev/null && ckit lint >/dev/null && make check >/dev/null ) || fail "gate red after a first page"
+( cd "$TMP/repo" && ckit new note first >/dev/null ) || fail "ckit new failed"
+# its skeleton's placeholder links, pointed somewhere real as an author would
+sed -i.bak 's#href="/content/[^"]*OTHER[^"]*"#href="/content/notes/first.html"#g' "$TMP/repo/content/notes/first.html" \
+  && rm -f "$TMP/repo/content/notes/first.html.bak"
+( cd "$TMP/repo" && ckit lint >/dev/null && make check >/dev/null ) || fail "gate red after a first page"
 ( cd "$TMP/repo" && make kit-sync >/dev/null && make kit-verify >/dev/null ) || fail "kit-sync through the installed engine failed"
 echo "wheel ok"

@@ -2,7 +2,7 @@
 
 **A page contract for agent-written knowledge.** An agent picks a genre; the genre carries a structure, a voice and a component vocabulary; the page lands where the genre says; a gate checks what can be checked. A human annotates the rendered page in the browser, and any agent later — in any session, on any clone — picks the notes up and addresses them. Zero build, stdlib Python, hand-authored HTML in one shared shell.
 
-**On this branch (0.5.0.dev0, a prototype):** a new reading shell — the library organised by topic, a reading measure, a ⌘K palette, link peeks, a page rail, a generated home page, dates and tags in the catalog, optional full text through Pagefind. See `CHANGELOG.md`.
+**0.5.0.dev0 (unreleased):** a reading shell — the library organised by topic, a reading measure, a ⌘K palette, link peeks, a page rail, a generated home page, dates and tags in the catalog, optional full text through Pagefind — and the tools to reorganise a library without breaking it: every internal link checked, `ckit topics`, `ckit tags`, `ckit mv`, `ckit rm`, and the `/curate` skill. See `CHANGELOG.md`.
 
 **Documentation:** <https://pierg.github.io/content-kit/> — itself a content-kit library. The reasoning behind each decision is in [`VISION.md`](VISION.md); how a repo's record and pages stay true together is in [`DESIGN-living-content.md`](DESIGN-living-content.md).
 
@@ -42,9 +42,12 @@ Python ≥ 3.10, no dependencies; node for book verification. No `uv`? `git clon
 | Command | Does |
 |---|---|
 | `ckit init [repo]` | vendor the kit into a repo, scaffold what it lacks, pin both |
-| `ckit new <genre> <slug>` | scaffold a page from its genre's skeleton; print its voice card |
-| `ckit lint [paths]` | form + genre + annotation lint; regenerate the indices |
-| `ckit check` | the gate: engine pin · extension points · indices current · lint · books |
+| `ckit new <genre> <slug> [--topic --tags]` | scaffold a page from its genre's skeleton, on its topic; print its voice card |
+| `ckit lint [paths]` | form (links, prose, tags) + genre + annotation lint; regenerate the indices |
+| `ckit check` | the gate: engine pin · extension points · indices current · lint · books — every problem in one run |
+| `ckit topics` · `tags` | the topics (label · hub · pages) and tags; `add` · `rename` · `merge` · `assign` reorganise them |
+| `ckit mv` · `rm --to` | move or retire a page: links rewritten, sidecar and dates carried, the old address redirected |
+| `ckit unwrap [paths]` | join hard-wrapped prose — one paragraph per line |
 | `ckit serve` · `up` · `down` · `status` | the reader, on the repo's port |
 | `ckit export [--base /repo/]` | the site as static files, for any static host |
 | `ckit annotations …` | the session-free review loop: list · show · add · reply · state · check |

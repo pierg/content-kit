@@ -12,7 +12,7 @@
     "tags": [
       "install",
       "uv",
-      "ckit init",
+      "ckit-init",
       "layout",
       "make"
     ],
@@ -33,7 +33,7 @@
     "tags": [
       "genre",
       "voice",
-      "ckit new",
+      "ckit-new",
       "status",
       "promotion"
     ],
@@ -53,7 +53,7 @@
     ],
     "tags": [
       "gate",
-      "ckit check",
+      "ckit-check",
       "lint",
       "indices",
       "fixtures",
@@ -78,7 +78,7 @@
       "annotations",
       "sidecar",
       "address",
-      "ckit annotations"
+      "ckit-annotations"
     ],
     "kind": "book",
     "href": "/content/books/running-a-library/04-the-review-loop.html"
@@ -98,7 +98,7 @@
       "§8 · Moving a 0.3 library across"
     ],
     "tags": [
-      "extension points",
+      "extension-points",
       "kit.json",
       "genres",
       "checks",
@@ -147,7 +147,7 @@
       "annotation",
       "review",
       "sidecar",
-      "W3C web annotation"
+      "w3c-web-annotation"
     ],
     "kind": "concept",
     "href": "/content/concepts/annotation/"
@@ -166,7 +166,7 @@
       "chronicle",
       "timeline",
       "record",
-      "generated index"
+      "generated-index"
     ],
     "kind": "concept",
     "href": "/content/concepts/chronicle/"
@@ -182,7 +182,7 @@
       "Related concepts"
     ],
     "tags": [
-      "extension point",
+      "extension-point",
       "kit.json",
       "layer",
       "plugin"
@@ -260,7 +260,7 @@
     "tags": [
       "skeleton",
       "scaffold",
-      "ckit new"
+      "ckit-new"
     ],
     "kind": "concept",
     "href": "/content/concepts/skeleton/"
@@ -282,9 +282,9 @@
     "tags": [
       "html",
       "markdown",
-      "static site",
-      "build step",
-      "design decision"
+      "static-site",
+      "build-step",
+      "design-decision"
     ],
     "kind": "entry",
     "href": "/content/entries/why-hand-authored-html/"
@@ -306,7 +306,7 @@
     "tags": [
       "content-kit",
       "overview",
-      "start here"
+      "start-here"
     ],
     "kind": "hub",
     "href": "/content/hubs/content-kit.html"
@@ -317,7 +317,7 @@
     "defn": "",
     "headings": [],
     "tags": [
-      "design law",
+      "design-law",
       "checks",
       "fixtures",
       "gate"
@@ -331,11 +331,11 @@
     "defn": "",
     "headings": [],
     "tags": [
-      "placement rule",
+      "placement-rule",
       "layers",
       "mechanisms",
       "conventions",
-      "extension points"
+      "extension-points"
     ],
     "kind": "note",
     "href": "/content/notes/the-placement-rule.html"
@@ -346,7 +346,7 @@
     "defn": "",
     "headings": [],
     "tags": [
-      "one format per document",
+      "one-format-per-document",
       "drift",
       "markdown",
       "html"
@@ -365,11 +365,11 @@
     ],
     "tags": [
       "related-work",
-      "llm wiki",
+      "llm-wiki",
       "documentation",
-      "prose linting",
-      "static site generators",
-      "web annotation"
+      "prose-linting",
+      "static-site-generators",
+      "web-annotation"
     ],
     "kind": "related",
     "href": "/content/related/prior-art.html"

@@ -15,6 +15,11 @@ SPORT=5397
 trap 'cd /; [ -f "$REPO/.serve.pid" ] && kill "$(cat "$REPO/.serve.pid")" 2>/dev/null; [ -n "${HTTPD:-}" ] && kill "$HTTPD" 2>/dev/null; rm -rf "$TMP"' EXIT
 fail() { echo "e2e: $*" >&2; exit 1; }
 edit() { sed -i.bak "$1" "$2" && rm -f "$2.bak"; }   # in place, on GNU and BSD sed alike
+fill() {  # point every skeleton placeholder link at a real page, as an author would
+  grep -rl 'OTHER' "$REPO/content" --include='*.html' | while read -r f; do
+    edit 's#href="/content/[^"]*OTHER[^"]*"#href="/content/concepts/thing/"#g' "$f"
+  done
+}
 json_set() {  # json_set <file> <python expression over c>
   python3 - "$1" "$2" <<'PY'
 import json, sys
@@ -27,11 +32,12 @@ echo "--- init ---"
 ckit init "$REPO" --name "Scratch Repo" --port $PORT >/dev/null
 for f in kit.json Makefile .gitignore kit/PIN kit/shell/lib.css kit/shell/search.html kit/shell/annotate.js \
          kit/genres/GENRES.md kit/genres/genres.json kit/craft/CRAFT.md kit/skills/present/SKILL.md \
-         kit/skills/address/SKILL.md kit/verify.sh kit/tools/kit_hash.py; do
+         kit/skills/address/SKILL.md kit/skills/curate/SKILL.md kit/verify.sh kit/tools/kit_hash.py; do
   [ -e "$REPO/$f" ] || fail "init did not create $f"
 done
 [ -L "$REPO/.claude/skills/present" ] || fail "present skill not symlinked"
 [ -L "$REPO/.claude/skills/address" ] || fail "address skill not symlinked"
+[ -L "$REPO/.claude/skills/curate" ] || fail "curate skill not symlinked"
 grep -q "\"ckit\": \"$(ckit version)\"" "$REPO/kit.json" || fail "kit.json did not get the engine pin"
 grep -q '^source content-kit ' "$REPO/kit/PIN" || fail "PIN has no content-kit source line"
 [ "$(awk '/^source content-kit/ {print NF}' "$REPO/kit/PIN")" = 4 ] || fail "the PIN source line must keep four fields (CI reads the fourth)"
@@ -52,6 +58,9 @@ echo "--- gate on a fresh repo, then on scaffolded pages ---"
   && ckit new book primer >/dev/null && ckit new chapter primer/01-start >/dev/null \
   && ckit new related cluster >/dev/null && ckit new paper draft >/dev/null ) || fail "ckit new failed"
 ( cd "$REPO" && make check >/dev/null 2>&1 ) && fail "stale indices after scaffolding passed the gate"
+OUT="$(cd "$REPO" && ckit lint 2>&1 || true)"
+echo "$OUT" | grep -q "skeleton's placeholder" || fail "the lint must name a fresh scaffold's placeholder links"
+fill
 ( cd "$REPO" && ckit lint >/dev/null && make check >/dev/null ) || fail "make check failed on scaffolded pages after ckit lint"
 [ -f "$REPO/content/catalog.json" ] || fail "indices were not generated"
 grep -q '"related"' "$REPO/content/catalog.json" || fail "catalog lacks the related genre"
@@ -194,6 +203,31 @@ curl -fsS "$S/proj/shell/lib.css" >/dev/null || fail "the based shell did not se
 curl -fsS "$S/proj/content/notes/hello.html" | grep -q "Status: LIVE" || fail "a based page did not serve under /proj/"
 kill "$HTTPD"; HTTPD=""
 echo "export ok"
+
+echo "--- organise: a topic and its hub, tags, prose joined, a move that keeps every link ---"
+( cd "$REPO" && ckit topics add kitchen --label "Kitchen" >/dev/null && ckit new hub kitchen --title "Kitchen" >/dev/null \
+  && ckit new note pepper --title "Pepper" --topic kitchen --tags salt,heat >/dev/null ) || fail "topics add / new --topic failed"
+grep -q '<meta name="topic" content="kitchen">' "$REPO/content/hubs/kitchen.html" || fail "a hub named for a declared topic must take it"
+grep -q '<meta name="tags" content="salt, heat">' "$REPO/content/notes/pepper.html" || fail "new --tags did not set the tags"
+fill
+edit 's#</main>#<p><a href="/content/notes/pepper.html">pepper</a></p></main>#' "$REPO/content/hubs/kitchen.html"
+python3 -c 'import sys, pathlib; p = pathlib.Path(sys.argv[1]); p.write_text(p.read_text().replace("</main>", "<p>hard\nwrapped</p>\n</main>"))' \
+  "$REPO/content/notes/pepper.html"
+OUT="$(cd "$REPO" && ckit lint 2>&1 || true)"
+echo "$OUT" | grep -q "ckit unwrap" || fail "hard-wrapped prose must be reported with its fix"
+( cd "$REPO" && ckit unwrap >/dev/null && ckit lint >/dev/null ) || fail "ckit unwrap did not leave the lint clean"
+( cd "$REPO" && ckit topics | grep -q "^kitchen  Kitchen · content/hubs/kitchen.html" ) || fail "ckit topics must list the topic with its hub"
+( cd "$REPO" && ckit tags | grep -q "salt" ) || fail "ckit tags must list the tags"
+( cd "$REPO" && ckit mv content/notes/pepper.html content/entries/pepper/ >/dev/null ) || fail "ckit mv failed"
+[ -f "$REPO/content/entries/pepper/index.html" ] || fail "ckit mv did not move the page"
+grep -q 'href="/content/entries/pepper/"' "$REPO/content/hubs/kitchen.html" || fail "ckit mv did not rewrite the hub's link"
+grep -q '"/content/notes/pepper.html": "/content/entries/pepper/"' "$REPO/kit.json" || fail "ckit mv did not record the redirect"
+( cd "$REPO" && make check >/dev/null ) || fail "gate red after a move"
+( cd "$REPO" && make docs >/dev/null )
+sleep 0.7
+curl -sI "$B/content/notes/pepper.html" | grep -q '^Location: /content/entries/pepper/' || fail "the old address must redirect"
+( cd "$REPO" && make down >/dev/null )
+echo "organise ok"
 
 echo "--- an open thread whose passage is rewritten turns the gate red ---"
 ( cd "$REPO" && ckit annotations add /content/notes/hello.html --author e2e --body "again" --quote "Atomic-thought unit" >/dev/null )

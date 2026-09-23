@@ -128,7 +128,7 @@ context beyond the blockquote itself.
 
 ## Backlinks
 
-Every page shows who links to it in the page rail (*Linked from*), from `/content/backlinks.json` — a lint-generated reverse index of every internal `href` in the library. No markup is needed. A page that wants the list in its own body as well can still place one:
+Every page shows who links to it in the page rail (*Linked from*), from `/content/backlinks.json` — a lint-generated reverse index of every internal `href` in the library. No markup is needed. A page that wants the list in its own body places one; it then replaces the rail's list (no page shows it twice), and it shows on narrow screens, where the rail is hidden:
 
 ```html
 <h2 id="backlinks">Cited by</h2>
@@ -143,7 +143,11 @@ Two surfaces, one index. The **palette** (⌘K / Ctrl-K / `/`, or the rail's sea
 
 **Full text**, when [Pagefind](https://pagefind.app) is installed (`pip install 'pagefind[bin]'`, or on PATH): `ckit serve` builds a static, chunked index of every page's `<main>` in the background and serves it at `/pagefind/`, `ckit export` writes it into the site, and both surfaces add *In the text* results. Nothing is committed; without it, nothing changes.
 
-Add `<meta name="tags" content="…">` to any page to make it findable by tag; `<meta name="topic" content="<slug>">` puts it on a topic (kit.json `"topics"` names them).
+Add `<meta name="tags" content="…">` to any page to make it findable by tag — lowercase slugs, comma-separated, each once (the lint checks; `ckit tags` lists the library's, so a new page reuses them); `<meta name="topic" content="<slug>">` puts it on a topic (kit.json `"topics"` names them; `ckit topics` lists them). `ckit new … --topic <slug> --tags a,b` writes both.
+
+## Links
+
+Every internal `href` and `src` must resolve the way the exported site will serve it, and the lint checks each one: an absolute address (`/content/…`, `/shell/…`, the landing `/`), or one relative to the page. Reported: an address nothing answers; a directory without an `index.html` (`ckit serve` lists it, a static host 404s); a bare slug (`/k-induction` — the server redirects it, a static host does not); a letter-case mismatch (a Mac forgives it, a Linux host does not); a file git ignores (it is in no clone); and an address kit.json `moved` redirects (link the page where it is now). Skeletons carry placeholder links through `…/OTHER…`, reported until each points at a real page. `data-unchecked` on the element exempts one link the gate cannot see — a build product, an address another process serves. Moving or retiring a page is `ckit mv` / `ckit rm --to`, which rewrite every link to it and record the old address in kit.json `moved`: `ckit serve` answers it with a 301 and `ckit export` leaves a refresh there, so outside links and bookmarks keep working.
 
 ## References
 

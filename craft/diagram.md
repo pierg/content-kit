@@ -4,7 +4,7 @@
 
 **The medium.** Hand-authored inline SVG inside a `<figure>`. Inline, so the shell's tokens apply and dark mode works; hand-authored, so every element is deliberate and the source is diffable. No raster screenshots of diagrams, no diagram-as-a-service.
 
-**The register.** One color register per figure. Sets and their geometry → SET (`--teal --indigo --blue --amber --red`). Actors in a loop → ROLE (`--azure --violet --orange`). Tokens go through `style="fill: var(--teal)"` or a class in the page's `<style>`, never as a bare presentation attribute (`fill="var(…)"` does not resolve) and never as a hex value.
+**The register.** One color register per figure. Sets and their geometry → SET (`--teal --indigo --blue --amber --red`). Actors in a loop → ROLE (`--azure --violet --orange`). Colour through the shell's tokens, never a hex value. In an inline SVG a token resolves in either form: a presentation attribute (`fill="var(--teal)"`) or a style (`style="fill: var(--teal)"`, or a class in the page's `<style>`). They differ only in precedence — any stylesheet rule that targets the shape beats a presentation attribute, and a `style` beats the stylesheet — so write `style=` or a class where a page rule must not recolour the shape. No token resolves in an SVG loaded from a file (`<img src="….svg">`): the figure must be inline. (An earlier version of this playbook said the attribute form "does not resolve"; it does — checked in Chromium, 2026-09-23.)
 
 ## Skeleton
 

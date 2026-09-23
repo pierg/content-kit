@@ -61,6 +61,15 @@ def _shaped(title: str, *, sections: tuple[str, ...] = SHAPE) -> str:
     return _page(title, "".join(f'<h2 id="{s}">{s}</h2><p>x</p>' for s in sections))
 
 
+PLACEHOLDER_HREF = re.compile(r'href="/content/[^"]*OTHER[^"]*"')
+
+
+def _settle(page: Path) -> None:
+    """Point a fresh scaffold's placeholder links somewhere real (the landing page), as an author
+    would point them at real pages."""
+    page.write_text(PLACEHOLDER_HREF.sub('href="/"', page.read_text(encoding="utf-8")), encoding="utf-8")
+
+
 def _write(repo: Repo, rel: str, text: str) -> Path:
     p = repo.content / rel
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -128,6 +137,289 @@ def shell_weight_problems(shell: Path) -> list[str]:
     return out
 
 
+def _organise_cases(failures: list[str]) -> int:
+    """0.5: every link resolves, prose is one paragraph per line, tags are a vocabulary, the gate
+    reports every stage at once, dates ignore whitespace, and topics, tags and pages reorganise
+    without breaking a link — each checked on planted pages."""
+    from . import export, organize, prose
+    from .book_nav import _sha, tags_of, topic_of
+    from .text import page_text
+    planted = 0
+    otmp, repo = _scratch()
+    saved_today = os.environ.get("CKIT_TODAY")
+
+    def quiet(fn, *args, **kw):
+        with redirect_stdout(io.StringIO()) as out:
+            got = fn(*args, **kw)
+        return got, out.getvalue()
+
+    def catalog_item(slug: str) -> dict:
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        return next((i for g in cat["groups"] for i in cat.get(g["key"]) or [] if i["slug"] == slug), {})
+
+    def kit() -> dict:
+        return json.loads((repo.root / "kit.json").read_text())
+
+    try:
+        cfg = kit()
+        cfg["topics"] = {"kitchen": "Kitchen", "garden": "Garden"}
+        (repo.root / "kit.json").write_text(json.dumps(cfg, indent=2) + "\n")
+        repo = load_repo(repo.root)
+        os.environ["CKIT_TODAY"] = "2026-05-01"
+
+        # ckit new: a hub named for a declared topic takes it; --topic and --tags become metas; an
+        # undeclared topic and a malformed tag are refused before anything is written
+        hub = new.create(repo, "hub", "kitchen", title="Kitchen")
+        _settle(hub)
+        if topic_of(hub.read_text()) != "kitchen":
+            failures.append("a hub named for a declared topic must declare that topic")
+        salt = new.create(repo, "note", "salt", title="Salt", topic="kitchen", tags=["salt", "heat"])
+        _settle(salt)
+        if topic_of(salt.read_text()) != "kitchen" or tags_of(salt.read_text()) != ["salt", "heat"]:
+            failures.append("ckit new --topic/--tags must set the page's metas")
+        for kwargs, needle in (({"topic": "astronomy"}, "not declared"), ({"tags": ["Bad Tag"]}, "lowercase slug")):
+            try:
+                new.create(repo, "note", "refused", **kwargs)
+                failures.append(f"ckit new {kwargs} must be refused")
+            except SystemExit as exc:
+                if needle not in str(exc):
+                    failures.append(f"ckit new {kwargs}: the refusal must say {needle!r}, got {exc}")
+            if (repo.content / "notes" / "refused.html").exists():
+                failures.append("a refused `ckit new` must write nothing")
+        planted += 4
+
+        # links: each way an address can fail to resolve is named; what resolves is silent
+        b = _write(repo, "notes/b.html", _page("B", "<p>Bee.</p>", head='<meta name="topic" content="kitchen">'))
+        (repo.content / "notes" / "fig").mkdir()
+        (repo.content / "notes" / "fig" / "ok.svg").write_text("<svg/>")
+        body = ('<p><a href="/content/notes/nope.html">a</a> <a href="/content/notes/">b</a> '
+                '<a href="/content/Notes/b.html">c</a> <a href="/salt">d</a> <img src="fig/missing.png" alt=""> '
+                '<a href="b.html">ok</a> <a href="/shell/search.html?q=x">ok</a> <a href="/shell/theme.css">ok</a> '
+                '<a href="/pagefind/pagefind.js">ok</a> <a href="https://example.org/">ok</a> <a href="#top">ok</a> '
+                '<a data-unchecked href="/built/paper.pdf">ok</a> <img src="fig/ok.svg" alt=""> '
+                '<a href="/content/notes/b.html#x">ok</a> <a href="/">ok</a></p>'
+                '<!-- <a href="/content/gone.html">commented out</a> -->')
+        lk = _write(repo, "notes/links.html", _page("Links", body))
+        mine = [p for p in _lint(repo) if "notes/links.html" in p]
+        for needle in ("/content/notes/nope.html — nothing lives there",
+                       "/content/notes/ — a directory without an index.html",
+                       "/content/Notes/b.html — differs in letter case from /content/notes/b.html",
+                       "/salt — a bare slug",
+                       "src fig/missing.png — nothing lives there"):
+            if not any(needle in p for p in mine):
+                failures.append(f"a dead link must be reported ({needle!r}); got: {mine}")
+            planted += 1
+        if len(mine) != 5:
+            failures.append(f"only the five dead links may be reported, got {len(mine)}: {mine}")
+        planted += 1
+        lk.unlink()
+
+        # prose: one paragraph per line — the hard-wrapped p, li and td are reported once, with the
+        # fix; a <br>, display math and code keep their lines; unwrapping changes no word a reader sees
+        wp = _write(repo, "notes/wrapped.html", _page("Wrapped",
+                    "<p>one line\ncontinues here</p>\n<p>a verse<br>\nnext line</p>\n<p>$$\na = b\n$$</p>\n"
+                    "<ul>\n<li>one</li>\n<li>two\nwrapped</li>\n</ul>\n<pre>code\nkeeps\nlines</pre>\n"
+                    "<table><tr><td>cell\nwrapped</td></tr></table>"))
+        got = [p for p in _lint(repo) if "notes/wrapped.html" in p]
+        if len(got) != 1 or "3 hard-wrapped elements" not in got[0] or "ckit unwrap" not in got[0]:
+            failures.append(f"three hard-wrapped elements must be reported once, with the fix: {got}")
+        before = page_text(wp.read_text())
+        text, n = prose.unwrap(wp.read_text())
+        wp.write_text(text)
+        if n != 3 or page_text(text) != before or "a verse<br>\nnext line" not in text \
+                or "$$\na = b\n$$" not in text or "code\nkeeps\nlines" not in text:
+            failures.append(f"unwrap must join exactly the wrapped elements and leave <br>, math and code (joined {n})")
+        if any("notes/wrapped.html" in p for p in _lint(repo)):
+            failures.append("an unwrapped page must lint clean")
+        planted += 3
+
+        # tags are a vocabulary: lowercase slugs, each once
+        tg = _write(repo, "notes/tagged.html", _page("Tagged", head='<meta name="tags" content="LLM Security, salt, salt, ">'))
+        got = [p for p in _lint(repo) if "notes/tagged.html" in p]
+        for needle in ("'llm-security'", "'salt' twice", "an empty tag"):
+            if not any(needle in p for p in got):
+                failures.append(f"a malformed tag must be reported ({needle!r}); got: {got}")
+            planted += 1
+        tg.unlink()
+        _lint(repo)
+
+        # one `ckit check` reports every stage that fails, and names them
+        salt.write_text(salt.read_text().replace("</main>", '<p><a href="/content/nowhere.html">x</a></p></main>'))
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = check.run(load_repo(repo.root))
+        if rc == 0 or "out of date" not in err.getvalue() or "/content/nowhere.html" not in out.getvalue() \
+                or "indices · lint" not in err.getvalue():
+            failures.append("one `ckit check` must report stale indices and the lint together, naming both")
+        planted += 1
+        salt.write_text(salt.read_text().replace('<p><a href="/content/nowhere.html">x</a></p>', ""))
+        _lint(repo)
+
+        # dates follow what a page says, not how it is laid out: a re-flowed, re-indented, CRLF copy
+        # keeps its dates, and a catalog written by 0.5.0.dev0 (line endings only) keeps its dates
+        os.environ["CKIT_TODAY"] = "2026-05-02"
+        b.write_text(b.read_text().replace("<p>Bee.</p>", "<p>Bee and wasp.</p>"))
+        _lint(repo)
+        os.environ["CKIT_TODAY"] = "2026-05-03"
+        b.write_text(b.read_text().replace("<p>Bee and wasp.</p>", "<p>Bee and\r\n    wasp.</p>"))
+        _lint(repo)
+        if catalog_item("b").get("updated") != "2026-05-02":
+            failures.append(f"a re-flowed page must keep its dates: {catalog_item('b')}")
+        b.write_text(prose.unwrap(b.read_text())[0])
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        for item in cat["notes"]:
+            if item["slug"] == "b":
+                item["sha"] = _sha([b], legacy=True)
+        (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
+        os.environ["CKIT_TODAY"] = "2026-05-04"
+        _lint(repo)
+        if catalog_item("b").get("updated") != "2026-05-02" or catalog_item("b").get("sha") != _sha([b]):
+            failures.append(f"a 0.5.0.dev0 catalog entry must keep its dates and take the new sha: {catalog_item('b')}")
+        planted += 2
+
+        # topics: add (listed with no hub yet), rename (pages, kit.json and the hub move together,
+        # the hub's old address redirected), merge (old slugs kept as tags), assign
+        _write(repo, "hubs/garden.html", _page("Garden", "<p>Map.</p>", head='<meta name="topic" content="garden">'))
+        quiet(organize.topics_add, repo, "pantry")
+        repo = load_repo(repo.root)
+        pantry_line = next((ln for ln in organize.topics_report(repo).splitlines() if ln.startswith("pantry")), "")
+        if kit()["topics"].get("pantry") != "Pantry" or "NO HUB" not in pantry_line:
+            failures.append(f"topics add must declare the topic, listed without a hub: {pantry_line!r}")
+        _write(repo, "hubs/pantry.html", _page("Pantry", "<p>Map.</p>", head='<meta name="topic" content="pantry">'))
+        jar = _write(repo, "notes/jar.html", _page("Jar", '<p>A <a href="/content/hubs/pantry.html">jar</a>.</p>',
+                                                   head='<meta name="topic" content="pantry">'))
+        _lint(repo)
+        repo, _ = quiet(organize.topics_rename, repo, "pantry", "larder")
+        k = kit()
+        if "pantry" in k["topics"] or k["topics"].get("larder") != "Pantry" or topic_of(jar.read_text()) != "larder":
+            failures.append(f"topics rename must rename it in kit.json (label kept) and on every page: {k['topics']}")
+        if not (repo.content / "hubs" / "larder.html").is_file() or (repo.content / "hubs" / "pantry.html").exists() \
+                or 'href="/content/hubs/larder.html"' not in jar.read_text() \
+                or k.get("moved", {}).get("/content/hubs/pantry.html") != "/content/hubs/larder.html":
+            failures.append("topics rename must move the topic's hub with it, links and redirect included")
+        planted += 3
+        repo, said = quiet(organize.topics_merge, repo, ["kitchen", "garden"], "food", "Food")
+        k = kit()
+        if set(k["topics"]) != {"food", "larder"} or topic_of(salt.read_text()) != "food" \
+                or "kitchen" not in tags_of(salt.read_text()):
+            failures.append(f"topics merge must fold the topics into one, the old slug kept as a tag: {k['topics']}")
+        if "2 hubs" not in said:
+            failures.append(f"a merge that leaves a topic two hubs must say so: {said!r}")
+        planted += 2
+        quiet(organize.topics_assign, repo, "larder", ["/content/notes/salt.html"])
+        if topic_of(salt.read_text()) != "larder":
+            failures.append("topics assign must put the page on the topic")
+        planted += 1
+
+        # tags: spellings that look alike are named; a rename merges them on every page
+        heaty = _write(repo, "notes/heaty.html", _page("Heaty", head='<meta name="tags" content="heats, salt">'))
+        if "alike: heat · heats" not in organize.tags_report(repo):
+            failures.append(f"tags that look alike must be named: {organize.tags_report(repo)}")
+        quiet(organize.tags_rename, repo, "heats", "heat")
+        if tags_of(heaty.read_text()) != ["heat", "salt"]:
+            failures.append(f"tags rename must rewrite the tag on every page: {tags_of(heaty.read_text())}")
+        planted += 2
+
+        # mv: a note promoted to an entry — links in (absolute and relative) and its own relative
+        # links rewritten, its sidecar and dates carried, the old address redirected
+        os.environ["CKIT_TODAY"] = "2026-05-04"
+        pepper = _write(repo, "notes/pepper.html", _page(
+            "Pepper", '<p>Pepper goes with <a href="salt.html">salt</a>.</p>'
+            '<details class="fcard"><summary>Q?</summary><div class="back">A.</div></details>',
+            head='<meta name="topic" content="larder">'))
+        linker = _write(repo, "notes/linker.html", _page(
+            "Linker", '<p><a href="/content/notes/pepper.html#x">abs</a> <a href="pepper.html">rel</a></p>'))
+        _lint(repo)
+        ann.add(repo, "/content/notes/pepper.html", "sharper?", author="tester", target={"exact": "Pepper goes with"})
+        os.environ["CKIT_TODAY"] = "2026-05-05"
+        repo, said = quiet(organize.move, repo, pepper, repo.content / "entries" / "pepper" / "index.html")
+        moved_to = repo.content / "entries" / "pepper" / "index.html"
+        sidecar = repo.content / "entries" / "pepper" / "index.annotations.json"
+        if pepper.exists() or not moved_to.is_file():
+            failures.append("mv must move the page")
+        if 'href="/content/entries/pepper/#x"' not in linker.read_text() \
+                or 'href="/content/entries/pepper/"' not in linker.read_text():
+            failures.append(f"mv must rewrite absolute and relative links to the page: {linker.read_text()}")
+        if 'href="/content/notes/salt.html"' not in moved_to.read_text():
+            failures.append("mv must make the moved page's relative links hold from its new place")
+        if not sidecar.is_file() or json.loads(sidecar.read_text()).get("page") != "/content/entries/pepper/" \
+                or ann.check_all(repo):
+            failures.append("mv must carry the sidecar, naming the new address, its anchors intact")
+        if kit().get("moved", {}).get("/content/notes/pepper.html") != "/content/entries/pepper/":
+            failures.append(f"mv must record the redirect in kit.json moved: {kit().get('moved')}")
+        if catalog_item("pepper").get("created") != "2026-05-04" \
+                or catalog_item("pepper").get("href") != "/content/entries/pepper/":
+            failures.append(f"mv must keep the page's created date: {catalog_item('pepper')}")
+        if "1 flashcard" not in said:
+            failures.append(f"mv must say the page's flashcards start afresh: {said!r}")
+        if _lint(repo):
+            failures.append("after mv the gate must be clean: " + " | ".join(_lint(repo)))
+        planted += 8
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), serve.make_handler(repo))
+        th = threading.Thread(target=httpd.serve_forever, daemon=True)
+        th.start()
+        try:
+            st, location, _ = _request(httpd.server_address[1], "/content/notes/pepper.html")
+            if st != 301 or location != "/content/entries/pepper/":
+                failures.append(f"serve must 301 a moved address to its page: {st} {location}")
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+            th.join(timeout=2)
+        quiet(export.run, repo, otmp / "dist")
+        stub = otmp / "dist" / "content" / "notes" / "pepper.html"
+        if not stub.is_file() or "url=/content/entries/pepper/" not in stub.read_text():
+            failures.append("export must leave a refresh at a moved address")
+        planted += 2
+        stale = _write(repo, "notes/stale.html", _page("Stale", '<p><a href="/content/notes/pepper.html">old</a></p>'))
+        if not any("moved to /content/entries/pepper/" in p for p in _lint(repo) if "notes/stale.html" in p):
+            failures.append("a link to a moved address must be reported, naming the new one")
+        stale.unlink()
+        planted += 1
+        for bad, needle in (({"/content/notes/salt.html": "/content/notes/b.html"}, "still exists"),
+                            ({"/content/notes/gone.html": "/content/notes/nowhere.html"}, "where no page lives"),
+                            ({"/x.html": "/y.html", "/y.html": "/x.html"}, "cycle")):
+            saved = repo.cfg.get("moved")
+            repo.cfg["moved"] = bad
+            if not any(needle in p for p in config.problems(repo)):
+                failures.append(f"a malformed kit.json moved ({bad}) must fail the gate saying {needle!r}")
+            repo.cfg["moved"] = saved
+            planted += 1
+
+        # rm: a page with an open thread is refused; once settled it retires into another page,
+        # its links and its address with it
+        extra = _write(repo, "notes/extra.html", _page("Extra", "<p>Extra words.</p>"))
+        points = _write(repo, "notes/points.html", _page("Points", '<p><a href="extra.html">extra</a></p>'))
+        _lint(repo)
+        t = ann.add(repo, "/content/notes/extra.html", "keep?", author="tester", target={"exact": "Extra words."})
+        served, exported = serve._landing(repo, threads=True).decode(), serve._landing(repo).decode()
+        if "Waiting for you · 2 open threads" not in served or "keep?" not in served or "Waiting for you" in exported:
+            failures.append("the served home page must open with the open threads; the exported one must not")
+        planted += 1
+        try:
+            quiet(organize.remove, repo, extra, salt)
+            failures.append("rm must refuse a page with an open annotation thread")
+        except SystemExit as exc:
+            if "open annotation" not in str(exc):
+                failures.append(f"rm's refusal must name the open thread: {exc}")
+        ann.reply(repo, "/content/notes/extra.html", t["id"], "folded into salt", author="tester", state="addressed")
+        repo, _ = quiet(organize.remove, repo, extra, salt)
+        if extra.exists() or ann.sidecar_for(extra).exists() \
+                or 'href="/content/notes/salt.html"' not in points.read_text() \
+                or kit().get("moved", {}).get("/content/notes/extra.html") != "/content/notes/salt.html":
+            failures.append("rm must retire the page and its sidecar, rewrite links to it and redirect its address")
+        if _lint(repo):
+            failures.append("after rm the gate must be clean: " + " | ".join(_lint(repo)))
+        planted += 3
+    finally:
+        if saved_today is None:
+            os.environ.pop("CKIT_TODAY", None)
+        else:
+            os.environ["CKIT_TODAY"] = saved_today
+        shutil.rmtree(otmp, ignore_errors=True)
+    return planted
+
+
 def _expect(probs: list[str], rel: str, needle: str, failures: list[str]) -> None:
     if not any(rel in p and needle in p for p in probs):
         failures.append(f"planted {rel!r} — expected a problem containing {needle!r}; got: "
@@ -139,9 +431,19 @@ def main(argv: list[str]) -> int:
     failures: list[str] = []
     planted = 0
     try:
-        # --- clean: every skeleton scaffolds through `ckit new` and passes the whole gate
+        # --- clean: every skeleton scaffolds through `ckit new`; a fresh scaffold's only complaint
+        #     is each placeholder link it carries, named as one — and once those point at real
+        #     pages, it passes the whole gate
         for genre, slug in CLEAN.items():
             new.create(repo, genre, slug, title=f"Fixture {genre}")
+        probs = _lint(repo)
+        stray = [p for p in probs if "skeleton's placeholder" not in p]
+        if stray or not probs:
+            failures.append("a fresh scaffold must report its placeholder links, and nothing else:\n  "
+                            + "\n  ".join(stray or ["(no placeholder link reported)"]))
+        planted += 1
+        for page in sorted(repo.content.rglob("*.html")):
+            _settle(page)
         probs = _lint(repo)
         if probs:
             failures.append("clean skeletons should lint clean:\n  " + "\n  ".join(probs))
@@ -545,7 +847,7 @@ def main(argv: list[str]) -> int:
             return e.getvalue() if rc_ else ""
 
         xtmp, repo = _scratch()  # a clean repo of its own: the planted violations above stay put
-        new.create(repo, "hub", "a-hub", title="Fixture hub")
+        _settle(new.create(repo, "hub", "a-hub", title="Fixture hub"))
         (repo.root / "plug").mkdir()
         (repo.root / "plug" / "genres_fx.json").write_text(json.dumps({"genres": {
             "recipe": {"dir": "recipes", "layout": "flat", "after": "hub", "label": "Recipes",
@@ -904,6 +1206,9 @@ def main(argv: list[str]) -> int:
             else:
                 os.environ["CKIT_TODAY"] = saved_today
             shutil.rmtree(ztmp, ignore_errors=True)
+
+        # --- 0.5: links, prose, tags, one report per gate, and reorganising without breaking a link
+        planted += _organise_cases(failures)
 
         # --- the shell's weight is a budget: the kit's own shell holds it, and a planted shell that
         #     does not is reported by name

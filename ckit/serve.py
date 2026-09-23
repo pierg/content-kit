@@ -15,6 +15,8 @@ That split is why a repo vendors only the shell, and why every page's absolute
 
 One write endpoint exists, for the annotation layer:
 
+An address kit.json `moved` names answers 301 to where the page lives now (`ckit mv`).
+
   GET  /__annotations/ping          → {"ok": true, "engine": "<version>"}  (lib.js probes this;
                                        static hosting answers 404 and the affordance never appears)
   POST /__annotations               → {"op": "add" | "reply" | "state", ...}  writes the sidecar
@@ -44,7 +46,7 @@ from pathlib import Path
 from urllib.parse import quote, unquote, urlparse
 
 from . import __version__, annotations
-from . import chronicle, config, pagefind
+from . import chronicle, config, links, pagefind
 from .book_nav import _books, _href_of, _title, build_catalog, build_search_index, groups
 from .paths import Repo, home_page, home_shell_page, load_repo
 
@@ -117,10 +119,17 @@ def _read_json(path: Path):
         return None
 
 
-def _landing(repo: Repo, base: str = "/") -> bytes:
+def _clip(s: str, n: int) -> str:
+    s = re.sub(r"\s+", " ", s).strip()
+    return s if len(s) <= n else s[: n - 1].rstrip() + "…"
+
+
+def _landing(repo: Repo, base: str = "/", *, threads: bool = False) -> bytes:
     """The generated home page, for a repo whose kit.json names no `home`: what the library holds,
     by topic when its pages declare topics, what changed lately, and a shelf per genre. Built from
-    the committed indices (the catalog and the search index) — the same data the chrome reads."""
+    the committed indices (the catalog and the search index) — the same data the chrome reads.
+    Served (`threads`), it opens with the annotation threads still open — what a reader, or an
+    agent flagging what it added beyond its source, is waiting on; the exported site omits them."""
     b = lambda href: _attr(_based(href, base))  # noqa: E731
     name = _esc(str(repo.cfg.get("name", "library")))
     question = _esc(str(repo.cfg.get("question", "")))
@@ -139,6 +148,21 @@ def _landing(repo: Repo, base: str = "/") -> bytes:
         f"<h1>{name}</h1>\n" + (f'<p class="hb-hero-q">{question}</p>\n' if question else "") +
         f'<a class="hb-hero-search" href="{b("/shell/search.html")}" data-hb-palette>{SEARCH_ICON}'
         '<span class="hb-find-label">Search everything…</span><span class="hb-kbd">/</span></a>\n</section>')
+
+    waiting = annotations.list_threads(repo, state="open") if threads else []
+    if waiting:
+        titles = {p["href"]: p.get("title", "") for p in pages}
+        rows = []
+        for t in waiting[:8]:
+            href = str(t.get("page") or "")
+            quoted = t["target"].get("exact") if isinstance(t.get("target"), dict) else ""
+            rows.append(f'<li><a href="{b(href)}"><span class="hb-date">{_esc(_clip(str(t.get("author", "")), 18))}</span>'
+                        f'<span>{_esc(titles.get(href) or href)}</span>'
+                        f'<span class="hb-where">{_esc(_clip(str(t.get("body") or quoted or ""), 72))}</span></a></li>')
+        more = len(waiting) - len(rows)
+        parts.append(f'<h2>Waiting for you · {len(waiting)} open thread{"" if len(waiting) == 1 else "s"}</h2>\n'
+                     '<ul class="hb-list">\n' + "\n".join(rows) + "\n</ul>"
+                     + (f'\n<p class="muted">{more} more — <code>ckit annotations list</code></p>' if more else ""))
 
     order = list(labels) + sorted({p["topic"] for p in pages if p.get("topic")} - set(labels))
     cards = []
@@ -351,7 +375,7 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
                     self.send_header("Content-Length", "0")
                     self.end_headers()
                     return
-                self._send(200, _landing(repo), "text/html; charset=utf-8", body)
+                self._send(200, _landing(repo, threads=True), "text/html; charset=utf-8", body)
                 return
             if path == "/shell/theme.css":
                 self._send(200, config.theme_css(repo), "text/css; charset=utf-8", body)
@@ -385,6 +409,14 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
                     self._send(200, listing, "text/html; charset=utf-8", body)
                     return
             if not target.is_file():
+                new = links.follow(links.moved_now(repo), path)
+                if new:  # kit.json `moved`: the page lives on at its new address
+                    query = urlparse(self.path).query
+                    self.send_response(301)
+                    self.send_header("Location", quote(new) + (f"?{query}" if query else ""))
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
                 found = _slug_file(repo, Path(rel_path).name)
                 if found is not None:
                     self.send_response(302)

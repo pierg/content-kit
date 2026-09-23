@@ -68,3 +68,61 @@ def word_count(html: str) -> int:
 def title_of(html: str, fallback: str) -> str:
     m = TITLE_RE.search(html) or H1_RE.search(html)
     return strip_tags(m.group(1)) if m else fallback
+
+
+# --- metadata: <meta name=… content=…> read and written in either attribute order, outside
+#     comments and inert bodies (a commented-out meta is not the page's)
+
+_META = re.compile(r"<meta\b(?:[^>\"']|\"[^\"]*\"|'[^']*')*>", re.I | re.S)
+_ATTR = re.compile(r"""([\w:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))""")
+_INERT = re.compile(r"<!--.*?-->|(<(script|style|noscript|template)\b[^>]*>).*?</\2\s*>", re.S | re.I)
+_HEAD_END = re.compile(r"</head\s*>", re.I)
+
+
+def _mask_inert(html: str) -> str:
+    return _INERT.sub(lambda m: " " * len(m.group(0)), html)
+
+
+def meta_tags(html: str) -> list[tuple[int, int, dict[str, str]]]:
+    """(start, end, attributes) of every <meta> a browser would read, in document order."""
+    out: list[tuple[int, int, dict[str, str]]] = []
+    for m in _META.finditer(_mask_inert(html)):
+        attrs = {}
+        for a in _ATTR.finditer(html[m.start() + 5:m.end() - 1]):
+            val = next(g for g in (a.group(2), a.group(3), a.group(4)) if g is not None)
+            attrs[a.group(1).lower()] = html_mod.unescape(val)
+        out.append((m.start(), m.end(), attrs))
+    return out
+
+
+def meta_content(html: str, name: str) -> str | None:
+    """The content of the page's <meta name="…">, or None when it has none."""
+    for _s, _e, attrs in meta_tags(html):
+        if attrs.get("name", "").lower() == name:
+            return attrs.get("content", "")
+    return None
+
+
+def set_meta(html: str, name: str, value: str | None) -> str:
+    """The page with <meta name="…"> set to `value` (added after the head's last <meta> when it
+    has none), or removed when `value` is None."""
+    found = [(s, e) for s, e, attrs in meta_tags(html) if attrs.get("name", "").lower() == name]
+    tag = f'<meta name="{name}" content="{html_mod.escape(value, quote=True)}">' if value is not None else ""
+    if found:
+        s, e = found[0]
+        if value is None:
+            if html[e:e + 1] == "\n":
+                e += 1
+            return html[:s] + html[e:]
+        return html[:s] + tag + html[e:]
+    if value is None:
+        return html
+    masked = _mask_inert(html)
+    head = _HEAD_END.search(masked)
+    limit = head.start() if head else len(html)
+    ends = [e for s, e, _a in meta_tags(html) if s < limit]
+    if ends:
+        return html[:ends[-1]] + "\n" + tag + html[ends[-1]:]
+    if head:
+        return html[:head.start()] + tag + "\n" + html[head.start():]
+    return tag + "\n" + html

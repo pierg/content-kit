@@ -10,6 +10,9 @@ Form (every page):
   2. classes that look like shell vocabulary are in the allowlist (plus kit.json `classes`)
   3. every page loads /shell/lib.css
   4. no reference to the retired book.js / book.css
+  5. every internal href and src resolves, as the exported site would serve it (links.py)
+  6. one paragraph per line — no hard-wrapped prose (prose.py; `ckit unwrap` joins it)
+  7. tags are lowercase slugs, each once: `<meta name="tags" content="a-tag, another">`
 
 Genre (by position in the tree — see genres.json and genres/GENRES.md):
   5. every page belongs to a genre; a page outside any genre is an error, not a default
@@ -31,10 +34,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from . import annotations, book_nav, config, plugins
+from . import annotations, book_nav, config, links, plugins, prose
 from .genres import Genre, classify, is_exempt, load_genres
 from .paths import DOC_STATUS, Repo
-from .text import DEFN_RE, STATUS_META_RE, SUB_RE, strip_tags, word_count
+from .text import DEFN_RE, STATUS_META_RE, SUB_RE, meta_content, strip_tags, word_count
 
 HEX = re.compile(r"(?<![\w-])#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b")
 CLASS_ATTR = re.compile(r'\bclass="([^"]*)"')
@@ -157,6 +160,29 @@ def _form(rel: str, text: str, allowed: set[str] = ALLOWED) -> list[str]:
         for cls in m.group(1).split():
             if SHELLISH.match(cls) and cls not in allowed:
                 probs.append(f"{rel}: unknown shell class '{cls}'")
+    return probs
+
+
+TAG_SLUG = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+
+
+def _tag_form(rel: str, text: str) -> list[str]:
+    """Tags are a vocabulary, not prose: one spelling each, or the library grows `LLM Security`
+    beside `llm-security` and a filter finds half the pages."""
+    raw = meta_content(_served(text), "tags")
+    if raw is None:
+        return []
+    probs: list[str] = []
+    seen: set[str] = set()
+    for tag in (t.strip() for t in raw.split(",")):
+        if not tag:
+            probs.append(f"{rel}: an empty tag in <meta name=\"tags\"> — a stray comma")
+        elif not TAG_SLUG.match(tag):
+            slug = re.sub(r"[^a-z0-9._-]+", "-", tag.lower()).strip("-")
+            probs.append(f"{rel}: tag {tag!r} — tags are lowercase slugs (a-z 0-9 - . _): {slug!r}")
+        elif tag in seen:
+            probs.append(f"{rel}: tag {tag!r} twice")
+        seen.add(tag)
     return probs
 
 
@@ -297,11 +323,14 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
 
 def lint_file(repo: Repo, path: Path, genres: dict[str, Genre],
               provided: dict | None = None, allowed: set[str] | None = None,
-              tokens: set[str] | None = None) -> list[str]:
+              tokens: set[str] | None = None, resolver: links.Resolver | None = None) -> list[str]:
     rel = repo.rel(path)
     text = path.read_text(encoding="utf-8", errors="replace")
     probs = _form(rel, text, allowed if allowed is not None else allowed_classes(repo, genres))
     probs.extend(_tokens(rel, text, tokens if tokens is not None else known_tokens(repo)))
+    probs.extend(links.check_page(resolver or links.Resolver(repo), rel, path, text))
+    probs.extend(prose.problems(rel, text))
+    probs.extend(_tag_form(rel, text))
     g = classify(repo, path, genres)
     if g is None:
         known = ", ".join(sorted({x.dir for x in genres.values()}))
@@ -330,10 +359,11 @@ def run(repo: Repo, paths: list[Path] | None = None, *, nav: bool = True) -> tup
     page_checks, repo_checks = plugin_checks(repo, genres)
     allowed = allowed_classes(repo, genres)
     tokens = known_tokens(repo)
+    resolver = links.Resolver(repo)
     files = iter_pages(repo, paths)
     probs: list[str] = []
     for f in files:
-        probs.extend(lint_file(repo, f, genres, page_checks, allowed, tokens))
+        probs.extend(lint_file(repo, f, genres, page_checks, allowed, tokens, resolver))
     for name, fn in repo_checks.items():
         got = fn(repo) or []
         if not isinstance(got, list):
