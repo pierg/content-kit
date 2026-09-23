@@ -3,7 +3,7 @@
     ckit init [<repo>] [--name "Name"] [--port 5180]
 
 Vendored into <repo>/kit/ — the parts an agent must find in-repo, readable, pinned:
-    shell/  genres/  craft/  skills/present  skills/address  tools/kit_hash.py  verify.sh
+    shell/  genres/  craft/  skills/{present,address,curate}  tools/kit_hash.py  verify.sh
 from `ckit where`: the package data of an installed engine, or the checkout it runs from.
 The engine itself is not vendored; the repo records the version it was checked against in
 kit.json (`"ckit"`), and `ckit check` fails on a mismatch.
@@ -32,7 +32,7 @@ from .paths import KIT_SRC, LEGACY_MARKER, MARKER
 
 PROJECT_URL = "https://github.com/pierg/content-kit"
 VENDORED_DIRS = ("shell", "genres", "craft")
-SKILLS = ("present", "address")
+SKILLS = ("present", "address", "curate")
 CONTENT_DIRS = ("notes", "entries", "concepts", "hubs", "projects", "papers", "related", "books")
 
 

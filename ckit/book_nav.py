@@ -15,6 +15,11 @@ Optional thin override: content/books/<slug>/book.json
     "planned": [ { "file": "11-x.html", "label": "11 X", "title": "Coming soon" } ]
   }
 
+Every catalog entry carries `created` and `updated` (YYYY-MM-DD) and the `sha` of what it covers
+(a page, or a whole book): a page whose text changes gets today's date, an unchanged one keeps its
+dates (whitespace does not count: a re-flowed page is unchanged), and one the catalog has never seen is dated from git history when there is any — so the
+dates are as stable as the pages, and `ckit check` fails on a page edited without `ckit lint`.
+
 Writes (committed artifacts; regenerate via `ckit nav` — lint does it too):
   content/books/<slug>/nav.json
   content/catalog.json · content/search-index.json · content/backlinks.json
@@ -23,16 +28,18 @@ Writes (committed artifacts; regenerate via `ckit nav` — lint does it too):
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 from . import chronicle, config, plugins
 from .genres import EXEMPT_PARTS, catalog_groups, load_genres
 from .paths import Repo
-from .text import (
-    DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TAGS_META_RE, TITLE_RE, TOPIC_META_RE, strip_tags, title_of,
-)
+from .text import DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TITLE_RE, meta_content, strip_tags, title_of
 
 NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
 HREF_RE = re.compile(r'href="(/content/[^"#?]*)(?:[#?][^"]*)?"', re.I)
@@ -54,14 +61,139 @@ def _read(p: Path) -> str:
     return p.read_text(encoding="utf-8", errors="replace")
 
 
-def _topic(p: Path) -> str | None:
+def topic_of(html: str) -> str | None:
     """A page's `<meta name="topic">` — a mechanism any content tree may use; a layer decides
     whether it is required (folio does)."""
+    return (meta_content(html, "topic") or "").strip() or None
+
+
+def tags_of(html: str) -> list[str]:
+    return [t.strip() for t in (meta_content(html, "tags") or "").split(",") if t.strip()]
+
+
+def _topic(p: Path) -> str | None:
     try:
-        m = TOPIC_META_RE.search(_read(p))
+        return topic_of(_read(p))
     except OSError:
         return None
-    return m.group(1).strip() or None if m else None
+
+
+def _tags(p: Path) -> list[str]:
+    try:
+        return tags_of(_read(p))
+    except OSError:
+        return []
+
+
+def today() -> str:
+    """The date a changed page is stamped with: UTC, or $CKIT_TODAY (fixtures pin it)."""
+    return os.environ.get("CKIT_TODAY") or datetime.now(timezone.utc).date().isoformat()
+
+
+_WS_BYTES = re.compile(rb"\s+")
+
+
+def _sha(files: list[Path], *, legacy: bool = False) -> str:
+    """What an entry covers, hashed with its whitespace collapsed: a page re-flowed, re-indented
+    or checked out with CRLF line endings says the same thing, so it keeps its dates (and is not
+    stale). `legacy` is the 0.5.0.dev0 hash (line endings only), read once so a catalog written
+    by it keeps its dates across the upgrade."""
+    h = hashlib.sha1()
+    for f in files:
+        h.update(f.name.encode("utf-8"))
+        h.update(b"\0")
+        data = f.read_bytes().replace(b"\r\n", b"\n")
+        h.update(data if legacy else _WS_BYTES.sub(b" ", data).strip())
+    return h.hexdigest()[:12]
+
+
+def _git_history(repo: Repo) -> dict[str, tuple[str, str]]:
+    """{repo-relative path: (first commit date, last commit date)} for the content tree, from one
+    `git log` — empty when the repo is not a git work tree (a scratch repo, an export)."""
+    try:
+        r = subprocess.run(["git", "-C", str(repo.root), "log", "--relative", "--format=%x00%cs", "--name-only",
+                            "--", repo.content_name], capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    if r.returncode != 0:
+        return {}
+    hist: dict[str, tuple[str, str]] = {}
+    date = None
+    for line in r.stdout.splitlines():
+        if line.startswith("\0"):
+            date = line[1:].strip() or None
+            continue
+        path = line.strip()
+        if not path or date is None:
+            continue
+        # newest commits come first: the first sighting is the last change, later ones move the first back
+        hist[path] = (date, hist[path][1]) if path in hist else (date, date)
+    return hist
+
+
+def _catalog_entries(cat: object) -> dict[str, dict]:
+    out: dict[str, dict] = {}
+    if not isinstance(cat, dict):
+        return out
+    for g in cat.get("groups") or []:
+        items = cat.get(g.get("key")) if isinstance(g, dict) else None
+        for item in items if isinstance(items, list) else []:
+            if isinstance(item, dict) and isinstance(item.get("href"), str):
+                out[item["href"]] = item
+    return out
+
+
+def _previous_catalogs(repo: Repo) -> list[dict[str, dict]]:
+    """The dates the catalog already carries: the file on disk — or, when it does not parse (a
+    merge conflict in it, the moment `ckit lint` is run to resolve one), both sides of the
+    conflict and then HEAD, so resolving a conflict never re-dates the library: a page kept from
+    either side keeps that side's dates."""
+    p = repo.content / "catalog.json"
+    try:
+        text = p.read_text(encoding="utf-8")
+        got = _catalog_entries(json.loads(text))
+        if got or text.strip().startswith("{"):
+            return [got]
+    except (OSError, ValueError):
+        pass
+    out: list[dict[str, dict]] = []
+    for rev in (":2:", ":3:", "HEAD:"):  # ours and theirs while a merge is unresolved, else HEAD
+        try:
+            r = subprocess.run(["git", "-C", str(repo.root), "show", f"{rev}./{repo.rel(p)}"],
+                               capture_output=True, text=True, timeout=30)
+            if r.returncode == 0:
+                out.append(_catalog_entries(json.loads(r.stdout)))
+        except (OSError, subprocess.SubprocessError, ValueError):
+            continue
+    return out
+
+
+def date_items(repo: Repo, entries: list[tuple[dict, list[Path]]]) -> None:
+    """Stamp each catalog item with created / updated / sha (see the module docstring)."""
+    prevs = _previous_catalogs(repo)
+    hist: dict[str, tuple[str, str]] | None = None
+    now = today()
+    for item, files in entries:
+        files = [f for f in files if f.is_file()]
+        sha = _sha(files)
+        olds = [c[item["href"]] for c in prevs if item["href"] in c]
+        legacy = _sha(files, legacy=True) if olds else None
+        same = next((o for o in olds if o.get("sha") in (sha, legacy) and o.get("created") and o.get("updated")),
+                    None)
+        born = sorted(str(o["created"]) for o in olds if o.get("created"))
+        if same:
+            created, updated = same["created"], same["updated"]
+        elif born:
+            created, updated = born[0], now
+        else:
+            if hist is None:
+                hist = _git_history(repo)
+            seen = [hist[repo.rel(f)] for f in files if repo.rel(f) in hist]
+            if seen:
+                created, updated = min(c for c, _ in seen), max(u for _, u in seen)
+            else:
+                created = updated = now
+        item["created"], item["updated"], item["sha"] = created, updated, sha
 
 
 def _title(p: Path) -> str:
@@ -176,10 +308,27 @@ def _books(repo: Repo) -> list[Path]:
     return [d for d in sorted(books.iterdir()) if d.is_dir() and (d / "index.html").is_file()]
 
 
+def topic_labels(repo: Repo) -> dict[str, str]:
+    """kit.json `topics` — {slug: label} — when the repo declares any: the shell names topics by
+    them. Whether a topic is required is a layer's convention (folio's); naming one is not."""
+    got = repo.cfg.get("topics")
+    if isinstance(got, list):  # a list of slugs names each topic by its slug
+        return {str(s): str(s) for s in got}
+    return {str(k): str(v) for k, v in got.items()} if isinstance(got, dict) else {}
+
+
 def build_catalog(repo: Repo) -> dict:
     c = repo.content_name
     grps = groups(repo)
-    out: dict = {"groups": grps}
+    site = {"name": str(repo.cfg.get("name") or "library")}
+    if repo.cfg.get("question"):
+        site["question"] = str(repo.cfg["question"])
+    out: dict = {"site": site}
+    labels = topic_labels(repo)
+    if labels:
+        out["topics"] = labels
+    out["groups"] = grps
+    dated: list[tuple[dict, list[Path]]] = []
     for g in grps:
         folder, layout = g["key"], g["layout"]
         d = repo.content / folder
@@ -199,7 +348,13 @@ def build_catalog(repo: Repo) -> dict:
                 topic = _topic(p)
                 if topic:  # only when declared, so a repo without topics carries none
                     item["topic"] = topic
+                tags = _tags(p)
+                if tags:
+                    item["tags"] = tags
+                # a book is dated by every page in it; any other entry by its own page
+                dated.append((item, sorted(p.parent.glob("*.html")) if g["kind"] == "book" else [p]))
         out[folder] = items
+    date_items(repo, dated)
     out["record"] = chronicle.record_catalog(repo) if chronicle.enabled(repo) else []
     for key, items in (("links", config.links(repo)), ("refs", config.refs(repo)),
                        ("indices", config.indices(repo))):
@@ -250,19 +405,18 @@ def _href_of(repo: Repo, p: Path) -> str:
 
 def _record(repo: Repo, p: Path, kinds: dict[str, str]) -> dict:
     text = _read(p)
-    tags_match = TAGS_META_RE.search(text)
-    topic = TOPIC_META_RE.search(text)
+    topic = topic_of(text)
     rec = {
         "title": _snippet(text, TITLE_RE) or _snippet(text, H1_RE) or p.stem,
         "sub": _snippet(text, SUB_RE, 240),
         "defn": _snippet(text, DEFN_RE, 400),
         "headings": _all(text, H2_RE) + _all(text, H3_RE, 4),
-        "tags": [t.strip() for t in tags_match.group(1).split(",")] if tags_match else [],
+        "tags": tags_of(text),
         "kind": _kind_of(repo, p.relative_to(repo.root), kinds),
         "href": _href_of(repo, p),
     }
-    if topic and topic.group(1).strip():
-        rec["topic"] = topic.group(1).strip()
+    if topic:
+        rec["topic"] = topic
     return rec
 
 

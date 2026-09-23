@@ -1,4 +1,8 @@
 {
+  "site": {
+    "name": "content-kit",
+    "question": "How do agents write pages that keep belonging — in the right place, in the right voice, checked, and reviewable by a human in the browser?"
+  },
   "groups": [
     {
       "key": "papers",
@@ -54,7 +58,18 @@
     {
       "slug": "running-a-library",
       "title": "Running a library",
-      "href": "/content/books/running-a-library/"
+      "href": "/content/books/running-a-library/",
+      "tags": [
+        "guide",
+        "install",
+        "genres",
+        "gate",
+        "review",
+        "extending"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "1f25e3e9fe96"
     }
   ],
   "projects": [],
@@ -62,75 +77,194 @@
     {
       "slug": "content-kit",
       "title": "content-kit",
-      "href": "/content/hubs/content-kit.html"
+      "href": "/content/hubs/content-kit.html",
+      "tags": [
+        "content-kit",
+        "overview",
+        "start-here"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "0a2728ac9325"
     }
   ],
   "related": [
     {
       "slug": "prior-art",
       "title": "Prior art",
-      "href": "/content/related/prior-art.html"
+      "href": "/content/related/prior-art.html",
+      "tags": [
+        "related-work",
+        "llm-wiki",
+        "documentation",
+        "prose-linting",
+        "static-site-generators",
+        "web-annotation"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "51ea7ce4e43a"
     }
   ],
   "entries": [
     {
       "slug": "why-hand-authored-html",
       "title": "Why hand-authored HTML",
-      "href": "/content/entries/why-hand-authored-html/"
+      "href": "/content/entries/why-hand-authored-html/",
+      "tags": [
+        "html",
+        "markdown",
+        "static-site",
+        "build-step",
+        "design-decision"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "8c35760faa1e"
     }
   ],
   "notes": [
     {
       "slug": "the-design-law",
       "title": "The design law",
-      "href": "/content/notes/the-design-law.html"
+      "href": "/content/notes/the-design-law.html",
+      "tags": [
+        "design-law",
+        "checks",
+        "fixtures",
+        "gate"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "ccf2b7398da1"
     },
     {
       "slug": "the-placement-rule",
       "title": "The placement rule",
-      "href": "/content/notes/the-placement-rule.html"
+      "href": "/content/notes/the-placement-rule.html",
+      "tags": [
+        "placement-rule",
+        "layers",
+        "mechanisms",
+        "conventions",
+        "extension-points"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "25d0bbef9c0c"
     },
     {
       "slug": "twins-drift",
       "title": "Twins drift",
-      "href": "/content/notes/twins-drift.html"
+      "href": "/content/notes/twins-drift.html",
+      "tags": [
+        "one-format-per-document",
+        "drift",
+        "markdown",
+        "html"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "247f3d9eed09"
     }
   ],
   "concepts": [
     {
       "slug": "annotation",
       "title": "Annotation",
-      "href": "/content/concepts/annotation/"
+      "href": "/content/concepts/annotation/",
+      "tags": [
+        "annotation",
+        "review",
+        "sidecar",
+        "w3c-web-annotation"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "7badafa7208a"
     },
     {
       "slug": "chronicle",
       "title": "Chronicle",
-      "href": "/content/concepts/chronicle/"
+      "href": "/content/concepts/chronicle/",
+      "tags": [
+        "chronicle",
+        "timeline",
+        "record",
+        "generated-index"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "6b15530d77fb"
     },
     {
       "slug": "extension-point",
       "title": "Extension point",
-      "href": "/content/concepts/extension-point/"
+      "href": "/content/concepts/extension-point/",
+      "tags": [
+        "extension-point",
+        "kit.json",
+        "layer",
+        "plugin"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "02e38fb1176e"
     },
     {
       "slug": "gate",
       "title": "Gate",
-      "href": "/content/concepts/gate/"
+      "href": "/content/concepts/gate/",
+      "tags": [
+        "gate",
+        "check",
+        "lint",
+        "ci"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-22",
+      "sha": "bf36e19296f5"
     },
     {
       "slug": "genre",
       "title": "Genre",
-      "href": "/content/concepts/genre/"
+      "href": "/content/concepts/genre/",
+      "tags": [
+        "genre",
+        "voice",
+        "structure",
+        "taxonomy"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-22",
+      "sha": "2aea4df745aa"
     },
     {
       "slug": "record",
       "title": "Record",
-      "href": "/content/concepts/record/"
+      "href": "/content/concepts/record/",
+      "tags": [
+        "record",
+        "log",
+        "history",
+        "markdown"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-22",
+      "sha": "cf03661b8c05"
     },
     {
       "slug": "skeleton",
       "title": "Skeleton",
-      "href": "/content/concepts/skeleton/"
+      "href": "/content/concepts/skeleton/",
+      "tags": [
+        "skeleton",
+        "scaffold",
+        "ckit-new"
+      ],
+      "created": "2026-09-22",
+      "updated": "2026-09-23",
+      "sha": "e85f5ee44205"
     }
   ],
   "record": []

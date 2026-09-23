@@ -14,6 +14,8 @@ import io
 import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import threading
 from contextlib import redirect_stdout
@@ -59,6 +61,15 @@ def _shaped(title: str, *, sections: tuple[str, ...] = SHAPE) -> str:
     return _page(title, "".join(f'<h2 id="{s}">{s}</h2><p>x</p>' for s in sections))
 
 
+PLACEHOLDER_HREF = re.compile(r'href="/content/[^"]*OTHER[^"]*"')
+
+
+def _settle(page: Path) -> None:
+    """Point a fresh scaffold's placeholder links somewhere real (the landing page), as an author
+    would point them at real pages."""
+    page.write_text(PLACEHOLDER_HREF.sub('href="/"', page.read_text(encoding="utf-8")), encoding="utf-8")
+
+
 def _write(repo: Repo, rel: str, text: str) -> Path:
     p = repo.content / rel
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -97,6 +108,486 @@ def _request(port: int, path: str) -> tuple[int, str | None, bytes]:
         conn.close()
 
 
+def _get(port: int, path: str, headers: dict | None = None) -> tuple[int, dict, bytes]:
+    """One GET with request headers — status, the response headers (lower-cased), and the body."""
+    conn = HTTPConnection("127.0.0.1", port, timeout=5)
+    try:
+        conn.request("GET", path, headers=headers or {})
+        resp = conn.getresponse()
+        return resp.status, {k.lower(): v for k, v in resp.getheaders()}, resp.read()
+    finally:
+        conn.close()
+
+
+# What every page loads before its own content: the shell's stylesheet and script, gzipped, and the
+# two reading faces. A budget nothing checks gets spent; this one is checked on the kit's own shell.
+SHELL_BUDGET = 32 * 1024
+FONT_BUDGET = 200 * 1024
+
+
+def shell_weight_problems(shell: Path) -> list[str]:
+    import gzip
+    out: list[str] = []
+    weight = sum(len(gzip.compress((shell / f).read_bytes(), 9)) for f in ("lib.css", "lib.js") if (shell / f).is_file())
+    if weight > SHELL_BUDGET:
+        out.append(f"the shell (lib.css + lib.js) is {weight} bytes gzipped, over its {SHELL_BUDGET}-byte budget")
+    fonts = sum(p.stat().st_size for p in (shell / "vendor" / "fonts").glob("*.woff2"))
+    if fonts > FONT_BUDGET:
+        out.append(f"the shell's fonts are {fonts} bytes, over their {FONT_BUDGET}-byte budget")
+    return out
+
+
+def _organise_cases(failures: list[str]) -> int:
+    """0.5: every link resolves, prose is one paragraph per line, tags are a vocabulary, the gate
+    reports every stage at once, dates ignore whitespace, and topics, tags and pages reorganise
+    without breaking a link — each checked on planted pages."""
+    from . import export, links, organize, prose
+    from .book_nav import _sha, tags_of, topic_of
+    from .text import page_text
+    planted = 0
+    otmp, repo = _scratch()
+    saved_today = os.environ.get("CKIT_TODAY")
+
+    def quiet(fn, *args, **kw):
+        with redirect_stdout(io.StringIO()) as out:
+            got = fn(*args, **kw)
+        return got, out.getvalue()
+
+    def catalog_item(slug: str) -> dict:
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        return next((i for g in cat["groups"] for i in cat.get(g["key"]) or [] if i["slug"] == slug), {})
+
+    def kit() -> dict:
+        return json.loads((repo.root / "kit.json").read_text())
+
+    try:
+        cfg = kit()
+        cfg["topics"] = {"kitchen": "Kitchen", "garden": "Garden"}
+        (repo.root / "kit.json").write_text(json.dumps(cfg, indent=2) + "\n")
+        repo = load_repo(repo.root)
+        os.environ["CKIT_TODAY"] = "2026-05-01"
+
+        # ckit new: a hub named for a declared topic takes it; --topic and --tags become metas; an
+        # undeclared topic and a malformed tag are refused before anything is written
+        hub = new.create(repo, "hub", "kitchen", title="Kitchen")
+        _settle(hub)
+        if topic_of(hub.read_text()) != "kitchen":
+            failures.append("a hub named for a declared topic must declare that topic")
+        salt = new.create(repo, "note", "salt", title="Salt", topic="kitchen", tags=["salt", "heat"])
+        _settle(salt)
+        if topic_of(salt.read_text()) != "kitchen" or tags_of(salt.read_text()) != ["salt", "heat"]:
+            failures.append("ckit new --topic/--tags must set the page's metas")
+        for kwargs, needle in (({"topic": "astronomy"}, "not declared"), ({"tags": ["Bad Tag"]}, "lowercase slug")):
+            try:
+                new.create(repo, "note", "refused", **kwargs)
+                failures.append(f"ckit new {kwargs} must be refused")
+            except SystemExit as exc:
+                if needle not in str(exc):
+                    failures.append(f"ckit new {kwargs}: the refusal must say {needle!r}, got {exc}")
+            if (repo.content / "notes" / "refused.html").exists():
+                failures.append("a refused `ckit new` must write nothing")
+        planted += 4
+
+        # links: each way an address can fail to resolve is named; what resolves is silent
+        b = _write(repo, "notes/b.html", _page("B", "<p>Bee.</p>", head='<meta name="topic" content="kitchen">'))
+        (repo.content / "notes" / "fig").mkdir()
+        (repo.content / "notes" / "fig" / "ok.svg").write_text("<svg/>")
+        body = ('<p><a href="/content/notes/nope.html">a</a> <a href="/content/notes/">b</a> '
+                '<a href="/content/Notes/b.html">c</a> <a href="/salt">d</a> <img src="fig/missing.png" alt=""> '
+                '<a href="b.html">ok</a> <a href="/shell/search.html?q=x">ok</a> <a href="/shell/theme.css">ok</a> '
+                '<a href="/pagefind/pagefind.js">ok</a> <a href="https://example.org/">ok</a> <a href="#top">ok</a> '
+                '<a data-unchecked href="/built/paper.pdf">ok</a> <img src="fig/ok.svg" alt=""> '
+                '<a href="/content/notes/b.html#x">ok</a> <a href="/">ok</a></p>'
+                '<!-- <a href="/content/gone.html">commented out</a> -->')
+        lk = _write(repo, "notes/links.html", _page("Links", body))
+        mine = [p for p in _lint(repo) if "notes/links.html" in p]
+        for needle in ("/content/notes/nope.html — nothing lives there",
+                       "/content/notes/ — a directory without an index.html",
+                       "/content/Notes/b.html — differs in letter case from /content/notes/b.html",
+                       "/salt — a bare slug",
+                       "src fig/missing.png — nothing lives there"):
+            if not any(needle in p for p in mine):
+                failures.append(f"a dead link must be reported ({needle!r}); got: {mine}")
+            planted += 1
+        if len(mine) != 5:
+            failures.append(f"only the five dead links may be reported, got {len(mine)}: {mine}")
+        planted += 1
+        lk.unlink()
+
+        # prose: one paragraph per line — the hard-wrapped p, li and td are reported once, with the
+        # fix; a <br>, display math and code keep their lines; unwrapping changes no word a reader sees
+        wp = _write(repo, "notes/wrapped.html", _page("Wrapped",
+                    "<p>one line\ncontinues here</p>\n<p>a verse<br>\nnext line</p>\n<p>$$\na = b\n$$</p>\n"
+                    "<ul>\n<li>one</li>\n<li>two\nwrapped</li>\n</ul>\n<pre>code\nkeeps\nlines</pre>\n"
+                    "<table><tr><td>cell\nwrapped</td></tr></table>\n<p>$a + b % the sum\n+ c$ and so</p>\n"
+                    "<p>if x < y and\nz > w then</p>\n"
+                    '<p>see <a title="two\nlines" href="/">this</a> link</p>'))
+        got = [p for p in _lint(repo) if "notes/wrapped.html" in p]
+        if len(got) != 1 or "4 hard-wrapped elements" not in got[0] or "ckit unwrap" not in got[0]:
+            failures.append(f"three hard-wrapped elements must be reported once, with the fix: {got}")
+        before = page_text(wp.read_text())
+        text, n = prose.unwrap(wp.read_text())
+        wp.write_text(text)
+        if n != 4 or page_text(text) != before or "a verse<br>\nnext line" not in text \
+                or "$$\na = b\n$$" not in text or "code\nkeeps\nlines" not in text \
+                or "% the sum\n+ c$" not in text or 'title="two\nlines"' not in text:
+            failures.append(f"unwrap must join exactly the wrapped elements and leave <br>, math (a TeX % "
+                            f"inline too), code and attribute values (joined {n})")
+        if any("notes/wrapped.html" in p for p in _lint(repo)):
+            failures.append("an unwrapped page must lint clean")
+        planted += 3
+
+        # tags are a vocabulary: lowercase slugs, each once
+        tg = _write(repo, "notes/tagged.html", _page("Tagged", head='<meta name="tags" content="LLM Security, salt, salt, ">'))
+        got = [p for p in _lint(repo) if "notes/tagged.html" in p]
+        for needle in ("'llm-security'", "'salt' twice", "an empty tag"):
+            if not any(needle in p for p in got):
+                failures.append(f"a malformed tag must be reported ({needle!r}); got: {got}")
+            planted += 1
+        tg.unlink()
+        _lint(repo)
+
+        # one `ckit check` reports every stage that fails, and names them
+        salt.write_text(salt.read_text().replace("</main>", '<p><a href="/content/nowhere.html">x</a></p></main>'))
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = check.run(load_repo(repo.root))
+        if rc == 0 or "out of date" not in err.getvalue() or "/content/nowhere.html" not in out.getvalue() \
+                or "indices · lint" not in err.getvalue():
+            failures.append("one `ckit check` must report stale indices and the lint together, naming both")
+        planted += 1
+        salt.write_text(salt.read_text().replace('<p><a href="/content/nowhere.html">x</a></p>', ""))
+        _lint(repo)
+
+        # dates follow what a page says, not how it is laid out: a re-flowed, re-indented, CRLF copy
+        # keeps its dates, and a catalog written by 0.5.0.dev0 (line endings only) keeps its dates
+        os.environ["CKIT_TODAY"] = "2026-05-02"
+        b.write_text(b.read_text().replace("<p>Bee.</p>", "<p>Bee and wasp.</p>"))
+        _lint(repo)
+        os.environ["CKIT_TODAY"] = "2026-05-03"
+        b.write_text(b.read_text().replace("<p>Bee and wasp.</p>", "<p>Bee and\r\n    wasp.</p>"))
+        _lint(repo)
+        if catalog_item("b").get("updated") != "2026-05-02":
+            failures.append(f"a re-flowed page must keep its dates: {catalog_item('b')}")
+        b.write_text(prose.unwrap(b.read_text())[0])
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        for item in cat["notes"]:
+            if item["slug"] == "b":
+                item["sha"] = _sha([b], legacy=True)
+        (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
+        os.environ["CKIT_TODAY"] = "2026-05-04"
+        _lint(repo)
+        if catalog_item("b").get("updated") != "2026-05-02" or catalog_item("b").get("sha") != _sha([b]):
+            failures.append(f"a 0.5.0.dev0 catalog entry must keep its dates and take the new sha: {catalog_item('b')}")
+        planted += 2
+        w2 = _write(repo, "notes/w2.html", _page("W2", "<p>two\nlines</p>"))
+        _lint(repo)
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        for item in cat["notes"]:
+            if item["slug"] == "w2":
+                item["sha"] = _sha([w2], legacy=True)
+        (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
+        os.environ["CKIT_TODAY"] = "2026-05-05"
+        prose.unwrap_repo(repo, [w2])
+        os.environ["CKIT_TODAY"] = "2026-05-04"
+        if catalog_item("w2").get("updated") != "2026-05-04" or "two lines" not in w2.read_text():
+            failures.append(f"`ckit unwrap` on a 0.5.0.dev0 catalog must keep a joined page's dates: {catalog_item('w2')}")
+        w2.unlink()
+        _lint(repo)
+        planted += 1
+
+        # topics: add (listed with no hub yet), rename (pages, kit.json and the hub move together,
+        # the hub's old address redirected), merge (old slugs kept as tags), assign
+        _write(repo, "hubs/garden.html", _page("Garden", "<p>Map.</p>", head='<meta name="topic" content="garden">'))
+        quiet(organize.topics_add, repo, "pantry")
+        repo = load_repo(repo.root)
+        pantry_line = next((ln for ln in organize.topics_report(repo).splitlines() if ln.startswith("pantry")), "")
+        if kit()["topics"].get("pantry") != "Pantry" or "NO HUB" not in pantry_line:
+            failures.append(f"topics add must declare the topic, listed without a hub: {pantry_line!r}")
+        _write(repo, "hubs/pantry.html", _page("Pantry", "<p>Map.</p>", head='<meta name="topic" content="pantry">'))
+        jar = _write(repo, "notes/jar.html", _page("Jar", '<p>A <a href="/content/hubs/pantry.html">jar</a>.</p>',
+                                                   head='<meta name="topic" content="pantry">'))
+        _lint(repo)
+        repo, _ = quiet(organize.topics_rename, repo, "pantry", "larder")
+        k = kit()
+        if "pantry" in k["topics"] or k["topics"].get("larder") != "Pantry" or topic_of(jar.read_text()) != "larder":
+            failures.append(f"topics rename must rename it in kit.json (label kept) and on every page: {k['topics']}")
+        if not (repo.content / "hubs" / "larder.html").is_file() or (repo.content / "hubs" / "pantry.html").exists() \
+                or 'href="/content/hubs/larder.html"' not in jar.read_text() \
+                or k.get("moved", {}).get("/content/hubs/pantry.html") != "/content/hubs/larder.html":
+            failures.append("topics rename must move the topic's hub with it, links and redirect included")
+        planted += 3
+        repo, said = quiet(organize.topics_merge, repo, ["kitchen", "garden"], "food", "Food")
+        k = kit()
+        if set(k["topics"]) != {"food", "larder"} or topic_of(salt.read_text()) != "food" \
+                or "kitchen" not in tags_of(salt.read_text()):
+            failures.append(f"topics merge must fold the topics into one, the old slug kept as a tag: {k['topics']}")
+        if "2 hubs" not in said:
+            failures.append(f"a merge that leaves a topic two hubs must say so: {said!r}")
+        planted += 2
+        quiet(organize.topics_add, repo, "delta")
+        quiet(organize.topics_add, repo, "beta")
+        repo = load_repo(repo.root)
+        _write(repo, "hubs/delta.html", _page("Delta", head='<meta name="topic" content="delta">'))
+        _write(repo, "hubs/beta.html", _page("Beta", head='<meta name="topic" content="beta">'))
+        repo, said = quiet(organize.topics_merge, repo, ["beta"], "delta")
+        if "ckit rm content/hubs/beta.html --to content/hubs/delta.html" not in said:
+            failures.append(f"a merge must keep the hub named for the surviving topic: {said!r}")
+        planted += 1
+        quiet(organize.topics_assign, repo, "larder", ["/content/notes/salt.html"])
+        if topic_of(salt.read_text()) != "larder":
+            failures.append("topics assign must put the page on the topic")
+        planted += 1
+
+        # tags: spellings that look alike are named; a rename merges them on every page
+        heaty = _write(repo, "notes/heaty.html", _page("Heaty", head='<meta name="tags" content="heats, salt">'))
+        if "alike: heat · heats" not in organize.tags_report(repo):
+            failures.append(f"tags that look alike must be named: {organize.tags_report(repo)}")
+        quiet(organize.tags_rename, repo, "heats", "heat")
+        if tags_of(heaty.read_text()) != ["heat", "salt"]:
+            failures.append(f"tags rename must rewrite the tag on every page: {tags_of(heaty.read_text())}")
+        planted += 2
+        up = _write(repo, "notes/up.html", _page("Up", head='<meta name="tags" content="LLM">'))
+        low = _write(repo, "notes/low.html", _page("Low", head='<meta name="tags" content="llm">'))
+        if "ckit tags rename LLM llm" not in organize.tags_report(repo):
+            failures.append(f"the suggested spelling must be one `ckit tags rename` accepts: {organize.tags_report(repo)}")
+        up.unlink()
+        low.unlink()
+        planted += 1
+
+        # mv: a note promoted to an entry — links in (absolute and relative) and its own relative
+        # links rewritten, its sidecar and dates carried, the old address redirected
+        os.environ["CKIT_TODAY"] = "2026-05-04"
+        pepper = _write(repo, "notes/pepper.html", _page(
+            "Pepper", '<p>Pepper goes with <a href="salt.html">salt</a>.</p>'
+            '<details class="fcard"><summary>Q?</summary><div class="back">A.</div></details>',
+            head='<meta name="topic" content="larder">'))
+        linker = _write(repo, "notes/linker.html", _page(
+            "Linker", '<p><a href="/content/notes/pepper.html#x">abs</a> <a href="pepper.html">rel</a></p>'))
+        _lint(repo)
+        ann.add(repo, "/content/notes/pepper.html", "sharper?", author="tester", target={"exact": "Pepper goes with"})
+        os.environ["CKIT_TODAY"] = "2026-05-05"
+        repo, said = quiet(organize.move, repo, pepper, repo.content / "entries" / "pepper" / "index.html")
+        moved_to = repo.content / "entries" / "pepper" / "index.html"
+        sidecar = repo.content / "entries" / "pepper" / "index.annotations.json"
+        if pepper.exists() or not moved_to.is_file():
+            failures.append("mv must move the page")
+        if 'href="/content/entries/pepper/#x"' not in linker.read_text() \
+                or 'href="/content/entries/pepper/"' not in linker.read_text():
+            failures.append(f"mv must rewrite absolute and relative links to the page: {linker.read_text()}")
+        if 'href="/content/notes/salt.html"' not in moved_to.read_text():
+            failures.append("mv must make the moved page's relative links hold from its new place")
+        if not sidecar.is_file() or json.loads(sidecar.read_text()).get("page") != "/content/entries/pepper/" \
+                or ann.check_all(repo):
+            failures.append("mv must carry the sidecar, naming the new address, its anchors intact")
+        if kit().get("moved", {}).get("/content/notes/pepper.html") != "/content/entries/pepper/":
+            failures.append(f"mv must record the redirect in kit.json moved: {kit().get('moved')}")
+        if catalog_item("pepper").get("created") != "2026-05-04" \
+                or catalog_item("pepper").get("href") != "/content/entries/pepper/":
+            failures.append(f"mv must keep the page's created date: {catalog_item('pepper')}")
+        if "1 flashcard" not in said:
+            failures.append(f"mv must say the page's flashcards start afresh: {said!r}")
+        if _lint(repo):
+            failures.append("after mv the gate must be clean: " + " | ".join(_lint(repo)))
+        planted += 8
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), serve.make_handler(repo))
+        th = threading.Thread(target=httpd.serve_forever, daemon=True)
+        th.start()
+        try:
+            st, location, _ = _request(httpd.server_address[1], "/content/notes/pepper.html")
+            if st != 301 or location != "/content/entries/pepper/":
+                failures.append(f"serve must 301 a moved address to its page: {st} {location}")
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+            th.join(timeout=2)
+        quiet(export.run, repo, otmp / "dist")
+        stub = otmp / "dist" / "content" / "notes" / "pepper.html"
+        if not stub.is_file() or "url=/content/entries/pepper/" not in stub.read_text():
+            failures.append("export must leave a refresh at a moved address")
+        planted += 2
+        x1 = _write(repo, "notes/x1.html", _page("X1", "<p>X.</p>"))
+        cc = _write(repo, "notes/cc.html", _page("Cc", "<p>C.</p>"))
+        _lint(repo)
+        repo, _ = quiet(organize.move, repo, x1, repo.content / "notes" / "x2.html")
+        repo, _ = quiet(organize.move, repo, cc, repo.content / "notes" / "x1.html")
+        k = kit().get("moved", {})
+        if "/content/notes/x1.html" in k or k.get("/content/notes/cc.html") != "/content/notes/x1.html" or _lint(repo):
+            failures.append(f"a page moved onto a redirected address takes it back, and the gate stays clean: {k}")
+        repo, _ = quiet(organize.move, repo, repo.content / "notes" / "x1.html", repo.content / "notes" / "cc.html")
+        planted += 1
+        rs = _write(repo, "notes/rs.html", _page("Rs", '<p><a href="../../shell/search.html">browse</a> '
+                                                       '<a href=b.html?x=1&amp;y=2>b</a></p>'))
+        uq = _write(repo, "notes/uq.html", _page("Uq", '<p><a href=/content/notes/nowhere.html>x</a> '
+                                                       '<a href=/content/notes/rs.html>rs</a></p>'))
+        if not any("uq.html" in p and "/content/notes/nowhere.html — nothing lives there" in p for p in _lint(repo)):
+            failures.append("a dead link in an unquoted attribute must be reported")
+        uq.write_text(uq.read_text().replace("<a href=/content/notes/nowhere.html>x</a> ", ""))
+        repo, _ = quiet(organize.move, repo, rs, repo.content / "entries" / "rs" / "index.html")
+        moved_rs = (repo.content / "entries" / "rs" / "index.html").read_text()
+        if 'href="/shell/search.html"' not in moved_rs or 'href="/content/notes/b.html?x=1&amp;y=2">' not in moved_rs \
+                or 'href="/content/entries/rs/"' not in uq.read_text() or _lint(repo):
+            failures.append("mv must pin a moved page's relative links (shell ones too), rewrite unquoted links "
+                            "to it, and leave the gate clean: " + " | ".join(_lint(repo)))
+        planted += 2
+        e1 = _write(repo, "entries/e1/index.html", _page("E1", '<p><img src="fig.svg" alt=""> '
+                                                               '<a href="../e1/fig.svg">the figure</a></p>'))
+        (e1.parent / "fig.svg").write_text("<svg/>")
+        _lint(repo)
+        repo, _ = quiet(organize.move, repo, e1, repo.content / "entries" / "renamed" / "index.html")
+        renamed = (repo.content / "entries" / "renamed" / "index.html").read_text()
+        if 'src="fig.svg"' not in renamed or 'href="/content/entries/renamed/fig.svg"' not in renamed or _lint(repo):
+            failures.append("a whole-folder move keeps relative links that still hold and rewrites those naming "
+                            "the old folder: " + renamed[renamed.find("<main>"):renamed.find("</main>")])
+        planted += 1
+        orphan = repo.content / "notes" / "orph.annotations.json"
+        orphan.write_text(json.dumps({"version": 1, "page": "/content/notes/orph.html", "threads": []}))
+        try:
+            quiet(organize.move, repo, repo.content / "notes" / "cc.html", repo.content / "notes" / "orph.html")
+            failures.append("mv onto a page whose sidecar already exists must be refused")
+        except SystemExit as exc:
+            if "sidecar already sits" not in str(exc):
+                failures.append(f"the refusal must name the sidecar in the way: {exc}")
+        orphan.unlink()
+        planted += 1
+        stale = _write(repo, "notes/stale.html", _page("Stale", '<p><a href="/content/notes/pepper.html">old</a></p>'))
+        if not any("moved to /content/entries/pepper/" in p for p in _lint(repo) if "notes/stale.html" in p):
+            failures.append("a link to a moved address must be reported, naming the new one")
+        stale.unlink()
+        planted += 1
+        for bad, needle in (({"/content/notes/salt.html": "/content/notes/b.html"}, "lives at /content/notes/salt.html again"),
+                            ({"/content/notes/gone.html": "/content/notes/nowhere.html"}, "where no page lives"),
+                            ({"/x.html": "/y.html", "/y.html": "/x.html"}, "cycle")):
+            saved = repo.cfg.get("moved")
+            repo.cfg["moved"] = bad
+            if not any(needle in p for p in links.moved_problems(repo)):
+                failures.append(f"a kit.json moved that the tree contradicts ({bad}) must be reported saying {needle!r}")
+            repo.cfg["moved"] = saved
+            planted += 1
+        saved = repo.cfg.get("moved")
+        repo.cfg["moved"] = {"/../../escaped.html": "/content/notes/b.html", "/x.html": "//evil.example/"}
+        got = config.problems(repo)
+        if not any(". or .. segment" in p for p in got) or not any("not a site address" in p for p in got):
+            failures.append(f"a moved address with .. or a // target must fail the declarations: {got}")
+        quiet(export.run, repo, otmp / "dist2")
+        if (otmp.parent / "escaped.html").exists() or (otmp / "escaped.html").exists():
+            failures.append("export must never write a moved address outside --out")
+        repo.cfg["moved"] = saved
+        planted += 2
+
+        # rm: refused with an open thread, outside git, or on what git cannot bring back; then it
+        # retires a page into another, its links and its address with it
+        extra = _write(repo, "notes/extra.html", _page("Extra", "<p>Extra words.</p>"))
+        points = _write(repo, "notes/points.html", _page("Points", '<p><a href="extra.html">extra</a></p>'))
+        _lint(repo)
+        t = ann.add(repo, "/content/notes/extra.html", "keep?", author="tester", target={"exact": "Extra words."})
+        served, exported = serve._landing(repo, threads=True).decode(), serve._landing(repo).decode()
+        if "Waiting for you · 2 open threads" not in served or "keep?" not in served or "Waiting for you" in exported:
+            failures.append("the served home page must open with the open threads; the exported one must not")
+        planted += 1
+
+        def refused(needle: str, *args, **kw) -> None:
+            try:
+                quiet(organize.remove, *args, **kw)
+                failures.append(f"rm must be refused ({needle})")
+            except SystemExit as exc:
+                if needle not in str(exc):
+                    failures.append(f"rm's refusal must say {needle!r}: {exc}")
+
+        refused("open annotation", repo, extra, salt)
+        ann.reply(repo, "/content/notes/extra.html", t["id"], "folded into salt", author="tester", state="addressed")
+        refused("not a git work tree", repo, extra, salt)
+        planted += 2
+        if shutil.which("git"):
+            import subprocess
+            gitenv = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+                      "GIT_COMMITTER_EMAIL": "t@t", "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+
+            def commit() -> None:
+                for args in (["add", "-A"], ["commit", "-q", "--allow-empty", "-m", "fixture"]):
+                    subprocess.run(["git", "-C", str(repo.root), *args], env=gitenv, capture_output=True, check=True)
+
+            subprocess.run(["git", "-C", str(repo.root), "init", "-q"], env=gitenv, capture_output=True, check=True)
+            commit()
+            extra.write_text(extra.read_text().replace("Extra words.", "Extra words, edited."))
+            refused("not committed", repo, extra, salt)
+            _lint(repo)
+            commit()
+            repo, _ = quiet(organize.remove, repo, extra, salt)
+            if extra.exists() or ann.sidecar_for(extra).exists() \
+                    or 'href="/content/notes/salt.html"' not in points.read_text() \
+                    or kit().get("moved", {}).get("/content/notes/extra.html") != "/content/notes/salt.html":
+                failures.append("rm must retire the page and its sidecar, rewrite links to it and redirect its address")
+            if _lint(repo):
+                failures.append("after rm the gate must be clean: " + " | ".join(_lint(repo)))
+            planted += 3
+            # a folder: an open thread on any page in it, an untracked file, or --to inside it refuses
+            new.create(repo, "book", "bk", title="Bk")
+            ch = new.create(repo, "chapter", "bk/01-one", title="One")
+            for f in (repo.content / "books" / "bk").glob("*.html"):
+                _settle(f)
+            _lint(repo)
+            quote = next(q for q in ("Chapter title", "One") if q in page_text(ch.read_text()))
+            t2 = ann.add(repo, "/content/books/bk/01-one.html", "hold on", author="tester", target={"exact": quote})
+            commit()
+            bk = repo.content / "books" / "bk" / "index.html"
+            refused("01-one.annotations.json", repo, bk, salt, folder=True)
+            ann.reply(repo, "/content/books/bk/01-one.html", t2["id"], "ok", author="tester", state="addressed")
+            commit()
+            (bk.parent / "draft.txt").write_text("mine")
+            refused("draft.txt", repo, bk, salt, folder=True)
+            (bk.parent / "draft.txt").unlink()
+            refused("inside content/books/bk", repo, bk, ch, folder=True)
+            repo, _ = quiet(organize.remove, repo, bk, salt, folder=True)
+            k = kit().get("moved", {})
+            if bk.parent.exists() or k.get("/content/books/bk/01-one.html") != "/content/notes/salt.html" or _lint(repo):
+                failures.append("rm --folder must retire the book and redirect every page in it: " + " | ".join(_lint(repo)))
+            planted += 4
+            # a new page at a redirected address takes it back
+            again, _ = quiet(new.create, repo, "note", "extra", title="Extra, again")
+            _settle(again)
+            if "/content/notes/extra.html" in kit().get("moved", {}) or _lint(repo):
+                failures.append("a new page at a redirected address must take it back: " + " | ".join(_lint(repo)))
+            planted += 1
+    finally:
+        if saved_today is None:
+            os.environ.pop("CKIT_TODAY", None)
+        else:
+            os.environ["CKIT_TODAY"] = saved_today
+        shutil.rmtree(otmp, ignore_errors=True)
+    ltmp, lrepo = _scratch()
+    try:
+        cfg = json.loads((lrepo.root / "kit.json").read_text())
+        cfg["topics"] = ["alpha", "beta"]
+        (lrepo.root / "kit.json").write_text(json.dumps(cfg, indent=2) + "\n")
+        lrepo = load_repo(lrepo.root)
+        try:
+            new.create(lrepo, "note", "n1", topic="nonexistent")
+            failures.append("with topics as a list, an undeclared topic must be refused")
+        except SystemExit:
+            pass
+        if topic_of(new.create(lrepo, "hub", "alpha").read_text()) != "alpha":
+            failures.append("with topics as a list, a hub named for one must take it")
+        quiet(organize.topics_add, lrepo, "gamma", "Gamma G")
+        got = json.loads((lrepo.root / "kit.json").read_text())["topics"]
+        if got != {"alpha": "alpha", "beta": "beta", "gamma": "Gamma G"}:
+            failures.append(f"a label on a list of topics must turn it into an object, keeping every slug: {got}")
+        planted += 3
+    finally:
+        shutil.rmtree(ltmp, ignore_errors=True)
+    # metadata: a meta's other attributes survive a new value; a meta alone on its line leaves with it
+    from .text import set_meta
+    h = '<head>\n  <meta charset="utf-8">\n  <meta name="tags" content="a" data-keep="y">\n  <title>T</title>\n</head>'
+    if set_meta('<meta name="x" data-content="keep" content="1">', "x", "2") != \
+            '<meta name="x" data-content="keep" content="2">':
+        failures.append("set_meta must change the content attribute, not one whose name ends in content")
+    if 'data-keep="y"' not in set_meta(h, "tags", "b") \
+            or set_meta(set_meta(h, "tags", "b"), "tags", None) != h.replace('  <meta name="tags" content="a" data-keep="y">\n', ""):
+        failures.append("set_meta must keep a meta's other attributes, and remove a lone meta with its line")
+    planted += 1
+    return planted
+
+
 def _expect(probs: list[str], rel: str, needle: str, failures: list[str]) -> None:
     if not any(rel in p and needle in p for p in probs):
         failures.append(f"planted {rel!r} — expected a problem containing {needle!r}; got: "
@@ -108,9 +599,19 @@ def main(argv: list[str]) -> int:
     failures: list[str] = []
     planted = 0
     try:
-        # --- clean: every skeleton scaffolds through `ckit new` and passes the whole gate
+        # --- clean: every skeleton scaffolds through `ckit new`; a fresh scaffold's only complaint
+        #     is each placeholder link it carries, named as one — and once those point at real
+        #     pages, it passes the whole gate
         for genre, slug in CLEAN.items():
             new.create(repo, genre, slug, title=f"Fixture {genre}")
+        probs = _lint(repo)
+        stray = [p for p in probs if "skeleton's placeholder" not in p]
+        if stray or not probs:
+            failures.append("a fresh scaffold must report its placeholder links, and nothing else:\n  "
+                            + "\n  ".join(stray or ["(no placeholder link reported)"]))
+        planted += 1
+        for page in sorted(repo.content.rglob("*.html")):
+            _settle(page)
         probs = _lint(repo)
         if probs:
             failures.append("clean skeletons should lint clean:\n  " + "\n  ".join(probs))
@@ -514,7 +1015,7 @@ def main(argv: list[str]) -> int:
             return e.getvalue() if rc_ else ""
 
         xtmp, repo = _scratch()  # a clean repo of its own: the planted violations above stay put
-        new.create(repo, "hub", "a-hub", title="Fixture hub")
+        _settle(new.create(repo, "hub", "a-hub", title="Fixture hub"))
         (repo.root / "plug").mkdir()
         (repo.root / "plug" / "genres_fx.json").write_text(json.dumps({"genres": {
             "recipe": {"dir": "recipes", "layout": "flat", "after": "hub", "label": "Recipes",
@@ -731,6 +1232,196 @@ def main(argv: list[str]) -> int:
                 failures.append(f"lib.css {base} sets a colour (or the border shorthand, which resets it): "
                                 "a theme's modifier class would lose to it")
             planted += 1
+
+        # --- 0.5: the catalog names the site and its topics, carries each page's tags, and dates
+        #     every entry by what changed — stable when nothing did, stale (a red gate) when a page
+        #     was edited without `ckit lint`
+        ztmp, zrepo = _scratch()
+        cfgz = json.loads((zrepo.root / "kit.json").read_text())
+        cfgz.update({"question": "What do we cook?", "topics": {"kitchen": "The kitchen"}})
+        (zrepo.root / "kit.json").write_text(json.dumps(cfgz))
+        zrepo = load_repo(zrepo.root)
+        meta = '<meta name="topic" content="kitchen"><meta name="tags" content="salt, heat">'
+        _write(zrepo, "notes/one.html", _page("One", "<p>First.</p>", head=meta))
+        _write(zrepo, "notes/two.html", _page("Two", "<p>Second.</p>"))
+        saved_today = os.environ.get("CKIT_TODAY")
+        try:
+            os.environ["CKIT_TODAY"] = "2026-01-01"
+            _lint(zrepo)
+            catz = json.loads((zrepo.content / "catalog.json").read_text())
+            if catz.get("site") != {"name": "Scratch", "question": "What do we cook?"}:
+                failures.append(f"the catalog must name the site and its question: {catz.get('site')}")
+            if catz.get("topics") != {"kitchen": "The kitchen"}:
+                failures.append(f"the catalog must carry kit.json's topic labels: {catz.get('topics')}")
+            one = next((n for n in catz["notes"] if n["slug"] == "one"), {})
+            if one.get("tags") != ["salt", "heat"]:
+                failures.append(f"a catalog entry must carry its page's tags: {one}")
+            if (one.get("created"), one.get("updated")) != ("2026-01-01", "2026-01-01") or len(one.get("sha", "")) != 12:
+                failures.append(f"a page the catalog has never seen, outside git, is dated today: {one}")
+            planted += 4
+            os.environ["CKIT_TODAY"] = "2026-02-02"
+            _write(zrepo, "notes/one.html", _page("One", "<p>First, revised.</p>", head=meta))
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                rc_stale = check.run(load_repo(zrepo.root))
+            if rc_stale == 0:
+                failures.append("a page edited without `ckit lint` must fail the gate: its catalog entry is stale")
+            _lint(zrepo)
+            catz = json.loads((zrepo.content / "catalog.json").read_text())
+            one = next(n for n in catz["notes"] if n["slug"] == "one")
+            two = next(n for n in catz["notes"] if n["slug"] == "two")
+            if (one["created"], one["updated"]) != ("2026-01-01", "2026-02-02"):
+                failures.append(f"a changed page keeps its created date and is updated today: {one}")
+            if (two["created"], two["updated"]) != ("2026-01-01", "2026-01-01"):
+                failures.append(f"an unchanged page keeps both dates: {two}")
+            os.environ["CKIT_TODAY"] = "2026-03-03"
+            before = (zrepo.content / "catalog.json").read_text()
+            _lint(zrepo)
+            if (zrepo.content / "catalog.json").read_text() != before:
+                failures.append("the dates must be stable: a lint on a later day with nothing changed rewrote the catalog")
+            planted += 4
+            # a checkout that turns LF into CRLF changes no entry: the sha reads normalised line endings
+            two_path = zrepo.content / "notes" / "two.html"
+            two_path.write_bytes(two_path.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                rc_crlf = check.run(load_repo(zrepo.root))
+            if rc_crlf != 0:
+                failures.append("a CRLF checkout of an unchanged page must leave the catalog current")
+            planted += 1
+            # resolving a merge conflict in catalog.json by `ckit lint` keeps the committed dates
+            if shutil.which("git"):
+                gitenv = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+                          "GIT_COMMITTER_EMAIL": "t@t", "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+                import subprocess
+                for args in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "fixture"]):
+                    subprocess.run(["git", "-C", str(zrepo.root), *args], env=gitenv, capture_output=True, check=True)
+                committed = (zrepo.content / "catalog.json").read_text()
+                (zrepo.content / "catalog.json").write_text("<<<<<<< HEAD\n" + committed + "=======\n{}\n>>>>>>> other\n")
+                os.environ["CKIT_TODAY"] = "2026-04-04"
+                _lint(zrepo)
+                resolved = json.loads((zrepo.content / "catalog.json").read_text())
+                one = next(n for n in resolved["notes"] if n["slug"] == "one")
+                if (one.get("created"), one.get("updated")) != ("2026-01-01", "2026-02-02"):
+                    failures.append(f"a lint that resolves a conflicted catalog.json must keep the committed dates: {one}")
+                planted += 1
+                # two branches change one page; the merge conflicts; the page is taken from theirs —
+                # it keeps their dates (read from the conflict's stages), not today's
+                mtmp, mrepo = _scratch()
+
+                def g(*args, ok=True):
+                    r = subprocess.run(["git", "-C", str(mrepo.root), *args], env=gitenv, capture_output=True, text=True)
+                    if ok and r.returncode != 0:
+                        raise RuntimeError(f"git {' '.join(args)}: {r.stderr.strip()}")
+                    return r
+
+                def stamp(day: str, text: str) -> None:
+                    os.environ["CKIT_TODAY"] = day
+                    _write(mrepo, "notes/m.html", _page("M", f"<p>{text}</p>"))
+                    _lint(mrepo)
+
+                stamp("2026-01-01", "base")
+                g("init", "-q"); g("add", "-A"); g("commit", "-q", "-m", "base")
+                g("checkout", "-q", "-b", "theirs")
+                stamp("2026-03-03", "their revision")
+                g("commit", "-q", "-am", "theirs")
+                g("checkout", "-q", "-")
+                stamp("2026-02-02", "our revision")
+                g("commit", "-q", "-am", "ours")
+                if g("merge", "--no-edit", "theirs", ok=False).returncode == 0:
+                    failures.append("the merge fixture must conflict (both sides changed one page)")
+                g("checkout", "--theirs", "content/notes/m.html")
+                os.environ["CKIT_TODAY"] = "2026-04-04"
+                _lint(mrepo)
+                m = next(n for n in json.loads((mrepo.content / "catalog.json").read_text())["notes"] if n["slug"] == "m")
+                if (m.get("created"), m.get("updated")) != ("2026-01-01", "2026-03-03"):
+                    failures.append(f"a page kept from the other side of a conflicted merge keeps that side's dates: {m}")
+                planted += 1
+                shutil.rmtree(mtmp, ignore_errors=True)
+
+            # --- files are revalidated (Last-Modified → 304), generated pages never stored, the
+            #     home page is built from the catalog, and /shell/pagefind.json says whether full
+            #     text answers
+            httpd3 = ThreadingHTTPServer(("127.0.0.1", 0), serve.make_handler(zrepo))
+            th3 = threading.Thread(target=httpd3.serve_forever, daemon=True)
+            th3.start()
+            try:
+                port3 = httpd3.server_address[1]
+                st, hd, _ = _get(port3, "/content/notes/one.html")
+                if st != 200 or hd.get("cache-control") != "no-cache" or not hd.get("etag"):
+                    failures.append(f"a file must be served no-cache with an ETag: {st} {hd.get('cache-control')}")
+                st2, _, body2 = _get(port3, "/content/notes/one.html", {"If-None-Match": hd.get("etag", "")})
+                if st2 != 304 or body2:
+                    failures.append(f"an unchanged file asked for by its ETag must answer 304 and no body, got {st2}")
+                one_path = zrepo.content / "notes" / "one.html"
+                one_path.write_text(one_path.read_text() + "\n")  # rewritten within the same second
+                st3, _, _ = _get(port3, "/content/notes/one.html", {"If-None-Match": hd.get("etag", "")})
+                if st3 != 200:
+                    failures.append(f"a file rewritten within the same second must not answer 304, got {st3}")
+                planted += 1
+                st, hd, body = _get(port3, "/")
+                if st != 200 or hd.get("cache-control") != "no-store" or b"The kitchen" not in body \
+                        or b"Search everything" not in body:
+                    failures.append("the generated home page must be served no-store, with the catalog's topics on it")
+                st, _, body = _get(port3, "/shell/pagefind.json")
+                if st != 200 or json.loads(body) != {"available": False}:
+                    failures.append(f"/shell/pagefind.json must say full text is not available here: {st} {body!r}")
+                planted += 4
+            finally:
+                httpd3.shutdown()
+                httpd3.server_close()
+        finally:
+            if saved_today is None:
+                os.environ.pop("CKIT_TODAY", None)
+            else:
+                os.environ["CKIT_TODAY"] = saved_today
+            shutil.rmtree(ztmp, ignore_errors=True)
+
+        # --- 0.5: links, prose, tags, one report per gate, and reorganising without breaking a link
+        planted += _organise_cases(failures)
+
+        # --- the shell's weight is a budget: the kit's own shell holds it, and a planted shell that
+        #     does not is reported by name
+        got = shell_weight_problems(KIT_SRC / "shell")
+        if got:
+            failures.extend(got)
+        heavy = Path(tempfile.mkdtemp(prefix="ckit-selftest-heavy-"))
+        (heavy / "lib.css").write_text("/* */", encoding="utf-8")
+        (heavy / "lib.js").write_bytes(os.urandom(SHELL_BUDGET + 1024))
+        if not any("over its" in x for x in shell_weight_problems(heavy)):
+            failures.append("a shell over its size budget must be reported")
+        shutil.rmtree(heavy, ignore_errors=True)
+        planted += 2
+
+        # --- a port held by a process with no pidfile is stopped, so `ckit up` can bind it
+        from . import ctl
+        holder = subprocess.Popen(
+            [sys.executable, "-c",
+             "import socket, time\n"
+             "s = socket.socket()\n"
+             "s.bind(('127.0.0.1', 0))\n"
+             "s.listen(1)\n"
+             "print(s.getsockname()[1], flush=True)\n"
+             "time.sleep(30)\n"],
+            stdout=subprocess.PIPE, text=True,
+        )
+        try:
+            taken = int(holder.stdout.readline())
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                ctl._free_port(taken)
+            try:
+                holder.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass
+            if holder.poll() is None or ctl._listeners(taken):
+                failures.append(
+                    f"a taken port was not freed (pid {holder.pid}, listeners {ctl._listeners(taken)})")
+            if str(holder.pid) not in buf.getvalue():
+                failures.append(f"freeing a port must name the pid it stopped; got {buf.getvalue()!r}")
+        finally:
+            if holder.poll() is None:
+                holder.kill()
+                holder.wait(timeout=2)
+        planted += 1
 
         # --- the version pin is load-bearing
         cfg = json.loads((repo.root / "kit.json").read_text())

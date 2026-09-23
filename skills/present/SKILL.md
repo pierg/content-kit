@@ -13,8 +13,10 @@ You are producing a **document**, not a chat reply. Chat gets the TL;DR and the 
 2. **Status in the first line.** The first `<p class="sub">` says LIVE, HISTORICAL, PARKED, RETIRED, FROZEN or DRAFT. The gate checks it.
 3. **One format per document.** A markdown draft *and* an HTML page of the same document are twins, and twins drift. The one legitimate pair is an imported external paper (`main.md` is their text, `index.html` is your reading; `source.json` declares it).
 4. **A layer's rules bind too.** A repo that vendors a layer on top of this kit carries that layer's authoring rules in `kit/` (a lab's record discipline, a folio's topic rule) and registers its checks in `kit.json`. Read them before writing: where a layer says no number enters a page except by citing a row of its record, that is as binding as anything here. Misses at the same volume as wins.
-5. **One paragraph per line.** Never hard-wrap prose to a column.
+5. **One paragraph per line.** Never hard-wrap prose to a column. The gate reports it; `ckit unwrap` joins it.
 6. **Address before you edit.** If the page has open annotations (`ckit annotations list`), run `/address` first — an open thread whose quoted passage you rewrite fails the gate.
+7. **Flag what goes beyond the source.** A passage you wrote that the source did not say (your example, your framing, a claim from general knowledge) gets an annotation thread for the owner: `ckit annotations add <page> --author agent:<name> --quote "<passage>" --body "Added — not in the source. Keep, edit or cut?"`. A page drafted wholly from general knowledge gets one page-level thread and the status DRAFT.
+8. **Organising is `/curate`'s.** Opening or merging a topic, retagging, moving, promoting or retiring a page: `/curate`, with `ckit topics`, `ckit tags`, `ckit mv` and `ckit rm`. Never `git mv` a page.
 
 ## Layered content
 
@@ -36,7 +38,7 @@ One rule separates the two authored classes: **an account carries every caveat i
 
 ## Authoring an HTML page
 
-**Scaffold it:** `ckit new <genre> <slug> [--title "…"]` copies the skeleton to where the genre lives and prints the voice card. Chapters are `<book>/<NN-name>`; `ckit new book <slug>` first if the book is new.
+**Scaffold it:** `ckit new <genre> <slug> [--title "…"] [--topic <slug>] [--tags a,b]` copies the skeleton to where the genre lives, sets the page's topic and tags, and prints the voice card. Chapters are `<book>/<NN-name>`; `ckit new book <slug>` first if the book is new. The skeleton's placeholder links (`…/OTHER…`) are the gate's to report until you point each at a real page or drop it. Reuse the library's tags (`ckit tags`); a topic must be one kit.json declares (`ckit topics`).
 
 | Genre | When | Path |
 |---|---|---|
@@ -54,7 +56,7 @@ A genre the repo adds (`ckit genres` lists them all) lands where its `dir` says,
 
 **Build the blocks:** before writing a comparison, a diagram, a table, a timeline, a code listing or a figure, read its playbook in `kit/craft/`. Show, then tell; one color register per figure; nothing overflows.
 
-**Mechanics:** every page loads `/shell/lib.css` and `/shell/lib.js`. Use the vocabulary in `kit/shell/COMPONENTS.md` — `.hb` tokens only, no new hex colors or type stacks. Page-specific widget CSS goes in a `<style>` block on that page; promote into the shell only when it recurs on three pages, and update `COMPONENTS.md`. Add `<ul data-backlinks></ul>` to show who cites the page. Math is opt-in (`/shell/math.js`, `$…$`). Never hand-edit `nav.json`, `catalog.json`, `search-index.json`, `backlinks.json` or any `*.annotations.json`.
+**Mechanics:** every page loads `/shell/lib.css` and `/shell/lib.js`. Use the vocabulary in `kit/shell/COMPONENTS.md` — `.hb` tokens only, no new hex colors or type stacks. Page-specific widget CSS goes in a `<style>` block on that page; promote into the shell only when it recurs on three pages, and update `COMPONENTS.md`. Every internal link must resolve as the exported site would serve it — the gate checks each `href` and `src`; `data-unchecked` exempts one it cannot see (a build product). The page rail lists who links to the page on its own ("Linked from"); add `<ul data-backlinks></ul>` only where that list belongs in the page itself — it then replaces the rail's, and shows on narrow screens, where the rail is hidden. Math is opt-in (`/shell/math.js`, `$…$`). Never hand-edit `nav.json`, `catalog.json`, `search-index.json`, `backlinks.json` or any `*.annotations.json`.
 
 ## Authoring a paper
 
@@ -68,13 +70,13 @@ A long page is drafted in passes, and the passes are kept separate on purpose:
 2. **Verify against the sources with a second model**, given only the page and what it cites, reporting every number, id, verdict word and bound that does not match.
 3. **Repair what verification found, then re-verify.** The draft is not the artifact until that pass is clean.
 4. **Reader-test the front door** on someone who has never seen the work. If they cannot say what was found and what it does not show, it is not plain yet.
-5. **Independent review before it lands** — fresh context, no write tools, reading the page against its sources rather than the summary of them. The author never self-certifies.
+5. **Independent review before it lands** — fresh context, no write tools, reading the page against its sources rather than the summary of them. The author never self-certifies. Where no reviewer is available (a solo session), say so plainly and make the owner the reviewer: the threads of rule 7 stay open until they are settled (`ckit annotations list` shows them; so does the generated home page, where kit.json names no `home`). A layer may name its own review.
 
 ## Before finishing
 
 ```bash
-ckit lint      # form + genre + annotation lint; regenerates the indices (catalog, search, backlinks, nav)
-make check     # the gate: engine pin · shell · indices current · lint · books  (+ any layer's own gate)
+ckit lint      # form (links, prose, tags) + genre + annotation lint; regenerates the indices
+make check     # the gate: engine pin · shell · indices current · lint · books — every problem in one run
 make docs      # read it in the browser before you call it done
 ```
 

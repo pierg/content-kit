@@ -125,6 +125,16 @@ def problems(repo: Repo) -> list[str]:
             if "{id}" not in x["href"]:
                 out.append(f"kit.json refs: href {x['href']!r} must contain {{id}}")
 
+    got = cfg.get("moved") or {}
+    if not isinstance(got, dict):
+        out.append('kit.json moved: must be an object {"<old address>": "<new address>"} (ckit mv writes it)')
+    else:
+        from .links import address_problem
+        for old, new in got.items():
+            why = address_problem(old) or address_problem(new)
+            if why:
+                out.append(f"kit.json moved: {old!r} → {new!r} — {why}")
+
     got = cfg.get("indices") or []
     if not isinstance(got, list):
         out.append("kit.json indices: must be a list of repo-relative JSON paths")

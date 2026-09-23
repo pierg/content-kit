@@ -8,6 +8,8 @@
     dist/<record files>   the markdown the record viewer and the chronicle link to
     dist/404.html         what a static host serves for a path that is not there
     dist/.nojekyll        so GitHub Pages serves every path as-is
+    dist/pagefind/…       a full-text index of the content, when pagefind is installed (pagefind.py)
+    dist/<moved address>  a refresh to where the page lives now, for each kit.json `moved` entry
 
 The export rewrites nothing at the default base. `--base /<repo>/` is for a site served under a
 path (a GitHub project site): root-absolute `href`/`src`/`action` attributes and CSS `url()`s in
@@ -25,7 +27,7 @@ import re
 import shutil
 from pathlib import Path
 
-from . import chronicle, config
+from . import chronicle, config, links, pagefind
 from .book_nav import _href_of
 from .paths import Repo, home_page, home_shell_page, load_repo
 from .serve import _landing
@@ -80,12 +82,22 @@ def _index(repo: Repo, base: str) -> str:
     return _landing(repo).decode("utf-8")
 
 
+def _redirect(new: str, base: str) -> str:
+    """A moved page's old address, on a static host: a refresh to where it lives now."""
+    href = html_mod.escape(new)
+    target = html_mod.escape(base.rstrip("/") + new)
+    return ('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+            f'<meta http-equiv="refresh" content="0; url={target}"><link rel="canonical" href="{href}">'
+            '<meta name="robots" content="noindex"><title>Moved</title></head>'
+            f'<body><p>This page moved: <a href="{href}">{href}</a></p></body></html>\n')
+
+
 def _not_found(repo: Repo) -> str:
     name = html_mod.escape(str(repo.cfg.get("name", "library")))
     return ('<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
             f'<title>Not found — {name}</title>\n<link rel="stylesheet" href="/shell/lib.css">\n'
-            '<script src="/shell/lib.js" defer></script>\n</head>\n<body class="hb">\n<main>\n'
+            '<script src="/shell/lib.js" defer></script>\n</head>\n<body class="hb" data-hb-app>\n<main>\n'
             '<h1>Not found</h1>\n<p class="sub">No page lives at this address — it may have moved.</p>\n'
             f'<p><a href="/">{name}</a> · <a href="/shell/search.html">Search everything</a></p>\n'
             '</main>\n</body>\n</html>\n')
@@ -122,8 +134,27 @@ def run(repo: Repo, out: Path, base: str = "/") -> int:
             if not dest.exists():
                 _write(dest, p.read_bytes(), base)
                 n_record += 1
+    cmd = pagefind.command()
+    full = bool(cmd) and pagefind.build(cmd, out, f"{repo.content_name}/**/*.html", out / "pagefind")
+    _write(out / "shell" / "pagefind.json", '{"available": %s}\n' % ("true" if full else "false"), base)
+    n_moved = 0
+    moved = links.moved_map(repo)
+    for old in moved:  # after the full-text build, so a redirect is never indexed
+        if links.address_problem(old) or links.address_problem(moved[old]):
+            continue  # malformed: `ckit check` reports it; never written, wherever it points
+        new = links.follow(moved, old) or "/"
+        dest = out / old.lstrip("/") if old.endswith(".html") else out / old.lstrip("/") / "index.html"
+        try:
+            dest.resolve().relative_to(out)
+        except ValueError:
+            continue
+        if not dest.exists():
+            _write(dest, _redirect(new, base), base)
+            n_moved += 1
     print(f"exported {repo.rel(out) if out.is_relative_to(repo.root) else out}: "
           f"{n_content} content · {n_shell + 1 + len(config.shell_pages(repo))} shell · {n_record} record files"
+          + (f" · {n_moved} redirect(s)" if n_moved else "")
+          + (" · full-text index" if full else "")
           + (f" · base {base}" if base != "/" else ""))
     return 0
 

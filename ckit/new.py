@@ -1,7 +1,8 @@
 """Scaffold a page of a genre from its skeleton: `ckit new <genre> <slug> [--title …]`.
 
-    ckit new note   proofs-are-hypotheses
+    ckit new note   proofs-are-hypotheses --topic formal-verification --tags induction,proofs
     ckit new concept k-induction
+    ckit new hub     guardrails                   # a hub named for a declared topic takes it
     ckit new chapter proofs-forever/04-floor      # <book>/<NN-name>
     ckit new book    proofs-forever
 
@@ -18,6 +19,7 @@ from pathlib import Path
 
 from .genres import load_genres, target_path
 from .paths import Repo, load_repo
+from .text import set_meta
 
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*(?:/[0-9]{2}-[a-z0-9][a-z0-9-]*)?$")
 
@@ -35,7 +37,26 @@ def _retitle(html: str, title: str) -> str:
     return re.sub(r"<h1>.*?</h1>", f"<h1>{title}</h1>", html, count=1, flags=re.S)
 
 
-def create(repo: Repo, genre_name: str, slug: str, *, title: str | None = None) -> Path:
+def _topic_and_tags(repo: Repo, g, slug: str, topic: str | None,
+                    tags: list[str] | None) -> tuple[str | None, list[str]]:
+    """The topic and tags a new page declares, checked before anything is written."""
+    from .lint import TAG_SLUG
+    from .organize import declared as declared_topics
+    declared = declared_topics(repo)
+    if topic is None and g.name == "hub" and slug in declared:
+        topic = slug  # a hub named for a declared topic is that topic's front door
+    if topic is not None and declared and topic not in declared:
+        raise SystemExit(f"topic {topic!r} is not declared in kit.json — one of: {', '.join(declared)}; "
+                         f"or declare it first: ckit topics add {topic}")
+    clean = [t.strip() for t in tags or [] if t.strip()]
+    bad = [t for t in clean if not TAG_SLUG.match(t)]
+    if bad:
+        raise SystemExit(f"tags {bad} — a tag is a lowercase slug (a-z 0-9 - . _)")
+    return topic, list(dict.fromkeys(clean))
+
+
+def create(repo: Repo, genre_name: str, slug: str, *, title: str | None = None,
+           topic: str | None = None, tags: list[str] | None = None) -> Path:
     genres = load_genres(repo)
     if genre_name not in genres:
         raise SystemExit(f"unknown genre {genre_name!r} — one of {', '.join(sorted(genres))}")
@@ -44,6 +65,7 @@ def create(repo: Repo, genre_name: str, slug: str, *, title: str | None = None) 
         raise SystemExit(f"slug {slug!r}: lowercase, digits and dashes (chapters: <book>/<NN-name>)")
     if not g.skeleton:
         raise SystemExit(f"genre {g.name!r} declares no skeleton — write the page by hand")
+    topic, tags = _topic_and_tags(repo, g, slug, topic, tags)
     dest = target_path(repo, g, slug)
     if dest.exists():
         raise SystemExit(f"{repo.rel(dest)} already exists")
@@ -59,7 +81,15 @@ def create(repo: Repo, genre_name: str, slug: str, *, title: str | None = None) 
     html = src.read_text(encoding="utf-8")
     if title:
         html = _retitle(html, title)
+    if topic:
+        html = set_meta(html, "topic", topic)
+    if tags:
+        html = set_meta(html, "tags", ", ".join(tags))
     dest.write_text(html, encoding="utf-8")
+    from .organize import reclaim
+    was = reclaim(repo, dest)
+    if was:
+        print(f"  {repo.rel(dest)} takes back an address kit.json `moved` sent to {was}: the redirect is dropped")
     return dest
 
 
@@ -76,10 +106,19 @@ def main(argv: list[str]) -> int:
     ap.add_argument("genre")
     ap.add_argument("slug")
     ap.add_argument("--title")
+    ap.add_argument("--topic", help="the topic the page is on (one kit.json declares); a hub named "
+                                    "for a declared topic takes it by default")
+    ap.add_argument("--tags", help="comma-separated lowercase slugs — reuse the library's (`ckit tags`)")
     args = ap.parse_args(argv)
     repo = load_repo()
-    dest = create(repo, args.genre, args.slug, title=args.title)
+    tags = args.tags.split(",") if args.tags else None
+    dest = create(repo, args.genre, args.slug, title=args.title, topic=args.topic, tags=tags)
     print(f"created {repo.rel(dest)}")
+    from .book_nav import topic_of
+    from .organize import declared as declared_topics
+    declared = declared_topics(repo)
+    if declared and not topic_of(dest.read_text(encoding="utf-8")):
+        print(f"  no topic set — this library declares: {', '.join(declared)} (--topic)")
     print(voice_card(repo, args.genre))
     print(f"see kit/genres/GENRES.md for the full voice; `ckit check` before it lands")
     return 0

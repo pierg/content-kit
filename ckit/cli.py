@@ -13,8 +13,13 @@ USAGE = f"""ckit {__version__} — serve, lint, navigate, scaffold and annotate 
   ckit check                         the content gate (version pin · shell · indices current · lint · books)
   ckit lint [paths] [--no-nav]       form + genre + annotation lint; regenerates the indices
   ckit nav [--check]                 regenerate nav.json / catalog / search-index / backlinks / chronicle / generators
-  ckit new <genre> <slug> [--title]  scaffold a page from its skeleton
+  ckit new <genre> <slug> [--title --topic --tags]   scaffold a page from its skeleton
   ckit genres                        list the genres this repo knows (core + its extensions)
+  ckit topics [add|rename|merge|assign …]   the topics: label · hub · pages; declare and reorganise
+  ckit tags [rename <old> <new>]     the tags and their pages; spellings that look alike
+  ckit mv <page> <to>                move a page: links rewritten, sidecar and dates kept, redirected
+  ckit rm <page> --to <page>         retire a page into another, its links and address with it
+  ckit unwrap [paths]                join hard-wrapped prose: one paragraph per line
   ckit serve [--host --port]         foreground server
   ckit up | down | status            background server
   ckit export [--out dist] [--base /] the site as static files (--base /<repo>/ for a project site)
@@ -113,6 +118,24 @@ def _annotations(argv: list[str]) -> int:
     return 2
 
 
+def _unwrap(argv: list[str]) -> int:
+    import argparse
+    from pathlib import Path
+
+    from . import prose
+    from .paths import load_repo
+
+    ap = argparse.ArgumentParser(prog="ckit unwrap", description="join hard-wrapped prose")
+    ap.add_argument("paths", nargs="*", type=Path, help="pages or directories (default: every page)")
+    args = ap.parse_args(argv)
+    joined, pages = prose.unwrap_repo(load_repo(), args.paths)
+    for rel, n in pages:
+        print(f"  {rel}: {n}")
+    print(f"joined {joined} hard-wrapped element(s) in {len(pages)} page(s)" if joined
+          else "no hard-wrapped prose")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ("-h", "--help", "help"):
@@ -156,6 +179,12 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "new":
         from . import new
         return new.main(rest)
+    if cmd in ("topics", "tags", "mv", "rm"):
+        from . import organize
+        return {"topics": organize.topics_main, "tags": organize.tags_main,
+                "mv": organize.mv_main, "rm": organize.rm_main}[cmd](rest)
+    if cmd == "unwrap":
+        return _unwrap(rest)
     if cmd == "genres":
         from .genres import load_genres, ordered
         from .paths import load_repo

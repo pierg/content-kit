@@ -10,7 +10,7 @@
 td.mono, td code { overflow-wrap: anywhere; }
 </style>
 <script src="/shell/lib.js" defer></script>
-<meta name="tags" content="gate, ckit check, lint, indices, fixtures, annotations">
+<meta name="tags" content="gate, ckit-check, lint, indices, fixtures, annotations">
 </head>
 <body class="hb">
 <main>
@@ -32,7 +32,7 @@ td.mono, td code { overflow-wrap: anywhere; }
 <tr><td>6 · books</td><td>every book passes the node verifier</td><td class="mono">book verify failed: content/books/…</td></tr>
 </table>
 
-<p>The first stage that fails stops the run, prints what is wrong and exits 1. Nothing is rewritten, nothing needs the network, and the same command gives the same answer in CI. When every stage holds you see:</p>
+<p>Stages 1 to 3 are preconditions: the first of them that fails stops the run, because nothing after it can be trusted. From stage 4 on, every stage runs and reports, and the gate exits 1 at the end naming each stage that failed, so one run shows every problem. Nothing is rewritten, nothing needs the network, and the same command gives the same answer in CI. When every stage holds you see:</p>
 
 <pre><code>$ ckit check
 content lint clean — 2 file(s)
@@ -41,8 +41,8 @@ content check ok</code></pre>
 <p>The book verifier, stage 6, reads each book's pages with node: it checks that structural tags are balanced, runs every inline script against a stub of the page, and follows every relative link and <code>#anchor</code> between the book's pages. The gate refuses to skip it: if the library has a <code>content/books/</code> directory and node is not installed, the gate fails and says so.</p>
 
 <details class="check">
-<summary>Check-yourself: you fix the one problem the gate reported, run it again, and it reports a different one. Did your fix break something?</summary>
-<div class="ans">Probably not. The gate stops at the first failing stage, so the later stages never ran. Fixing stale indices, for example, lets the lint run for the first time, and it reports what it finds.</div>
+<summary>Check-yourself: the gate reports stale indices and three lint problems. You run <code>ckit lint</code>, which regenerates the indices, and the gate still fails. Why?</summary>
+<div class="ans"><code>ckit lint</code> regenerates the indices and fixes nothing else: the three lint problems are still there, and the gate reports all of them in the same run. Fix them, run <code>ckit lint</code> again (your edits changed the indices), then the gate.</div>
 </details>
 
 <h2 id="s2">§2 · Stale indices</h2>
@@ -73,6 +73,9 @@ indices out of date — run `ckit nav` (or `ckit lint`) and commit the result:
 <li>No <code>var&#40;--name)</code> that neither the shell, the library's theme, nor the page itself declares. An undeclared token renders as nothing, silently.</li>
 <li>Every class that looks like shell vocabulary (starting <code>sw-</code>, <code>lane-</code>, <code>v-</code>, <code>ev-</code>, <code>st-</code>, <code>hb-</code>) is one the shell or the library defines.</li>
 <li>The page loads <code>/shell/lib.css</code>.</li>
+<li>Every internal <code>href</code> and <code>src</code> resolves the way the exported site would serve it: no address nothing answers, no directory without an <code>index.html</code>, no bare slug, no letter-case mismatch, no file git ignores, and no address the library has moved. A skeleton's placeholder links are reported until they point somewhere real; <code>data-unchecked</code> exempts a link the gate cannot see, such as a build product.</li>
+<li>One paragraph per line: no prose element broken across lines at a column. <code>ckit unwrap</code> joins them.</li>
+<li>Tags are lowercase slugs, each once per page.</li>
 <li>The page lives under a genre. A page anywhere else under <code>content/</code> is an error.</li>
 </ul>
 

@@ -5,6 +5,7 @@
     ckit status
 
 One pidfile per repo root (`.serve.pid`), so several repos serve at once on their own ports.
+A port already taken — a server whose pidfile is gone — is stopped so this one can bind.
 """
 
 from __future__ import annotations
@@ -38,11 +39,54 @@ def _url(repo: Repo, host: str | None, port: int | None) -> str:
     return f"http://{host or repo.cfg['host']}:{port or repo.cfg['port']}/"
 
 
+def _listeners(port: int) -> list[int]:
+    """Pids with a TCP listen socket on `port`. Empty when lsof is missing."""
+    try:
+        out = subprocess.run(
+            ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-t"],
+            capture_output=True, text=True, check=False,
+        )
+    except FileNotFoundError:
+        return []
+    pids: list[int] = []
+    for line in out.stdout.split():
+        try:
+            pid = int(line)
+        except ValueError:
+            continue
+        if pid != os.getpid() and pid not in pids:
+            pids.append(pid)
+    return pids
+
+
+def _free_port(port: int) -> None:
+    """Stop whatever is listening on `port`, so a new server can bind it."""
+    for pid in _listeners(port):
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            continue
+        print(f"stopping {pid} (port {port} in use)")
+    deadline = time.monotonic() + 2.0
+    while time.monotonic() < deadline and _listeners(port):
+        time.sleep(0.1)
+    for pid in _listeners(port):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            continue
+        print(f"killed {pid} (port {port} still in use)")
+    deadline = time.monotonic() + 1.0
+    while time.monotonic() < deadline and _listeners(port):
+        time.sleep(0.1)
+
+
 def up(repo: Repo, host: str | None, port: int | None) -> int:
     pid = _pid(repo)
     if pid:
         print(f"already running at {_url(repo, host, port)}  (pid {pid})")
         return 0
+    _free_port(int(port or repo.cfg["port"]))
     cmd = [sys.executable, "-m", "ckit", "serve", "--root", str(repo.root)]
     if host:
         cmd += ["--host", host]
