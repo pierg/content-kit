@@ -14,6 +14,8 @@ import io
 import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import threading
 from contextlib import redirect_stdout
@@ -915,6 +917,38 @@ def main(argv: list[str]) -> int:
             failures.append("a shell over its size budget must be reported")
         shutil.rmtree(heavy, ignore_errors=True)
         planted += 2
+
+        # --- a port held by a process with no pidfile is stopped, so `ckit up` can bind it
+        from . import ctl
+        holder = subprocess.Popen(
+            [sys.executable, "-c",
+             "import socket, time\n"
+             "s = socket.socket()\n"
+             "s.bind(('127.0.0.1', 0))\n"
+             "s.listen(1)\n"
+             "print(s.getsockname()[1], flush=True)\n"
+             "time.sleep(30)\n"],
+            stdout=subprocess.PIPE, text=True,
+        )
+        try:
+            taken = int(holder.stdout.readline())
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                ctl._free_port(taken)
+            try:
+                holder.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass
+            if holder.poll() is None or ctl._listeners(taken):
+                failures.append(
+                    f"a taken port was not freed (pid {holder.pid}, listeners {ctl._listeners(taken)})")
+            if str(holder.pid) not in buf.getvalue():
+                failures.append(f"freeing a port must name the pid it stopped; got {buf.getvalue()!r}")
+        finally:
+            if holder.poll() is None:
+                holder.kill()
+                holder.wait(timeout=2)
+        planted += 1
 
         # --- the version pin is load-bearing
         cfg = json.loads((repo.root / "kit.json").read_text())
