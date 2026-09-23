@@ -2,6 +2,8 @@
 
 **A page contract for agent-written knowledge.** An agent picks a genre; the genre carries a structure, a voice and a component vocabulary; the page lands where the genre says; a gate checks what can be checked. A human annotates the rendered page in the browser, and any agent later — in any session, on any clone — picks the notes up and addresses them. Zero build, stdlib Python, hand-authored HTML in one shared shell.
 
+**On this branch (0.5.0.dev0, a prototype):** a new reading shell — the library organised by topic, a reading measure, a ⌘K palette, link peeks, a page rail, a generated home page, dates and tags in the catalog, optional full text through Pagefind. See `CHANGELOG.md`.
+
 **Documentation:** <https://pierg.github.io/content-kit/> — itself a content-kit library. The reasoning behind each decision is in [`VISION.md`](VISION.md); how a repo's record and pages stay true together is in [`DESIGN-living-content.md`](DESIGN-living-content.md).
 
 ## Five minutes

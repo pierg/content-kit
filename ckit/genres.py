@@ -134,7 +134,7 @@ def ordered(genres: dict[str, Genre]) -> list[Genre]:
     return placed
 
 
-RESERVED_GROUP_KEYS = {"groups", "record", "links", "refs", "indices"}
+RESERVED_GROUP_KEYS = {"site", "topics", "groups", "record", "links", "refs", "indices"}
 
 
 def catalog_groups(genres: dict[str, Genre]) -> list[dict]:

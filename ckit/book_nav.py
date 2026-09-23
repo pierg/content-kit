@@ -15,6 +15,11 @@ Optional thin override: content/books/<slug>/book.json
     "planned": [ { "file": "11-x.html", "label": "11 X", "title": "Coming soon" } ]
   }
 
+Every catalog entry carries `created` and `updated` (YYYY-MM-DD) and the `sha` of what it covers
+(a page, or a whole book): a page whose bytes change gets today's date, an unchanged one keeps its
+dates, and one the catalog has never seen is dated from git history when there is any — so the
+dates are as stable as the pages, and `ckit check` fails on a page edited without `ckit lint`.
+
 Writes (committed artifacts; regenerate via `ckit nav` — lint does it too):
   content/books/<slug>/nav.json
   content/catalog.json · content/search-index.json · content/backlinks.json
@@ -23,8 +28,12 @@ Writes (committed artifacts; regenerate via `ckit nav` — lint does it too):
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 from . import chronicle, config, plugins
@@ -62,6 +71,90 @@ def _topic(p: Path) -> str | None:
     except OSError:
         return None
     return m.group(1).strip() or None if m else None
+
+
+def _tags(p: Path) -> list[str]:
+    try:
+        m = TAGS_META_RE.search(_read(p))
+    except OSError:
+        return []
+    return [t.strip() for t in m.group(1).split(",") if t.strip()] if m else []
+
+
+def today() -> str:
+    """The date a changed page is stamped with: UTC, or $CKIT_TODAY (fixtures pin it)."""
+    return os.environ.get("CKIT_TODAY") or datetime.now(timezone.utc).date().isoformat()
+
+
+def _sha(files: list[Path]) -> str:
+    h = hashlib.sha1()
+    for f in files:
+        h.update(f.name.encode("utf-8"))
+        h.update(b"\0")
+        h.update(f.read_bytes())
+    return h.hexdigest()[:12]
+
+
+def _git_history(repo: Repo) -> dict[str, tuple[str, str]]:
+    """{repo-relative path: (first commit date, last commit date)} for the content tree, from one
+    `git log` — empty when the repo is not a git work tree (a scratch repo, an export)."""
+    try:
+        r = subprocess.run(["git", "-C", str(repo.root), "log", "--relative", "--format=%x00%cs", "--name-only",
+                            "--", repo.content_name], capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    if r.returncode != 0:
+        return {}
+    hist: dict[str, tuple[str, str]] = {}
+    date = None
+    for line in r.stdout.splitlines():
+        if line.startswith("\0"):
+            date = line[1:].strip() or None
+            continue
+        path = line.strip()
+        if not path or date is None:
+            continue
+        # newest commits come first: the first sighting is the last change, later ones move the first back
+        hist[path] = (date, hist[path][1]) if path in hist else (date, date)
+    return hist
+
+
+def _previous_catalog(repo: Repo) -> dict[str, dict]:
+    p = repo.content / "catalog.json"
+    try:
+        cat = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    out: dict[str, dict] = {}
+    for g in cat.get("groups") or []:
+        for item in cat.get(g.get("key"), []) if isinstance(g, dict) else []:
+            if isinstance(item, dict) and isinstance(item.get("href"), str):
+                out[item["href"]] = item
+    return out
+
+
+def date_items(repo: Repo, entries: list[tuple[dict, list[Path]]]) -> None:
+    """Stamp each catalog item with created / updated / sha (see the module docstring)."""
+    prev = _previous_catalog(repo)
+    hist: dict[str, tuple[str, str]] | None = None
+    now = today()
+    for item, files in entries:
+        files = [f for f in files if f.is_file()]
+        sha = _sha(files)
+        old = prev.get(item["href"])
+        if old and old.get("sha") == sha and old.get("created") and old.get("updated"):
+            created, updated = old["created"], old["updated"]
+        elif old and old.get("created"):
+            created, updated = old["created"], now
+        else:
+            if hist is None:
+                hist = _git_history(repo)
+            seen = [hist[repo.rel(f)] for f in files if repo.rel(f) in hist]
+            if seen:
+                created, updated = min(c for c, _ in seen), max(u for _, u in seen)
+            else:
+                created = updated = now
+        item["created"], item["updated"], item["sha"] = created, updated, sha
 
 
 def _title(p: Path) -> str:
@@ -176,10 +269,25 @@ def _books(repo: Repo) -> list[Path]:
     return [d for d in sorted(books.iterdir()) if d.is_dir() and (d / "index.html").is_file()]
 
 
+def topic_labels(repo: Repo) -> dict[str, str]:
+    """kit.json `topics` — {slug: label} — when the repo declares any: the shell names topics by
+    them. Whether a topic is required is a layer's convention (folio's); naming one is not."""
+    got = repo.cfg.get("topics")
+    return {str(k): str(v) for k, v in got.items()} if isinstance(got, dict) else {}
+
+
 def build_catalog(repo: Repo) -> dict:
     c = repo.content_name
     grps = groups(repo)
-    out: dict = {"groups": grps}
+    site = {"name": str(repo.cfg.get("name") or "library")}
+    if repo.cfg.get("question"):
+        site["question"] = str(repo.cfg["question"])
+    out: dict = {"site": site}
+    labels = topic_labels(repo)
+    if labels:
+        out["topics"] = labels
+    out["groups"] = grps
+    dated: list[tuple[dict, list[Path]]] = []
     for g in grps:
         folder, layout = g["key"], g["layout"]
         d = repo.content / folder
@@ -199,7 +307,13 @@ def build_catalog(repo: Repo) -> dict:
                 topic = _topic(p)
                 if topic:  # only when declared, so a repo without topics carries none
                     item["topic"] = topic
+                tags = _tags(p)
+                if tags:
+                    item["tags"] = tags
+                # a book is dated by every page in it; any other entry by its own page
+                dated.append((item, sorted(p.parent.glob("*.html")) if g["kind"] == "book" else [p]))
         out[folder] = items
+    date_items(repo, dated)
     out["record"] = chronicle.record_catalog(repo) if chronicle.enabled(repo) else []
     for key, items in (("links", config.links(repo)), ("refs", config.refs(repo)),
                        ("indices", config.indices(repo))):

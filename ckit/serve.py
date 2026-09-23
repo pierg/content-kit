@@ -20,26 +20,41 @@ One write endpoint exists, for the annotation layer:
   POST /__annotations               → {"op": "add" | "reply" | "state", ...}  writes the sidecar
 
 Reads of a sidecar are plain static GETs of `<page>.annotations.json`.
+
+Files are served `Cache-Control: no-cache` with a `Last-Modified`: the browser keeps its copy and
+asks each time, so an edited page shows on reload and an unchanged one costs a 304. Where pagefind
+is installed (see pagefind.py), a full-text index of the content is built in the background at
+start and served at /pagefind/ — the palette and the search page use it when it answers.
 """
 
 from __future__ import annotations
 
 import argparse
+import email.utils
 import html as html_mod
 import json
 import mimetypes
+import re
+import signal
+import threading
+from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 from . import __version__, annotations
-from . import chronicle, config
-from .book_nav import _books, _href_of, _title, groups
+from . import chronicle, config, pagefind
+from .book_nav import _books, _href_of, _title, build_catalog, build_search_index, groups
 from .paths import Repo, home_page, home_shell_page, load_repo
 
 
 def _esc(text: str) -> str:
     return html_mod.escape(text, quote=False)
+
+
+def _attr(text: str) -> str:
+    """For an attribute value: quotes escaped too, so a title with a quote in it stays one attribute."""
+    return html_mod.escape(text, quote=True)
 
 
 def _href(repo: Repo, p: Path) -> str:
@@ -77,25 +92,116 @@ def _list_group(repo: Repo, title: str, items: list[tuple[str, Path]], empty: st
     return f'<h2>{_esc(title)}</h2>\n<ul class="catalog">\n{lis}\n</ul>'
 
 
+SEARCH_ICON = ('<svg class="hb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/>'
+               '<path d="m20 20-3.5-3.5"/></svg>')
+
+
+def _fmt_date(iso: str) -> str:
+    try:
+        d = date.fromisoformat(iso)
+    except (TypeError, ValueError):
+        return ""
+    return f"{d.day} {d.strftime('%b %Y')}"
+
+
+def _clean_sub(sub: str) -> str:
+    """A page's opening line without its status word — the summary a reader wants on a card."""
+    return re.sub(r"^\s*Status:\s*[A-Z]+\s*[—–-]\s*", "", sub or "").strip()
+
+
+def _read_json(path: Path):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
 def _landing(repo: Repo, base: str = "/") -> bytes:
+    """The generated home page, for a repo whose kit.json names no `home`: what the library holds,
+    by topic when its pages declare topics, what changed lately, and a shelf per genre. Built from
+    the committed indices (the catalog and the search index) — the same data the chrome reads."""
+    b = lambda href: _attr(_based(href, base))  # noqa: E731
     name = _esc(str(repo.cfg.get("name", "library")))
     question = _esc(str(repo.cfg.get("question", "")))
-    lede = f'<p class="sub">{question}</p>' if question else ""
-    b = lambda href: _esc(_based(href, base))  # noqa: E731
-    chron = f' <a class="search-cta" href="{b("/shell/chronicle.html")}">Chronicle &rarr;</a>' if chronicle.enabled(repo) else ""
-    extra = "".join(
-        f' <a class="search-cta" href="{b(x["href"])}"' + (f' title="{_esc(x["title"])}"' if x.get("title") else "")
-        + f'>{_esc(x["label"])} &rarr;</a>'
-        for x in config.links(repo))
-    rec = chronicle.record_catalog(repo) if chronicle.enabled(repo) else []
-    record = ("<h2>Record</h2>\n<ul class=\"catalog\">\n" + "\n".join(
-        f'<li><a href="{b(r["href"])}">{_esc(r["title"])}</a><div class="path">{_esc(r["path"])}</div></li>' for r in rec)
-        + "\n</ul>") if rec else ""
-    grps = "\n".join(
-        _list_group(repo, g["label"], _group_items(repo, g["key"], g["layout"]),
-                    f"No {g['key']} yet — `ckit new {g['kind']} <slug>`", base)
-        for g in groups(repo)
-    )
+    cat = _read_json(repo.content / "catalog.json") or build_catalog(repo)
+    idx = _read_json(repo.content / "search-index.json")
+    if not isinstance(idx, list):
+        idx = build_search_index(repo)
+    subs = {r.get("href"): _clean_sub(r.get("sub", "")) for r in idx if isinstance(r, dict)}
+    grps = [g for g in cat.get("groups") or [] if isinstance(g, dict)]
+    pages = [dict(it, _g=g) for g in grps for it in cat.get(g["key"], []) if isinstance(it, dict)]
+    labels = cat.get("topics") or {}
+
+    parts: list[str] = []
+    parts.append(
+        '<section class="hb-hero">\n'
+        f"<h1>{name}</h1>\n" + (f'<p class="hb-hero-q">{question}</p>\n' if question else "") +
+        f'<a class="hb-hero-search" href="{b("/shell/search.html")}" data-hb-palette>{SEARCH_ICON}'
+        '<span class="hb-find-label">Search everything…</span><span class="hb-kbd">/</span></a>\n</section>')
+
+    order = list(labels) + sorted({p["topic"] for p in pages if p.get("topic")} - set(labels))
+    cards = []
+    for slug in order:
+        mine = [p for p in pages if p.get("topic") == slug]
+        if not mine:
+            continue
+        hub = next((p for p in mine if p["_g"]["kind"] == "hub"), None)
+        counts = []
+        for g in grps:
+            n = sum(1 for p in mine if p["_g"] is g)
+            if n and g["kind"] != "hub":
+                counts.append(f"{n} {_esc(g['kind'] if n == 1 else g['label'].lower())}")
+        latest = max((p.get("updated") or "" for p in mine), default="")
+        href = hub["href"] if hub else f"/shell/search.html?topic={quote(slug)}"
+        stance = subs.get(hub["href"], "") if hub else ""
+        cards.append(
+            f'<a class="hb-card" href="{b(href)}"><span class="hb-card-title">{_esc(str(labels.get(slug) or slug.replace("-", " ").title()))}</span>'
+            + (f'<span class="hb-card-sub">{_esc(stance)}</span>' if stance else "")
+            + f'<span class="hb-card-meta"><span>{len(mine)} pages</span><span>{" · ".join(counts)}</span>'
+            + (f"<span>updated {_esc(_fmt_date(latest))}</span>" if latest else "") + "</span></a>")
+    if cards:
+        parts.append('<h2>Topics</h2>\n<div class="hb-grid">\n' + "\n".join(cards) + "\n</div>")
+
+    recent = sorted((p for p in pages if p.get("updated")), key=lambda p: (p["updated"], p.get("title", "")), reverse=True)[:8]
+    if recent:
+        rows = []
+        for p in recent:
+            kind = p["_g"]["kind"]
+            topic = p.get("topic")
+            where = _esc(str(labels.get(topic) or topic.replace("-", " ").title())) if topic else ""
+            rows.append(f'<li><a href="{b(p["href"])}"><span class="hb-date">{_esc(_fmt_date(p["updated"]))}</span>'
+                        f'<span><span class="hb-kind hb-kind-{_attr(kind)}">{_esc(kind)}</span>{_esc(p.get("title", ""))}</span>'
+                        f'<span class="hb-where">{where}</span></a></li>')
+        parts.append('<h2>Recently updated</h2>\n<ul class="hb-list">\n' + "\n".join(rows) + "\n</ul>")
+
+    shelves = []
+    for g in grps:
+        items = [p for p in pages if p["_g"] is g]
+        if not items:
+            continue
+        lis = "".join(f'<li><a href="{b(p["href"])}" title="{_attr(p.get("title", ""))}">{_esc(p.get("title", ""))}</a></li>' for p in items[:6])
+        more = (f'<li class="hb-more"><a href="{b("/shell/search.html?kind=" + quote(g["kind"]))}">All {len(items)} &rarr;</a></li>'
+                if len(items) > 6 else "")
+        shelves.append(f'<div class="hb-shelf"><h3><span>{_esc(g["label"])}</span><span class="hb-count">{len(items)}</span></h3>'
+                       f"<ul>{lis}{more}</ul></div>")
+    if shelves:
+        parts.append('<h2>Library</h2>\n<div class="hb-shelves">\n' + "\n".join(shelves) + "\n</div>")
+
+    links = []
+    if chronicle.enabled(repo):
+        links.append(f'<a href="{b("/shell/chronicle.html")}">Chronicle &rarr;</a>')
+        for r in chronicle.record_catalog(repo):
+            title = re.sub(r"\s+[—–-]\s+(LIVE|HISTORICAL|PARKED|RETIRED|FROZEN|DRAFT)\s*$", "", r["title"])
+            links.append(f'<a href="{b(r["href"])}" title="{_attr(r["path"])}">{_esc(title)} &rarr;</a>')
+    for x in config.links(repo):
+        links.append(f'<a href="{b(x["href"])}"' + (f' title="{_attr(x["title"])}"' if x.get("title") else "")
+                     + f'>{_esc(x["label"])} &rarr;</a>')
+    if links:
+        parts.append('<h2>Elsewhere</h2>\n<div class="hb-links-row">' + " ".join(links) + "</div>")
+
+    if len(parts) == 1:
+        parts.append('<p class="muted">Nothing here yet — <code>ckit new note &lt;slug&gt;</code> writes the first page.</p>')
+
     body = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -104,30 +210,10 @@ def _landing(repo: Repo, base: str = "/") -> bytes:
 <title>{name}</title>
 <link rel="stylesheet" href="{b("/shell/lib.css")}">
 <script src="{b("/shell/lib.js")}" defer></script>
-<style>
-  .catalog {{ list-style: none; padding: 0; }}
-  .catalog li {{ margin: 0 0 10px; }}
-  .catalog .path {{ color: var(--ink-3); font-size: 12px; }}
-  .home-lede {{ background: var(--surface-1); border: 1px solid var(--ring);
-                border-radius: 12px; padding: 14px 18px; margin: 18px 0; }}
-  .home-lede a.search-cta {{ display: inline-block; margin-top: 6px;
-                border: 1.5px solid var(--violet); color: var(--violet);
-                border-radius: 999px; padding: 4px 14px; font-weight: 700;
-                font-size: 13px; text-decoration: none; }}
-  .home-lede a.search-cta:hover {{ background: color-mix(in srgb, var(--violet) 10%, transparent); }}
-</style>
 </head>
-<body class="hb">
-<main>
-<h1>{name}</h1>
-{lede}
-
-<div class="home-lede">
-Looking for something? <a class="search-cta" href="{b("/shell/search.html")}">Search everything &rarr;</a>{chron}{extra}
-</div>
-
-{grps}
-{record}
+<body class="hb" data-hb-app>
+<main class="hb-home">
+""" + "\n\n".join(parts) + """
 </main>
 </body>
 </html>
@@ -164,13 +250,14 @@ def _dir_listing(repo: Repo, directory: Path) -> bytes | None:
         f"<title>{_esc(heading)}</title>"
         '<link rel="stylesheet" href="/shell/lib.css">'
         '<script src="/shell/lib.js" defer></script></head>'
-        f'<body class="hb"><main>{_list_group(repo, heading, items, "")}</main></body></html>'
+        f'<body class="hb" data-hb-app><main>{_list_group(repo, heading, items, "")}</main></body></html>'
     ).encode("utf-8")
 
 
-def make_handler(repo: Repo):
+def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
     shell = repo.shell.resolve()
     root = repo.root.resolve()
+    index = index or pagefind.Index(None)
 
     def resolve(rel_path: str) -> Path | None:
         if rel_path.startswith("shell/") and rel_path[len("shell/"):] in config.shell_pages(repo):
@@ -192,14 +279,30 @@ def make_handler(repo: Repo):
         def log_message(self, fmt: str, *args) -> None:  # quiet by design
             pass
 
-        def _send(self, status: int, data: bytes, ctype: str, body: bool = True) -> None:
+        def _send(self, status: int, data: bytes, ctype: str, body: bool = True,
+                  modified: float | None = None) -> None:
             self.send_response(status)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(data)))
-            self.send_header("Cache-Control", "no-store")
+            if modified is None:
+                self.send_header("Cache-Control", "no-store")
+            else:  # a file: keep it, but ask every time — an edit shows on the next reload
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Last-Modified", email.utils.formatdate(modified, usegmt=True))
             self.end_headers()
             if body:
                 self.wfile.write(data)
+
+        def _fresh(self, mtime: float) -> bool:
+            """The browser's copy is current (If-Modified-Since at or after the file's mtime)."""
+            ims = self.headers.get("If-Modified-Since")
+            if not ims:
+                return False
+            try:
+                since = email.utils.parsedate_to_datetime(ims).timestamp()
+            except (TypeError, ValueError, IndexError, OverflowError):
+                return False
+            return int(mtime) <= int(since)
 
         def _json(self, status: int, obj: object, body: bool = True) -> None:
             self._send(status, json.dumps(obj).encode("utf-8"), "application/json; charset=utf-8", body)
@@ -256,11 +359,20 @@ def make_handler(repo: Repo):
             if path == "/shell/theme.css":
                 self._send(200, config.theme_css(repo), "text/css; charset=utf-8", body)
                 return
+            if path == "/shell/pagefind.json":  # whether /pagefind/ answers — asked once per session
+                self._json(200, {"available": index.dir is not None}, body)
+                return
             if path == "/__annotations/ping":
                 self._json(200, {"ok": True, "engine": __version__}, body)
                 return
             rel_path = path.lstrip("/")
-            target = resolve(rel_path)
+            if rel_path.startswith("pagefind/") and not (repo.root / "pagefind").exists():
+                target = index.file(rel_path[len("pagefind/"):])
+                if target is None:
+                    self.send_error(404, "Not found")
+                    return
+            else:
+                target = resolve(rel_path)
             if target is None:
                 self.send_error(403, "Forbidden")
                 return
@@ -285,14 +397,20 @@ def make_handler(repo: Repo):
                     return
                 self.send_error(404, "Not found")
                 return
-            data = target.read_bytes()
+            mtime = target.stat().st_mtime
             ctype, _ = mimetypes.guess_type(str(target))
             ctype = ctype or "application/octet-stream"
             if (ctype.startswith("text/") or ctype in
                     ("application/javascript", "application/json", "image/svg+xml")) \
                     and "charset" not in ctype:
                 ctype = f"{ctype}; charset=utf-8"
-            self._send(200, data, ctype, body)
+            if self._fresh(mtime):
+                self.send_response(304)
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Last-Modified", email.utils.formatdate(mtime, usegmt=True))
+                self.end_headers()
+                return
+            self._send(200, target.read_bytes(), ctype, body, modified=mtime)
 
     return Handler
 
@@ -308,12 +426,20 @@ def main(argv: list[str]) -> int:
         raise SystemExit(f"no vendored shell at {repo.rel(repo.shell)} — run `ckit init` here first")
     host = args.host or repo.cfg["host"]
     port = args.port or int(repo.cfg["port"])
-    httpd = ThreadingHTTPServer((host, port), make_handler(repo))
+    index = pagefind.Index(pagefind.command())
+    httpd = ThreadingHTTPServer((host, port), make_handler(repo, index))
     print(f"{repo.cfg.get('name', 'library')} at http://{host}:{port}/  (root={repo.root})", flush=True)
+    if index.cmd:  # full text, when pagefind is installed: built beside the server, never committed
+        threading.Thread(target=index.build, args=(repo,), daemon=True).start()
+
+    def _stop(*_):  # `ckit down` sends SIGTERM: stop the same way ^C does, so the cleanup below runs
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, _stop)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         print("\nbye")
     finally:
         httpd.server_close()
+        index.close()
     return 0

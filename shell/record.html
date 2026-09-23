@@ -19,6 +19,7 @@
 .rec-toc { font-size: 12.5px; color: var(--ink-3); margin: 0 0 18px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .rec-toc a { color: var(--ink-3); }
 .rec-toc a:hover { color: var(--azure); }
+#rec { font-family: var(--font-body); font-size: 1.06rem; }
 #rec h1 { font-size: 24px; }
 #rec h2 { margin-top: 44px; }
 #rec h3 { margin-top: 26px; }
@@ -39,7 +40,7 @@
 <script src="/shell/vendor/marked/marked.umd.js"></script>
 <script src="/shell/lib.js" defer></script>
 </head>
-<body class="hb">
+<body class="hb" data-hb-app>
 <main>
 <div class="rec-banner" id="banner"><span class="muted">Loading…</span></div>
 <nav class="rec-toc" id="toc" aria-label="On this page" hidden></nav>

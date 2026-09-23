@@ -3,56 +3,64 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Search</title>
+<title>Browse</title>
 <link rel="stylesheet" href="/shell/lib.css">
 <style>
-.search-wrap { max-width: 720px; margin: 12px 0 20px; }
-.search-input { width: 100%; padding: 12px 14px; font: 16px/1.4 system-ui, -apple-system, sans-serif;
-                background: var(--surface-1); color: var(--ink-1);
-                border: 1.5px solid var(--baseline); border-radius: 10px; }
-.search-input:focus { outline: 2px solid var(--violet); border-color: var(--violet); }
-.search-meta { color: var(--ink-3); font-size: 12px; margin: 8px 2px 12px; }
-.filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; }
-.fchip { font: 600 12px ui-monospace, Menlo, monospace; padding: 3px 10px;
-         border-radius: 999px; border: 1.5px solid var(--baseline);
-         background: var(--surface-1); color: var(--ink-2); cursor: pointer;
-         letter-spacing: 0.03em; text-transform: uppercase; }
-.fchip.on { border-color: var(--violet); color: var(--violet); background: color-mix(in srgb, var(--violet) 8%, var(--surface-1)); }
-.hits { list-style: none; padding: 0; margin: 0; }
-.hit  { padding: 12px 0; border-bottom: 1px solid var(--grid); }
-.hit .title { font-weight: 700; font-size: 15px; }
-.hit .title a { color: var(--ink-1); }
-.hit .title a:hover { color: var(--azure); text-decoration: none; }
-/* the kind badge takes its colour from the shared .hb-kind-<genre> rule (lib.css, or a layer's theme) */
-.hb .hit .kind { font: 700 10.5px ui-monospace, Menlo, monospace; text-transform: uppercase;
-             letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px; border-width: 1px; border-style: solid;
-             margin: 0 8px 0 0; vertical-align: 0; }
-.hit .origin { font: 10.5px ui-monospace, Menlo, monospace; color: var(--ink-3); margin-left: 8px; }
-.hit .sub  { color: var(--ink-2); font-size: 13px; margin: 4px 0; }
-.hit .snip { color: var(--ink-3); font-size: 12.5px; font-family: ui-monospace, Menlo, monospace; margin: 4px 0; }
-.hit .snip mark { background: color-mix(in srgb, var(--violet) 22%, transparent); color: var(--ink-1); border-radius: 2px; padding: 0 2px; }
-.hit .href { color: var(--ink-3); font: 11.5px ui-monospace, Menlo, monospace; }
-.hit .tags { display: inline-flex; gap: 4px; margin-left: 8px; }
-.hit .tag  { font: 10.5px ui-monospace, Menlo, monospace; color: var(--ink-3);
-             border: 1px dashed var(--baseline); border-radius: 4px; padding: 0 5px; }
-.empty { color: var(--ink-3); padding: 40px 0; text-align: center; font-size: 14px; }
+/* Browse and search: every page of the library (and of every index kit.json `indices` merges in),
+   narrowed by words, kind, topic and tag. The filters live in the URL (?q= &kind= &topic= &tag=),
+   so a breadcrumb, a tag chip or a topic card can link straight to a view of the library.
+   Generated from /content/search-index.json and /content/catalog.json; nothing here is authored. */
+.br-bar { position: relative; max-width: 46rem; margin: 6px 0 16px; }
+.br-bar .hb-ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-3); width: 18px; height: 18px; }
+.br-input { width: 100%; box-sizing: border-box; padding: 13px 16px 13px 42px; font: 16px/1.4 var(--font-sans);
+            background: var(--surface-1); color: var(--ink-1); border: 1px solid var(--baseline); border-radius: 12px; }
+.br-input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-color: var(--accent); }
+.br-facets { display: grid; gap: 10px; margin: 0 0 22px; }
+.br-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.br-row .br-label { font: 650 10.5px/1.2 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);
+                    width: 4.5rem; flex: none; }
+.fchip { font: 500 12.5px/1 var(--font-sans); padding: 6px 11px; border-radius: 999px; border: 1px solid var(--grid);
+         background: var(--surface-1); color: var(--ink-2); cursor: pointer; }
+.fchip:hover { border-color: var(--baseline); color: var(--ink-1); }
+.fchip.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface-1)); }
+.fchip .n { color: var(--ink-3); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.fchip.more { border-style: dashed; }
+.br-meta { font: 13px/1.4 var(--font-sans); color: var(--ink-3); margin: 0 0 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.br-meta button { font: 500 12.5px/1 var(--font-sans); background: none; border: 0; color: var(--link); cursor: pointer; padding: 0; }
+.hits { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--grid); }
+.hit  { padding: 16px 2px 16px; border-bottom: 1px solid var(--grid); }
+.hit .top { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.hit .title { font: 650 16.5px/1.35 var(--font-sans); letter-spacing: -0.01em; }
+.hit .title a { color: var(--ink-1); text-decoration: none; }
+.hit .title a:hover { color: var(--link); }
+.hit .where { font: 12.5px/1.3 var(--font-sans); color: var(--ink-3); }
+.hit .origin { font: 600 11px/1 var(--font-sans); color: var(--ink-2); border: 1px dashed var(--baseline); border-radius: 4px; padding: 2px 6px; }
+.hit .sub  { font: 15px/1.55 var(--font-serif); color: var(--ink-2); margin: 6px 0 0; max-width: 48rem; }
+.hit .snip { font: 13.5px/1.55 var(--font-sans); color: var(--ink-3); margin: 5px 0 0; max-width: 48rem; }
+.hit mark { background: color-mix(in srgb, var(--amber) 28%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
+.hit .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.hit .tags a { font: 500 11.5px/1 var(--font-sans); color: var(--ink-3); background: var(--surface-2); border: 1px solid var(--grid);
+               border-radius: 999px; padding: 4px 8px; text-decoration: none; }
+.hit .tags a:hover { color: var(--ink-1); }
+.br-section { font: 650 10.5px/1.2 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin: 30px 0 4px; }
+.empty { color: var(--ink-3); padding: 40px 0; text-align: center; font: 14px var(--font-sans); }
 </style>
 <script src="/shell/lib.js" defer></script>
 </head>
-<body class="hb">
+<body class="hb" data-hb-app>
 <main>
 
-<h1>Search</h1>
-<p class="sub">Client-side, prebuilt index. Searches titles, subheadings, definition blockquotes, and tags across every page.</p>
+<h1>Browse</h1>
+<p class="sub">Every page in the library — by words, kind, topic and tag. Titles, opening lines, headings, definitions and tags are searched here from the generated search index; press <span class="hb-kbd">/</span> anywhere for the quick palette.</p>
 
-<div class="search-wrap">
-  <input id="q" type="search" class="search-input" placeholder="Type to filter…"
-         autofocus autocomplete="off">
-  <div class="filters" id="filters" role="tablist" aria-label="Filter by kind"></div>
-  <div class="search-meta" id="meta">Loading index…</div>
+<div class="br-bar">
+  <svg class="hb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+  <input id="q" type="search" class="br-input" placeholder="Search the library…" autofocus autocomplete="off" spellcheck="false" aria-label="Search the library">
 </div>
-
+<div class="br-facets" id="facets"></div>
+<div class="br-meta" id="meta">Loading the index…</div>
 <ul class="hits" id="hits" aria-live="polite"></ul>
+<div id="fulltext"></div>
 
 <script>
 (function () {
@@ -62,106 +70,163 @@
   function u(href) {
     return typeof href === "string" && href.charAt(0) === "/" && href.charAt(1) !== "/" ? BASE + href.slice(1) : href;
   }
-  var KINDS = [];  /* the catalog's groups, in its order, then "page" */
-  var state = { q: "", kinds: new Set() };
-  var idx = [];
-
   function esc(s) {
-    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
-
+  function titleCase(s) { return String(s).replace(/[-_]+/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
+  function clean(sub) { return window.hbCleanSub ? window.hbCleanSub(sub) : String(sub || ""); }
+  function words(q) { return q.toLowerCase().split(/\s+/).filter(function (w) { return w.length > 1; }); }
   function highlight(text, q) {
-    if (!q) return esc(text);
-    var re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig");
-    return esc(text).replace(re, function (m) { return "<mark>" + m + "</mark>"; });
+    var s = esc(text);
+    words(q).forEach(function (w) {
+      s = s.replace(new RegExp("(" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>");
+    });
+    return s;
+  }
+  function fmtDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+    if (!m) return "";
+    try { return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); }
+    catch (e) { return iso; }
   }
 
-  function score(rec, q) {
-    if (!q) return 1;
-    var ql = q.toLowerCase();
-    var t = (rec.title || "").toLowerCase();
-    var s = (rec.sub   || "").toLowerCase();
-    var d = (rec.defn  || "").toLowerCase();
-    var h = (rec.headings || []).join(" ").toLowerCase();
-    var g = (rec.tags || []).join(" ").toLowerCase();
-    var sc = 0;
-    if (t.indexOf(ql) !== -1) sc += 8;
-    if (t.split(/\s+/).some(function (w) { return w === ql; })) sc += 3;
-    if (s.indexOf(ql) !== -1) sc += 3;
-    if (d.indexOf(ql) !== -1) sc += 2;
-    if (h.indexOf(ql) !== -1) sc += 2;
-    if (g.indexOf(ql) !== -1) sc += 4;
-    return sc;
+  var params = new URLSearchParams(location.search);
+  function list(name) { return (params.get(name) || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean); }
+  var state = { q: params.get("q") || "", kinds: new Set(list("kind")), topics: new Set(list("topic")),
+                tags: new Set(list("tag")), allTags: false };
+  var idx = [], KINDS = [], TOPICS = [], TAGS = [], labels = {}, dates = {};
+
+  function sync() {
+    var p = new URLSearchParams();
+    if (state.q.trim()) p.set("q", state.q.trim());
+    if (state.kinds.size) p.set("kind", Array.from(state.kinds).join(","));
+    if (state.topics.size) p.set("topic", Array.from(state.topics).join(","));
+    if (state.tags.size) p.set("tag", Array.from(state.tags).join(","));
+    var qs = p.toString();
+    history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
   }
 
-  function bestSnippet(rec, q) {
-    var pool = [rec.defn, rec.sub, (rec.headings || []).join(" · ")].filter(Boolean);
-    if (!q) return pool[0] || "";
-    var ql = q.toLowerCase();
-    for (var i = 0; i < pool.length; i++) {
-      var t = pool[i], ix = t.toLowerCase().indexOf(ql);
-      if (ix < 0) continue;
-      var start = Math.max(0, ix - 40);
-      var end = Math.min(t.length, ix + q.length + 100);
-      return (start > 0 ? "…" : "") + t.slice(start, end) + (end < t.length ? "…" : "");
+  function matches(r) {
+    if (state.kinds.size && !state.kinds.has(r.kind)) return false;
+    if (state.topics.size && !state.topics.has(r.topic || "")) return false;
+    if (state.tags.size) {
+      var tg = r.tags || [];
+      var all = true;
+      state.tags.forEach(function (t) { if (tg.indexOf(t) === -1) all = false; });
+      if (!all) return false;
     }
-    return pool[0] || "";
+    return true;
+  }
+
+  function score(r, q) {
+    if (!q) return 1;
+    if (window.hbScore) return window.hbScore(r, q, labels[r.topic] || r.topic || "");
+    var t = (r.title + " " + (r.sub || "")).toLowerCase();
+    return q.toLowerCase().split(/\s+/).every(function (w) { return t.indexOf(w) !== -1; }) ? 1 : 0;
+  }
+
+  function snippet(r, q) {
+    var pool = [r.defn, (r.headings || []).join(" · ")].filter(Boolean);
+    var ws = words(q);
+    for (var i = 0; i < pool.length; i++) {
+      var t = pool[i], lo = t.toLowerCase();
+      for (var j = 0; j < ws.length; j++) {
+        var ix = lo.indexOf(ws[j]);
+        if (ix < 0) continue;
+        var start = Math.max(0, ix - 50), end = Math.min(t.length, ix + ws[j].length + 120);
+        return (start > 0 ? "…" : "") + t.slice(start, end) + (end < t.length ? "…" : "");
+      }
+    }
+    return "";
+  }
+
+  function chip(kind, value, label, n, on) {
+    return '<button type="button" class="fchip' + (on ? " on" : "") + '" data-f="' + kind + '" data-v="' + esc(value) + '">' +
+      esc(label) + (n != null ? '<span class="n">' + n + "</span>" : "") + "</button>";
+  }
+
+  function renderFacets() {
+    var pool = idx.filter(function (r) { return !r.origin; });
+    var rows = [];
+    rows.push('<div class="br-row"><span class="br-label">Kind</span>' + KINDS.map(function (k) {
+      var n = idx.filter(function (r) { return r.kind === k; }).length;
+      return n ? chip("kind", k, k, n, state.kinds.has(k)) : "";
+    }).join("") + "</div>");
+    if (TOPICS.length) rows.push('<div class="br-row"><span class="br-label">Topic</span>' + TOPICS.map(function (t) {
+      var n = pool.filter(function (r) { return r.topic === t; }).length;
+      return chip("topic", t, labels[t] || titleCase(t), n, state.topics.has(t));
+    }).join("") + "</div>");
+    if (TAGS.length) {
+      var shown = state.allTags ? TAGS : TAGS.slice(0, 18);
+      state.tags.forEach(function (t) {
+        if (!shown.some(function (x) { return (x.name || x) === t; })) shown = shown.concat([{ name: t, n: null }]);
+      });
+      rows.push('<div class="br-row"><span class="br-label">Tag</span>' + shown.map(function (t) {
+        return chip("tag", t.name || t, "#" + (t.name || t), t.n, state.tags.has(t.name || t));
+      }).join("") + (TAGS.length > 18 && !state.allTags ? '<button type="button" class="fchip more" data-f="more">+' + (TAGS.length - 18) + " more</button>" : "") + "</div>");
+    }
+    document.getElementById("facets").innerHTML = rows.join("");
   }
 
   function render() {
     var q = state.q.trim();
-    var hits = idx
-      .filter(function (r) { return state.kinds.size === 0 || state.kinds.has(r.kind); })
+    var hits = idx.filter(matches)
       .map(function (r) { return { r: r, s: score(r, q) }; })
       .filter(function (x) { return x.s > 0; })
-      .sort(function (a, b) { return b.s - a.s; });
-
-    var meta = document.getElementById("meta");
-    meta.textContent = q
-      ? hits.length + " hit" + (hits.length === 1 ? "" : "s") + " for \"" + q + "\""
-      : idx.length + " pages indexed";
-
+      .sort(function (a, b) {
+        if (q) return b.s - a.s;
+        var da = dates[a.r.href] || "", db = dates[b.r.href] || "";
+        return da < db ? 1 : da > db ? -1 : (a.r.title || "").localeCompare(b.r.title || "");
+      });
+    var filtered = state.kinds.size || state.topics.size || state.tags.size;
+    document.getElementById("meta").innerHTML =
+      "<span>" + (q ? hits.length + " page" + (hits.length === 1 ? "" : "s") + " match “" + esc(q) + "”"
+                    : hits.length + " page" + (hits.length === 1 ? "" : "s") + (filtered ? "" : ", newest first")) + "</span>" +
+      (q || filtered ? '<button type="button" data-f="clear">Clear</button>' : "");
     var hitsEl = document.getElementById("hits");
-    if (hits.length === 0) {
-      hitsEl.innerHTML = '<li class="empty">No hits. Try a different word or clear the filters.</li>';
-      return;
+    if (!hits.length) {
+      hitsEl.innerHTML = '<li class="empty">Nothing matches — try fewer words, or clear a filter.</li>';
+    } else {
+      hitsEl.innerHTML = hits.slice(0, 80).map(function (h) {
+        var r = h.r, snip = q ? snippet(r, q) : "";
+        var where = [];
+        if (r.topic) where.push(esc(labels[r.topic] || titleCase(r.topic)));
+        if (dates[r.href]) where.push("updated " + esc(fmtDate(dates[r.href])));
+        return '<li class="hit"><div class="top"><span class="hb-kind hb-kind-' + esc(r.kind) + '">' + esc(r.kind) + "</span>" +
+          '<span class="title"><a href="' + esc(u(r.href)) + '">' + highlight(r.title || r.href, q) + "</a></span>" +
+          (r.origin ? '<span class="origin">' + esc(r.origin) + "</span>" : "") +
+          (where.length ? '<span class="where">· ' + where.join(" · ") + "</span>" : "") + "</div>" +
+          (r.sub ? '<div class="sub">' + highlight(clean(r.sub), q) + "</div>" : "") +
+          (snip ? '<div class="snip">' + highlight(snip, q) + "</div>" : "") +
+          (r.tags && r.tags.length ? '<div class="tags">' + r.tags.map(function (t) {
+            return '<a href="' + esc(u("/shell/search.html?tag=" + encodeURIComponent(t))) + '" data-tag="' + esc(t) + '">#' + esc(t) + "</a>";
+          }).join("") + "</div>" : "") + "</li>";
+      }).join("");
     }
-    hitsEl.innerHTML = hits.slice(0, 50).map(function (h) {
-      var r = h.r;
-      var snip = bestSnippet(r, q);
-      return '<li class="hit">' +
-        '<div>' +
-          '<span class="kind hb-kind hb-kind-' + esc(r.kind) + '">' + esc(r.kind) + '</span>' +
-          '<span class="title"><a href="' + esc(u(r.href)) + '">' + highlight(r.title, q) + '</a></span>' +
-          (r.origin ? '<span class="origin">' + esc(r.origin) + '</span>' : '') +
-          (r.tags && r.tags.length
-            ? '<span class="tags">' + r.tags.map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('') + '</span>'
-            : '') +
-        '</div>' +
-        (r.sub ? '<div class="sub">' + highlight(r.sub, q) + '</div>' : '') +
-        (snip && snip !== r.sub ? '<div class="snip">' + highlight(snip, q) + '</div>' : '') +
-        '<div class="href">' + esc(r.href) + '</div>' +
-      '</li>';
-    }).join("");
+    fulltext(q, hits);
   }
 
-  function initFilters(catalog) {
-    var el = document.getElementById("filters");
-    KINDS = ((catalog && catalog.groups) || []).map(function (g) { return g.kind; });
-    idx.forEach(function (r) { if (KINDS.indexOf(r.kind) === -1) KINDS.push(r.kind); });
-    KINDS = KINDS.filter(function (k) { return k !== "page"; }).concat(["page"]);
-    el.innerHTML = KINDS.map(function (k) {
-      return '<button class="fchip" data-kind="' + k + '">' + k + '</button>';
-    }).join("");
-    el.addEventListener("click", function (e) {
-      var b = e.target.closest("[data-kind]");
-      if (!b) return;
-      var k = b.dataset.kind;
-      if (state.kinds.has(k)) state.kinds.delete(k);
-      else state.kinds.add(k);
-      b.classList.toggle("on");
-      render();
-    });
+  var ftSeq = 0;
+  function fulltext(q, hits) {
+    var box = document.getElementById("fulltext");
+    var seq = ++ftSeq;
+    if (q.length < 3 || !window.hbPagefind) { box.innerHTML = ""; return; }
+    window.hbPagefind().then(function (pf) {
+      if (!pf || seq !== ftSeq) return null;
+      return pf.debouncedSearch ? pf.debouncedSearch(q, {}, 200) : pf.search(q);
+    }).then(function (s) {
+      if (!s || seq !== ftSeq) return null;
+      return Promise.all(s.results.slice(0, 12).map(function (x) { return x.data(); }));
+    }).then(function (docs) {
+      if (!docs || seq !== ftSeq) return;
+      var shown = {};
+      hits.forEach(function (h) { shown[u(h.r.href)] = 1; });
+      docs = docs.filter(function (d) { return !shown[d.url.replace(/index\.html$/, "")]; });
+      box.innerHTML = docs.length ? '<div class="br-section">Also in the text</div><ul class="hits">' + docs.map(function (d) {
+        return '<li class="hit"><div class="top"><span class="title"><a href="' + esc(d.url) + '">' + esc((d.meta && d.meta.title) || d.url) +
+          '</a></span></div><div class="snip">' + d.excerpt + "</div></li>";
+      }).join("") + "</ul>" : "";
+    }).catch(function () {});
   }
 
   function getJson(url) {
@@ -173,7 +238,29 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var input = document.getElementById("q");
-    input.addEventListener("input", function () { state.q = input.value; render(); });
+    input.value = state.q;
+    input.addEventListener("input", function () { state.q = input.value; sync(); render(); });
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-f]");
+      if (b) {
+        var f = b.dataset.f, v = b.dataset.v;
+        if (f === "clear") { state.q = ""; input.value = ""; state.kinds.clear(); state.topics.clear(); state.tags.clear(); }
+        else if (f === "more") state.allTags = true;
+        else {
+          var set = f === "kind" ? state.kinds : f === "topic" ? state.topics : state.tags;
+          if (set.has(v)) set.delete(v); else set.add(v);
+        }
+        sync(); renderFacets(); render();
+        return;
+      }
+      var t = e.target.closest("a[data-tag]");
+      if (t && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        state.tags.add(t.dataset.tag);
+        sync(); renderFacets(); render();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
     /* the repo's own index, then every extra index kit.json `indices` declares (a folio's
        federated catalog of sibling repos, say) — merged; one that fails to load is skipped */
     getJson("/content/catalog.json").catch(function () { return null; }).then(function (catalog) {
@@ -185,15 +272,26 @@
         idx = [].concat.apply([], lists.map(function (l) {
           return Array.isArray(l) ? l : (l && Array.isArray(l.records) ? l.records : []);
         }));
-        initFilters(catalog);
+        labels = (catalog && catalog.topics) || {};
+        ((catalog && catalog.groups) || []).forEach(function (g) {
+          if (KINDS.indexOf(g.kind) === -1) KINDS.push(g.kind);
+          (catalog[g.key] || []).forEach(function (it) { if (it.updated) dates[it.href] = it.updated; });
+        });
+        idx.forEach(function (r) { if (KINDS.indexOf(r.kind) === -1) KINDS.push(r.kind); });
+        KINDS = KINDS.filter(function (k) { return k !== "page"; }).concat(["page"]);
+        var seenT = {};
+        Object.keys(labels).forEach(function (t) { seenT[t] = 1; TOPICS.push(t); });
+        idx.forEach(function (r) { if (r.topic && !r.origin && !seenT[r.topic]) { seenT[r.topic] = 1; TOPICS.push(r.topic); } });
+        var counts = {};
+        idx.forEach(function (r) { if (!r.origin) (r.tags || []).forEach(function (t) { counts[t] = (counts[t] || 0) + 1; }); });
+        TAGS = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || a.localeCompare(b); })
+          .map(function (t) { return { name: t, n: counts[t] }; });
+        renderFacets();
         render();
       });
     }).catch(function () {
-      document.getElementById("meta").textContent = "Failed to load index.";
+      document.getElementById("meta").textContent = "The search index could not be loaded.";
     });
-    // Support ?q= in URL for shareable searches
-    var params = new URLSearchParams(location.search);
-    if (params.get("q")) { input.value = params.get("q"); state.q = input.value; }
   });
 })();
 </script>

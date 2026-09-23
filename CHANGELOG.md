@@ -2,6 +2,39 @@
 
 Every release names what it breaks and how to move across. A repo pins the engine version it was checked against (`"ckit"` in `kit.json`), so an upgrade is always a deliberate act per repo.
 
+## 0.5.0.dev0 — unreleased (prototype on `pg-/quirky-cannon-y7jjqv`)
+
+A shell for reading and for finding: the library organised by topic, a reading measure, a palette, peeks, a page rail and a generated home page — and the catalog grows what a knowledge base needs (topics by name, tags, dates). No content page has to change: every class, token and script API of 0.4 still works, and the chrome still lives outside `<main>`.
+
+### Changes a repo sees
+
+1. **Generated indices change shape** — regenerate them (`ckit lint`) and commit. `catalog.json` gains `site` (name, question), `topics` (kit.json `topics`, when declared), and per entry `tags`, `created`, `updated` and `sha`. `site` and `topics` join the reserved catalog keys: a genre may not use them as its directory.
+2. **A page edited without `ckit lint` fails the gate.** An entry's `sha` covers its page (a book: every page in it), so its `updated` date moves exactly when its bytes do — and a stale one is a stale index. Dates are seeded from git history the first time an entry is seen, else today (UTC, or `$CKIT_TODAY`).
+3. **The reading column narrows** to ~70 characters a line (`--measure`); figures, tables, code and side-by-side blocks break out to `--wide`. Pages whose prose sits inside a classed wrapper keep the wide column.
+4. **The generated home page** (no `home` in kit.json) is built from the committed indices: topics as cards (with each hub's opening line), recently updated, a shelf per genre, the repo's links and record files.
+5. `ckit serve` sends files `Cache-Control: no-cache` with `Last-Modified` and answers `If-Modified-Since` with 304 (was `no-store`); generated responses stay `no-store`.
+
+### Added
+
+- **The library rail** — by topic when pages declare one, by genre otherwise, folding and remembered; the theme (auto · light · dark) and reading face (serif · sans) toggles.
+- **The page rail** — outline with scroll-spy, the page's kind, topic, dates, reading time and tags, and *Linked from* (automatic backlinks).
+- **The palette** — ⌘K / Ctrl-K / `/`: pages, topics, tags and the shell's pages; full text when Pagefind answers.
+- **Peeks** on internal links; the status pill on the opening line; a top bar with breadcrumbs or a book's chapters.
+- **Browse** (`/shell/search.html`): multi-word matching, kind / topic / tag filters kept in the URL, newest first.
+- **Full text through Pagefind, optional** (`ckit/pagefind.py`): built in the background by `ckit serve` (rebuilt after `ckit lint`) and written by `ckit export`; `/shell/pagefind.json` says whether it answers. Nothing committed, nothing required.
+- **Fonts**: Inter and Source Serif 4, variable, latin, weight axis (SIL OFL), vendored under `shell/vendor/fonts/`.
+- **View transitions and speculation-rules prefetch**, where browsers have them.
+- **A weight budget for the shell**, checked by the selftest: `lib.css` + `lib.js` ≤ 32 KB gzipped (27.6 KB now, from 12.1 KB in 0.4), fonts ≤ 200 KB (147 KB).
+- `data-hb-app` on the shell's own pages (full width, sans, no page rail).
+
+### Moving a repo from 0.4
+
+```bash
+git -C ../content-kit checkout pg-/quirky-cannon-y7jjqv    # the engine and the kit, from this branch
+ckit init .                                                 # re-vendors kit/, pins "ckit": "0.5.0.dev0", regenerates the indices
+make check && git add kit kit.json content/*.json && git commit
+```
+
 ## 0.4.0 — 2026-09-22
 
 The page contract stops knowing what a lab is. Everything a layer needs now reaches the engine through ten declared extension points, and the vocabulary that used to be built in — the story genre, record-id checks, the dashboard, the formal-verification colours and widgets — moves out to the layers and themes that own it. The engine installs as a package.

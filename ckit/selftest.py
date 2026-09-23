@@ -97,6 +97,35 @@ def _request(port: int, path: str) -> tuple[int, str | None, bytes]:
         conn.close()
 
 
+def _get(port: int, path: str, headers: dict | None = None) -> tuple[int, dict, bytes]:
+    """One GET with request headers — status, the response headers (lower-cased), and the body."""
+    conn = HTTPConnection("127.0.0.1", port, timeout=5)
+    try:
+        conn.request("GET", path, headers=headers or {})
+        resp = conn.getresponse()
+        return resp.status, {k.lower(): v for k, v in resp.getheaders()}, resp.read()
+    finally:
+        conn.close()
+
+
+# What every page loads before its own content: the shell's stylesheet and script, gzipped, and the
+# two reading faces. A budget nothing checks gets spent; this one is checked on the kit's own shell.
+SHELL_BUDGET = 32 * 1024
+FONT_BUDGET = 200 * 1024
+
+
+def shell_weight_problems(shell: Path) -> list[str]:
+    import gzip
+    out: list[str] = []
+    weight = sum(len(gzip.compress((shell / f).read_bytes(), 9)) for f in ("lib.css", "lib.js") if (shell / f).is_file())
+    if weight > SHELL_BUDGET:
+        out.append(f"the shell (lib.css + lib.js) is {weight} bytes gzipped, over its {SHELL_BUDGET}-byte budget")
+    fonts = sum(p.stat().st_size for p in (shell / "vendor" / "fonts").glob("*.woff2"))
+    if fonts > FONT_BUDGET:
+        out.append(f"the shell's fonts are {fonts} bytes, over their {FONT_BUDGET}-byte budget")
+    return out
+
+
 def _expect(probs: list[str], rel: str, needle: str, failures: list[str]) -> None:
     if not any(rel in p and needle in p for p in probs):
         failures.append(f"planted {rel!r} — expected a problem containing {needle!r}; got: "
@@ -731,6 +760,98 @@ def main(argv: list[str]) -> int:
                 failures.append(f"lib.css {base} sets a colour (or the border shorthand, which resets it): "
                                 "a theme's modifier class would lose to it")
             planted += 1
+
+        # --- 0.5: the catalog names the site and its topics, carries each page's tags, and dates
+        #     every entry by what changed — stable when nothing did, stale (a red gate) when a page
+        #     was edited without `ckit lint`
+        ztmp, zrepo = _scratch()
+        cfgz = json.loads((zrepo.root / "kit.json").read_text())
+        cfgz.update({"question": "What do we cook?", "topics": {"kitchen": "The kitchen"}})
+        (zrepo.root / "kit.json").write_text(json.dumps(cfgz))
+        zrepo = load_repo(zrepo.root)
+        meta = '<meta name="topic" content="kitchen"><meta name="tags" content="salt, heat">'
+        _write(zrepo, "notes/one.html", _page("One", "<p>First.</p>", head=meta))
+        _write(zrepo, "notes/two.html", _page("Two", "<p>Second.</p>"))
+        saved_today = os.environ.get("CKIT_TODAY")
+        try:
+            os.environ["CKIT_TODAY"] = "2026-01-01"
+            _lint(zrepo)
+            catz = json.loads((zrepo.content / "catalog.json").read_text())
+            if catz.get("site") != {"name": "Scratch", "question": "What do we cook?"}:
+                failures.append(f"the catalog must name the site and its question: {catz.get('site')}")
+            if catz.get("topics") != {"kitchen": "The kitchen"}:
+                failures.append(f"the catalog must carry kit.json's topic labels: {catz.get('topics')}")
+            one = next((n for n in catz["notes"] if n["slug"] == "one"), {})
+            if one.get("tags") != ["salt", "heat"]:
+                failures.append(f"a catalog entry must carry its page's tags: {one}")
+            if (one.get("created"), one.get("updated")) != ("2026-01-01", "2026-01-01") or len(one.get("sha", "")) != 12:
+                failures.append(f"a page the catalog has never seen, outside git, is dated today: {one}")
+            planted += 4
+            os.environ["CKIT_TODAY"] = "2026-02-02"
+            _write(zrepo, "notes/one.html", _page("One", "<p>First, revised.</p>", head=meta))
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                rc_stale = check.run(load_repo(zrepo.root))
+            if rc_stale == 0:
+                failures.append("a page edited without `ckit lint` must fail the gate: its catalog entry is stale")
+            _lint(zrepo)
+            catz = json.loads((zrepo.content / "catalog.json").read_text())
+            one = next(n for n in catz["notes"] if n["slug"] == "one")
+            two = next(n for n in catz["notes"] if n["slug"] == "two")
+            if (one["created"], one["updated"]) != ("2026-01-01", "2026-02-02"):
+                failures.append(f"a changed page keeps its created date and is updated today: {one}")
+            if (two["created"], two["updated"]) != ("2026-01-01", "2026-01-01"):
+                failures.append(f"an unchanged page keeps both dates: {two}")
+            os.environ["CKIT_TODAY"] = "2026-03-03"
+            before = (zrepo.content / "catalog.json").read_text()
+            _lint(zrepo)
+            if (zrepo.content / "catalog.json").read_text() != before:
+                failures.append("the dates must be stable: a lint on a later day with nothing changed rewrote the catalog")
+            planted += 4
+
+            # --- files are revalidated (Last-Modified → 304), generated pages never stored, the
+            #     home page is built from the catalog, and /shell/pagefind.json says whether full
+            #     text answers
+            httpd3 = ThreadingHTTPServer(("127.0.0.1", 0), serve.make_handler(zrepo))
+            th3 = threading.Thread(target=httpd3.serve_forever, daemon=True)
+            th3.start()
+            try:
+                port3 = httpd3.server_address[1]
+                st, hd, _ = _get(port3, "/content/notes/one.html")
+                if st != 200 or hd.get("cache-control") != "no-cache" or not hd.get("last-modified"):
+                    failures.append(f"a file must be served no-cache with a Last-Modified: {st} {hd.get('cache-control')}")
+                st2, _, body2 = _get(port3, "/content/notes/one.html", {"If-Modified-Since": hd.get("last-modified", "")})
+                if st2 != 304 or body2:
+                    failures.append(f"an unchanged file asked for with If-Modified-Since must answer 304 and no body, got {st2}")
+                st, hd, body = _get(port3, "/")
+                if st != 200 or hd.get("cache-control") != "no-store" or b"The kitchen" not in body \
+                        or b"Search everything" not in body:
+                    failures.append("the generated home page must be served no-store, with the catalog's topics on it")
+                st, _, body = _get(port3, "/shell/pagefind.json")
+                if st != 200 or json.loads(body) != {"available": False}:
+                    failures.append(f"/shell/pagefind.json must say full text is not available here: {st} {body!r}")
+                planted += 4
+            finally:
+                httpd3.shutdown()
+                httpd3.server_close()
+        finally:
+            if saved_today is None:
+                os.environ.pop("CKIT_TODAY", None)
+            else:
+                os.environ["CKIT_TODAY"] = saved_today
+            shutil.rmtree(ztmp, ignore_errors=True)
+
+        # --- the shell's weight is a budget: the kit's own shell holds it, and a planted shell that
+        #     does not is reported by name
+        got = shell_weight_problems(KIT_SRC / "shell")
+        if got:
+            failures.extend(got)
+        heavy = Path(tempfile.mkdtemp(prefix="ckit-selftest-heavy-"))
+        (heavy / "lib.css").write_text("/* */", encoding="utf-8")
+        (heavy / "lib.js").write_bytes(os.urandom(SHELL_BUDGET + 1024))
+        if not any("over its" in x for x in shell_weight_problems(heavy)):
+            failures.append("a shell over its size budget must be reported")
+        shutil.rmtree(heavy, ignore_errors=True)
+        planted += 2
 
         # --- the version pin is load-bearing
         cfg = json.loads((repo.root / "kit.json").read_text())
