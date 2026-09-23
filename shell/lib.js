@@ -651,8 +651,11 @@
     return '<nav class="hb-book" aria-label="Chapters">' + bits.join("") + "</nav>";
   }
 
-  function readingMinutes(main) {
-    var words = (main.textContent || "").split(/\s+/).filter(Boolean).length;
+  function readingMinutes(main) {  /* the prose, not a widget's script or style */
+    var words = 0, w = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) { return /^(SCRIPT|STYLE|TEMPLATE)$/.test(n.parentNode.nodeName) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; }
+    }), n;
+    while ((n = w.nextNode())) words += n.nodeValue.split(/\s+/).filter(Boolean).length;
     return Math.max(1, Math.round(words / 230));
   }
 
