@@ -613,13 +613,16 @@
       '<div class="hb-side-foot">' + themeButton() + fontButton() + '<span class="hb-spacer"></span></div>';
   }
 
+  /* only what the reader opens or closes is remembered — a group the tree opens by default
+     (the current page's) fires "toggle" too, and must not become sticky */
   function wireTree(aside) {
-    aside.addEventListener("toggle", function (e) {
-      var d = e.target;
-      if (!d || d.tagName !== "DETAILS" || !d.dataset.key) return;
-      openState[d.dataset.key] = d.open;
+    aside.addEventListener("click", function (e) {
+      var sm = e.target.closest && e.target.closest("summary");
+      var d = sm && sm.parentNode;
+      if (!d || d.tagName !== "DETAILS" || !d.dataset.key || !aside.contains(d)) return;
+      openState[d.dataset.key] = !d.open;  /* the state the click is about to give it */
       store.set("open:" + BASE, JSON.stringify(openState));
-    }, true);
+    });
   }
 
   /* --------------------------------------------------------- chrome: top bar */
