@@ -37,7 +37,7 @@ from .paths import Repo
 
 SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 TAG = re.compile(r"<([A-Za-z][\w:-]*)\b((?:[^>\"']|\"[^\"]*\"|'[^']*')*)>", re.S)
-URL_ATTR = re.compile(r"""(?<![\w:-])(href|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))""", re.I)
+URL_ATTR = re.compile(r"""(?<![\w:-])(href|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>`]+))""", re.I)
 UNCHECKED = re.compile(r"(?<![\w:-])data-unchecked(?![\w-])", re.I)
 COMMENT = re.compile(r"<!--.*?-->", re.S)
 BODY = re.compile(r"(<(script|style|noscript|template)\b[^>]*>)(.*?)(</\2\s*>)", re.S | re.I)

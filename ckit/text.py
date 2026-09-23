@@ -103,7 +103,7 @@ def meta_content(html: str, name: str) -> str | None:
     return None
 
 
-_CONTENT_ATTR = re.compile(r"""(\bcontent\s*=\s*)("[^"]*"|'[^']*'|[^\s"'>]+)""", re.I)
+_CONTENT_ATTR = re.compile(r"""(?<![\w:.-])(content\s*=\s*)("[^"]*"|'[^']*'|[^\s"'>]+)""", re.I)
 
 
 def set_meta(html: str, name: str, value: str | None) -> str:

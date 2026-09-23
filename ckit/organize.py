@@ -547,7 +547,15 @@ def _uncommitted(repo: Repo, paths: list[Path]) -> list[str] | None:
         return None
     if r.returncode != 0:
         return None
-    return [e[3:].decode("utf-8", "replace") for e in r.stdout.split(b"\0") if len(e) > 3]
+    out, items, i = [], r.stdout.split(b"\0"), 0
+    while i < len(items):
+        entry = items[i]
+        if len(entry) > 3:
+            out.append(entry[3:].decode("utf-8", "replace"))
+            if entry[:1] in (b"R", b"C"):  # a rename or copy: the next item is where it came from
+                i += 1
+        i += 1
+    return out
 
 
 def _open_threads(sidecars: list[Path]) -> list[Path]:

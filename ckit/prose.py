@@ -28,7 +28,7 @@ BLOCKY = re.compile(
     r"canvas|object|script|style|template|textarea|select|main)\b", re.I)
 COMMENT = re.compile(r"<!--.*?-->", re.S)
 BODY = re.compile(r"(<(script|style|noscript|template)\b[^>]*>)(.*?)(</\2\s*>)", re.S | re.I)
-TAG = re.compile(r"<(?:[^>\"']|\"[^\"]*\"|'[^']*')*>")
+TAG = re.compile(r"<!--.*?-->|</?[A-Za-z](?:[^>\"']|\"[^\"]*\"|'[^']*')*>", re.S)  # a raw < in text is text
 BR = re.compile(r"<br\b", re.I)
 DISPLAY_MATH = re.compile(r"\$\$|\\\[|\\begin\{", re.S)
 INLINE_MATH = re.compile(r"\\\((.*?)\\\)|(?<!\\)\$(.+?)(?<!\\)\$", re.S)

@@ -220,14 +220,15 @@ def _organise_cases(failures: list[str]) -> int:
                     "<p>one line\ncontinues here</p>\n<p>a verse<br>\nnext line</p>\n<p>$$\na = b\n$$</p>\n"
                     "<ul>\n<li>one</li>\n<li>two\nwrapped</li>\n</ul>\n<pre>code\nkeeps\nlines</pre>\n"
                     "<table><tr><td>cell\nwrapped</td></tr></table>\n<p>$a + b % the sum\n+ c$ and so</p>\n"
+                    "<p>if x < y and\nz > w then</p>\n"
                     '<p>see <a title="two\nlines" href="/">this</a> link</p>'))
         got = [p for p in _lint(repo) if "notes/wrapped.html" in p]
-        if len(got) != 1 or "3 hard-wrapped elements" not in got[0] or "ckit unwrap" not in got[0]:
+        if len(got) != 1 or "4 hard-wrapped elements" not in got[0] or "ckit unwrap" not in got[0]:
             failures.append(f"three hard-wrapped elements must be reported once, with the fix: {got}")
         before = page_text(wp.read_text())
         text, n = prose.unwrap(wp.read_text())
         wp.write_text(text)
-        if n != 3 or page_text(text) != before or "a verse<br>\nnext line" not in text \
+        if n != 4 or page_text(text) != before or "a verse<br>\nnext line" not in text \
                 or "$$\na = b\n$$" not in text or "code\nkeeps\nlines" not in text \
                 or "% the sum\n+ c$" not in text or 'title="two\nlines"' not in text:
             failures.append(f"unwrap must join exactly the wrapped elements and leave <br>, math (a TeX % "
@@ -416,7 +417,7 @@ def _organise_cases(failures: list[str]) -> int:
         repo, _ = quiet(organize.move, repo, repo.content / "notes" / "x1.html", repo.content / "notes" / "cc.html")
         planted += 1
         rs = _write(repo, "notes/rs.html", _page("Rs", '<p><a href="../../shell/search.html">browse</a> '
-                                                       '<a href=b.html>b</a></p>'))
+                                                       '<a href=b.html?x=1&amp;y=2>b</a></p>'))
         uq = _write(repo, "notes/uq.html", _page("Uq", '<p><a href=/content/notes/nowhere.html>x</a> '
                                                        '<a href=/content/notes/rs.html>rs</a></p>'))
         if not any("uq.html" in p and "/content/notes/nowhere.html — nothing lives there" in p for p in _lint(repo)):
@@ -424,7 +425,7 @@ def _organise_cases(failures: list[str]) -> int:
         uq.write_text(uq.read_text().replace("<a href=/content/notes/nowhere.html>x</a> ", ""))
         repo, _ = quiet(organize.move, repo, rs, repo.content / "entries" / "rs" / "index.html")
         moved_rs = (repo.content / "entries" / "rs" / "index.html").read_text()
-        if 'href="/shell/search.html"' not in moved_rs or 'href="/content/notes/b.html"' not in moved_rs \
+        if 'href="/shell/search.html"' not in moved_rs or 'href="/content/notes/b.html?x=1&amp;y=2">' not in moved_rs \
                 or 'href="/content/entries/rs/"' not in uq.read_text() or _lint(repo):
             failures.append("mv must pin a moved page's relative links (shell ones too), rewrite unquoted links "
                             "to it, and leave the gate clean: " + " | ".join(_lint(repo)))
@@ -577,6 +578,9 @@ def _organise_cases(failures: list[str]) -> int:
     # metadata: a meta's other attributes survive a new value; a meta alone on its line leaves with it
     from .text import set_meta
     h = '<head>\n  <meta charset="utf-8">\n  <meta name="tags" content="a" data-keep="y">\n  <title>T</title>\n</head>'
+    if set_meta('<meta name="x" data-content="keep" content="1">', "x", "2") != \
+            '<meta name="x" data-content="keep" content="2">':
+        failures.append("set_meta must change the content attribute, not one whose name ends in content")
     if 'data-keep="y"' not in set_meta(h, "tags", "b") \
             or set_meta(set_meta(h, "tags", "b"), "tags", None) != h.replace('  <meta name="tags" content="a" data-keep="y">\n', ""):
         failures.append("set_meta must keep a meta's other attributes, and remove a lone meta with its line")
