@@ -12,7 +12,6 @@ generated search index, as before. `$CKIT_PAGEFIND` names a binary, or `off` tur
 
 from __future__ import annotations
 
-import hashlib
 import os
 import shutil
 import subprocess
@@ -60,12 +59,15 @@ def build(cmd: list[str], site: Path, glob: str, out: Path) -> bool:
 
 
 class Index:
-    """The index `ckit serve` keeps: built beside the server, swapped in whole, rebuilt when the
-    committed catalog changes (a `ckit lint` ran), removed when the server stops."""
+    """The index `ckit serve` keeps: built in a private temporary directory (mkdtemp — this
+    process's, unguessable, 0700), swapped in whole, rebuilt when the committed catalog changes
+    (a `ckit lint` ran), removed when the server stops. The build before the current one is kept
+    too, so a page opened before a rebuild can still fetch the fragments its pagefind.js names."""
 
     def __init__(self, cmd: list[str] | None):
         self.cmd = cmd
         self.dir: Path | None = None
+        self.prev: Path | None = None
         self._stamp: float | None = None
         self._repo = None
         self._lock = threading.Lock()
@@ -87,17 +89,14 @@ class Index:
         try:
             self._repo = repo
             stamp = self._catalog_mtime()
-            # one place per repo, reused across runs, so a server that dies leaves nothing behind
-            home = Path(tempfile.gettempdir()) / ("ckit-pagefind-" + hashlib.sha1(str(repo.root.resolve()).encode()).hexdigest()[:12])
-            home.mkdir(parents=True, exist_ok=True)
-            out = Path(tempfile.mkdtemp(prefix="build-", dir=home))
+            out = Path(tempfile.mkdtemp(prefix="ckit-pagefind-"))
             if build(self.cmd, repo.root, f"{repo.content_name}/**/*.html", out):
-                self.dir, self._stamp = out, stamp
-                for old in home.iterdir():  # every earlier build, this server's or a dead one's
-                    if old != out:
-                        shutil.rmtree(old, ignore_errors=True)
+                gone, self.prev, self.dir = self.prev, self.dir, out
+                if gone:
+                    shutil.rmtree(gone, ignore_errors=True)
             else:
                 shutil.rmtree(out, ignore_errors=True)
+            self._stamp = stamp  # a failed build is not retried until the catalog changes again
         finally:
             self._building = False
 
@@ -105,16 +104,22 @@ class Index:
         """A file of the current index, or None; a stale index starts its own rebuild."""
         if self._repo is not None and self._catalog_mtime() != self._stamp and not self._building:
             threading.Thread(target=self.build, args=(self._repo,), daemon=True).start()
-        if not self.dir or not rel or ".." in Path(rel).parts:
+        if not rel or ".." in Path(rel).parts:
             return None
-        p = (self.dir / rel).resolve()
-        try:
-            p.relative_to(self.dir.resolve())
-        except ValueError:
-            return None
-        return p if p.is_file() else None
+        for d in (self.dir, self.prev):
+            if not d:
+                continue
+            p = (d / rel).resolve()
+            try:
+                p.relative_to(d.resolve())
+            except ValueError:
+                continue
+            if p.is_file():
+                return p
+        return None
 
     def close(self) -> None:
-        if self.dir:
-            shutil.rmtree(self.dir, ignore_errors=True)
-            self.dir = None
+        for d in (self.dir, self.prev):
+            if d:
+                shutil.rmtree(d, ignore_errors=True)
+        self.dir = self.prev = None

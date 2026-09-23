@@ -78,6 +78,13 @@
     });
   }
 
+  /* a JSON object as a map with no prototype: a topic or tag called "constructor" is a key */
+  function own(obj) {
+    var out = Object.create(null);
+    if (obj && typeof obj === "object") Object.keys(obj).forEach(function (k) { out[k] = obj[k]; });
+    return out;
+  }
+
   function slugify(t) {
     return String(t).toLowerCase().replace(/<[^>]*>/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
   }
@@ -469,7 +476,7 @@
         byHref[p.href] = p;
       });
     });
-    var labels = (cat && cat.topics) || {};
+    var labels = own((cat && cat.topics) || {});
     var order = Object.keys(labels);
     pages.forEach(function (p) { if (p.topic && order.indexOf(p.topic) === -1) order.push(p.topic); });
     var topics = order.map(function (slug) {
@@ -496,7 +503,7 @@
 
   /* ----------------------------------------------------------- chrome: rail */
   var openState = (function () {
-    try { return JSON.parse(store.get("open") || "{}") || {}; } catch (e) { return {}; }
+    try { return own(JSON.parse(store.get("open:" + BASE) || "{}")); } catch (e) { return Object.create(null); }
   })();
   function isOpen(key, fallback) { return Object.prototype.hasOwnProperty.call(openState, key) ? !!openState[key] : fallback; }
 
@@ -611,7 +618,7 @@
       var d = e.target;
       if (!d || d.tagName !== "DETAILS" || !d.dataset.key) return;
       openState[d.dataset.key] = d.open;
-      store.set("open", JSON.stringify(openState));
+      store.set("open:" + BASE, JSON.stringify(openState));
     }, true);
   }
 
@@ -754,28 +761,29 @@
   /* ----------------------------------------------------------- the mount */
   var mounted = null;
 
+  function isApp(main) {
+    var body = document.body;
+    return !!(body.hasAttribute("data-hb-app") || sitePath().indexOf("/shell/") === 0 || main.classList.contains("hb-home"));
+  }
+
+  function metaText(where, minutes) {
+    var when = where.page && (where.page.updated || where.page.created);
+    return (when ? "Updated " + escapeHtml(fmtDate(when)) + " · " : "") + minutes + " min read";
+  }
+
   function mountShell(opts) {
-    var cat = opts.catalog;
-    var book = opts.book;
     var main = document.querySelector("main");
     if (!main) return;
+    var cat = opts.catalog;
     var lib = model(cat);
     var where = locate(lib);
-    var body = document.body;
-    var path = sitePath();
-    var app = !!(body.hasAttribute("data-hb-app") || path.indexOf("/shell/") === 0 || main.classList.contains("hb-home"));
-
-    if (mounted) {  /* a fresher catalog: repaint the library rail in place, keep everything else */
-      if (mounted.aside) {
-        var sc0 = mounted.aside.querySelector(".hb-side-scroll");
-        var keep = sc0 ? sc0.scrollTop : 0;
-        mounted.aside.innerHTML = sideHtml(lib, where);
-        var sc1 = mounted.aside.querySelector(".hb-side-scroll");
-        if (sc1) sc1.scrollTop = keep;
-      }
-      mounted.lib = lib;
+    if (mounted) {  /* a fresher catalog: repaint what it drives, keep the rest */
+      refresh(lib, where);
+      if (opts.book) applyBook(opts.book);
       return;
     }
+    var body = document.body;
+    var app = isApp(main);
 
     body.classList.add("hb-has-shell", "hb-has-top");
     if (app) body.classList.add("hb-app");
@@ -784,6 +792,8 @@
     stage.className = "hb-stage";
     main.parentNode.insertBefore(stage, main);
     stage.appendChild(main);
+    /* the chrome is fixed or absolutely placed: it goes first in <body>, wherever <main> lives */
+    var first = body.firstChild;
 
     /* the library rail */
     var aside = null;
@@ -797,8 +807,8 @@
       var backdrop = document.createElement("div");
       backdrop.className = "hb-side-backdrop";
       backdrop.addEventListener("click", function () { setDrawer(false); });
-      body.insertBefore(aside, stage);
-      body.insertBefore(backdrop, stage);
+      body.insertBefore(aside, first);
+      body.insertBefore(backdrop, first);
       aside.addEventListener("click", function (e) {
         if (e.target.closest("a")) setDrawer(false);
         var tb = e.target.closest("[data-hb-theme]");
@@ -818,7 +828,7 @@
       });
       /* keep the current page in view in a long tree */
       var here = aside.querySelector(".hb-tree a.here");
-      if (here && here.scrollIntoView) {
+      if (here) {
         var sc = aside.querySelector(".hb-side-scroll");
         if (here.offsetTop > sc.clientHeight - 80) sc.scrollTop = here.offsetTop - sc.clientHeight / 2;
       }
@@ -831,17 +841,16 @@
     var minutes = readingMinutes(main);
     var top = document.createElement("div");
     top.className = "hb-top";
-    var when = where.page && (where.page.updated || where.page.created);
     top.innerHTML =
       (aside ? '<button type="button" class="hb-iconbtn hb-only-narrow" data-hb-drawer aria-label="Library" aria-controls="hb-side" aria-expanded="false">' + icon("menu") + "</button>" : "") +
       crumbsHtml(lib, where) +
       '<div class="hb-top-meta">' +
-      (!app && !bookRoot() ? '<span class="hb-only-wide hb-norail">' + (when ? "Updated " + escapeHtml(fmtDate(when)) + " · " : "") + minutes + " min read</span>" : "") +
+      (!app && !bookRoot() ? '<span class="hb-only-wide hb-norail">' + metaText(where, minutes) + "</span>" : "") +
       (!app && hs.length > 1 ? '<span class="hb-contents"><button type="button" class="hb-iconbtn" data-hb-contents aria-expanded="false">' + icon("list") +
         '<span class="hb-only-wide">Contents</span></button><div class="hb-contents-panel" hidden>' + tocHtml(hs) + "</div></span>" : "") +
       '<button type="button" class="hb-iconbtn hb-only-narrow" data-hb-palette aria-label="Search">' + icon("search") + "</button>" +
       "</div>";
-    body.insertBefore(top, stage);
+    body.insertBefore(top, first);
     top.addEventListener("click", function (e) {
       if (e.target.closest("[data-hb-drawer]")) setDrawer(!body.classList.contains("hb-side-open"));
       var cb = e.target.closest("[data-hb-contents]");
@@ -862,14 +871,14 @@
       rail.className = "hb-rail";
       rail.setAttribute("aria-label", "About this page");
       rail.innerHTML = (hs.length > 1 ? '<div class="hb-rail-sec"><div class="hb-rail-label">On this page</div>' + tocHtml(hs) + "</div>" : "") +
-        '<div class="hb-rail-sec"><div class="hb-rail-label">Page</div>' + factsHtml(lib, where, minutes) + "</div>" +
+        '<div class="hb-rail-sec"><div class="hb-rail-label">Page</div><div data-hb-facts>' + factsHtml(lib, where, minutes) + "</div></div>" +
         '<div class="hb-rail-sec" data-hb-linked hidden></div>';
       body.appendChild(rail);
       scrollSpy(rail, hs);
       if (!main.querySelector("ul[data-backlinks]")) {
         backlinksIndex().then(function (data) {
-          var hits = (data && data[where.href]) || [];
-          if (!hits.length) return;
+          var hits = (data && Object.prototype.hasOwnProperty.call(data, where.href) && data[where.href]) || [];
+          if (!hits.length || !Array.isArray(hits)) return;
           var sec = rail.querySelector("[data-hb-linked]");
           sec.innerHTML = '<div class="hb-rail-label">Linked from · ' + hits.length + "</div>" + linksHtml(hits);
           sec.hidden = false;
@@ -881,18 +890,43 @@
       }
     }
 
-    mounted = { aside: aside, lib: lib, where: where, top: top, main: main, book: null };
-    if (book) applyBook(book);
+    mounted = { aside: aside, lib: lib, where: where, top: top, rail: rail, main: main, book: null, foot: null, minutes: minutes };
+    if (opts.book) applyBook(opts.book);
+  }
+
+  /* a fresher catalog than the cached one the page painted with: the library rail, the crumbs,
+     the top bar's date and the page's facts follow it */
+  function refresh(lib, where) {
+    mounted.lib = lib;
+    mounted.where = where;
+    if (mounted.aside) {
+      var sc0 = mounted.aside.querySelector(".hb-side-scroll");
+      var keep = sc0 ? sc0.scrollTop : 0;
+      mounted.aside.innerHTML = sideHtml(lib, where);
+      var sc1 = mounted.aside.querySelector(".hb-side-scroll");
+      if (sc1) sc1.scrollTop = keep;
+    }
+    if (!mounted.book) {
+      var crumbs = mounted.top.querySelector(".hb-crumbs");
+      if (crumbs) crumbs.outerHTML = crumbsHtml(lib, where);
+    }
+    var meta = mounted.top.querySelector(".hb-norail");
+    if (meta) meta.innerHTML = metaText(where, mounted.minutes);
+    var facts = mounted.rail && mounted.rail.querySelector("[data-hb-facts]");
+    if (facts) facts.innerHTML = factsHtml(lib, where, mounted.minutes);
   }
 
   /* a book's chapters: in the top bar in place of the crumbs, and prev / next below the page —
-     both outside the reading column, so they can arrive after the page has painted */
+     both outside the reading column, so they can arrive after the page has painted, and be
+     replaced when a fresher nav.json (or a libBook() call) arrives */
   function applyBook(book) {
-    if (!mounted || mounted.book || !book || !book.chapters) return;
+    if (!mounted || !book || !book.chapters) return;
+    if (mounted.book && JSON.stringify(mounted.book) === JSON.stringify(book)) return;
     mounted.book = book;
-    var crumbs = mounted.top.querySelector(".hb-crumbs");
-    if (crumbs) crumbs.outerHTML = bookHtml(book);
-    injectFoot(book.chapters, mounted.main);
+    var strip = mounted.top.querySelector(".hb-crumbs, .hb-book");
+    if (strip) strip.outerHTML = bookHtml(book);
+    if (mounted.foot && mounted.foot.parentNode) mounted.foot.parentNode.removeChild(mounted.foot);
+    mounted.foot = injectFoot(book.chapters, mounted.main);
   }
 
   function setDrawer(open) {
@@ -904,11 +938,11 @@
   function injectFoot(chapters, main) {
     var cur = hereFile();
     var i = chapters.findIndex(function (c) { return c.file === cur; });
-    if (i < 0) return;
+    if (i < 0) return null;
     var prev = null, next = null;
     for (var p = i - 1; p >= 0; p--) if (chapters[p].status === "landed") { prev = chapters[p]; break; }
     for (var n = i + 1; n < chapters.length; n++) if (chapters[n].status === "landed") { next = chapters[n]; break; }
-    if (!prev && !next) return;
+    if (!prev && !next) return null;
     var foot = document.createElement("nav");
     foot.className = "hb-foot";
     foot.setAttribute("aria-label", "Previous and next");
@@ -916,13 +950,16 @@
       (prev ? '<a class="hb-prev" href="' + escapeAttr(prev.file) + '"><small>← Previous</small>' + escapeHtml(prev.title) + "</a>" : "") +
       (next ? '<a class="hb-next" href="' + escapeAttr(next.file) + '"><small>Next →</small>' + escapeHtml(next.title) + "</a>" : "");
     main.insertAdjacentElement("afterend", foot);
+    return foot;
   }
 
   var manualBook = null;
 
-  /** Optional manual API — rare full chapter list without nav.json. */
+  /** Optional manual API — rare full chapter list without nav.json. Callable any time,
+      including from the page's own DOMContentLoaded handler; it replaces nav.json's chapters. */
   window.libBook = function (cfg) {
     manualBook = cfg || {};
+    if (mounted) applyBook(manualBook);
   };
 
   /* ------------------------------------------------------------ the palette
@@ -961,27 +998,33 @@
   window.hbScore = function (r, q, topicLabel) { return scoreRec(r, tokens(q), topicLabel || ""); };
   window.hbCleanSub = function (sub) { return cleanSub(sub); };
 
-  function highlight(text, toks) {
-    var s = escapeHtml(text);
-    toks.forEach(function (tk) {
-      if (tk.length < 2) return;
-      s = s.replace(new RegExp("(" + tk.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>");
-    });
-    return s;
+  function highlight(text, toks) {  /* marks on the raw text, then escapes every piece */
+    var s = String(text == null ? "" : text);
+    var ws = toks.filter(function (t) { return t.length >= 2; })
+      .map(function (t) { return t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); });
+    if (!ws.length) return escapeHtml(s);
+    var re = new RegExp(ws.join("|"), "ig"), out = "", last = 0, m;
+    while ((m = re.exec(s))) {
+      if (!m[0]) { re.lastIndex++; continue; }
+      out += escapeHtml(s.slice(last, m.index)) + "<mark>" + escapeHtml(m[0]) + "</mark>";
+      last = m.index + m[0].length;
+    }
+    return out + escapeHtml(s.slice(last));
   }
+  window.hbHighlight = function (text, q) { return highlight(text, tokens(String(q || ""))); };
 
   function cleanSub(sub) {
     return String(sub || "").replace(/^\s*Status:\s*[A-Z]+\s*[—–-]\s*/, "");
   }
 
   function recentPages() {
-    try { return JSON.parse(store.get("recent") || "[]") || []; } catch (e) { return []; }
+    try { var r = JSON.parse(store.get("recent:" + BASE) || "[]"); return Array.isArray(r) ? r : []; } catch (e) { return []; }
   }
   function remember(title, href) {
     if (!title || !href) return;
     var list = recentPages().filter(function (r) { return r.href !== href; });
     list.unshift({ title: title, href: href });
-    store.set("recent", JSON.stringify(list.slice(0, 12)));
+    store.set("recent:" + BASE, JSON.stringify(list.slice(0, 12)));
   }
 
   var pagefindP = null;
@@ -1014,15 +1057,21 @@
     var list = d.querySelector(".hb-pal-list");
     var state = { items: [], sel: 0, seq: 0 };
 
-    function render(groups) {
+    function render(groups, keepUrl) {
       state.items = [];
+      groups.forEach(function (g) { g.items.forEach(function (it) { state.items.push(it); }); });
+      if (keepUrl) {  /* late results must not move the highlight onto another row */
+        var at = -1;
+        state.items.forEach(function (it, i) { if (at < 0 && it.url === keepUrl) at = i; });
+        state.sel = at < 0 ? 0 : at;
+      }
       var html = [];
+      var n = 0;
       groups.forEach(function (g) {
         if (!g.items.length) return;
         html.push('<li class="hb-pal-group">' + escapeHtml(g.label) + "</li>");
         g.items.forEach(function (it) {
-          var i = state.items.length;
-          state.items.push(it);
+          var i = n++;
           html.push('<li class="hb-pal-item' + (i === state.sel ? " sel" : "") + '" data-i="' + i + '" role="option"><a href="' +
             escapeAttr(it.url) + '"' + (it.ext ? ' target="_blank" rel="noopener"' : "") + '><span class="hb-pal-t">' + it.titleHtml + "</span>" +
             (it.meta ? '<span class="hb-pal-m">' + it.meta + "</span>" : "") +
@@ -1048,7 +1097,7 @@
         if (seq !== state.seq) return;
         var lib = model(res[0]);
         var idx = res[1] || [];
-        var labels = {};
+        var labels = Object.create(null);
         lib.topics.forEach(function (t) { labels[t.slug] = t.label; });
         var groups = [];
         if (!q) {
@@ -1061,7 +1110,7 @@
           }) });
         } else {
           var toks = tokens(q);
-          var hits = idx.map(function (r) { return { r: r, s: scoreRec(r, toks, labels[r.topic] || r.topic || "") }; })
+          var hits = idx.map(function (r) { return { r: r, s: scoreRec(r, toks, String(labels[r.topic] || r.topic || "")) }; })
             .filter(function (x) { return x.s > 0; })
             .sort(function (a, b) { return b.s - a.s; })
             .slice(0, 12);
@@ -1109,8 +1158,9 @@
               return { url: d.url, titleHtml: escapeHtml((d.meta && d.meta.title) || d.url), sub: d.excerpt };
             });
             if (!items.length) return;
+            var keep = state.items[state.sel] && state.items[state.sel].url;
             groups.splice(1, 0, { label: "In the text", items: items });
-            render(groups);
+            render(groups, keep);
           }).catch(function () {});
         }
       });
@@ -1118,6 +1168,7 @@
 
     input.addEventListener("input", run);
     d.addEventListener("keydown", function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
       if (e.key === "ArrowDown") { e.preventDefault(); move(1); }
       else if (e.key === "ArrowUp") { e.preventDefault(); move(-1); }
       else if (e.key === "Enter") {
@@ -1157,6 +1208,7 @@
   function initPalette() {
     document.addEventListener("keydown", function (e) {
       if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "k" || e.key === "K")) {
+        if (typing(e) && !(pal && pal.dialog.contains(e.target))) return;
         e.preventDefault();
         if (pal && pal.dialog.open) pal.dialog.close(); else openPalette();
       } else if (e.key === "/" && !e.metaKey && !e.ctrlKey && !typing(e)) {
@@ -1265,47 +1317,53 @@
     document.head.appendChild(l);
   }
 
-  function start() {
-    initIcon();
+  function safely(fn) {
+    try { fn(); } catch (e) { if (window.console && console.error) console.error("ckit shell:", e); }
+  }
+
+  function start(viaLoaded) {
+    safely(initIcon);
     var root = bookRoot();
     var bookKey = root ? "nav:" + BASE + root : null;
     var cachedBook = null;
-    if (manualBook) cachedBook = manualBook;
-    else if (bookKey) { try { cachedBook = JSON.parse(store.get(bookKey) || "null"); } catch (e) { cachedBook = null; } }
+    if (bookKey) { try { cachedBook = JSON.parse(store.get(bookKey) || "null"); } catch (e) { cachedBook = null; } }
     var cached = cachedCatalog();
-    var bookP = manualBook ? Promise.resolve(manualBook)
-      : root ? fetch(hbUrl(root + "nav.json"), { credentials: "same-origin" })
+    var bookP = root ? fetch(hbUrl(root + "nav.json"), { credentials: "same-origin" })
           .then(function (r) { return r.ok ? r.text() : null; })
           .then(function (t) { if (!t) return null; store.set(bookKey, t); return JSON.parse(t); })
           .catch(function () { return null; })
       : Promise.resolve(null);
 
     var main = document.querySelector("main");
-    if (main) markStatus(main);  /* now, before the first paint: the pill must not reflow the page later */
-    if (cached) mountShell({ catalog: cached, book: cachedBook });
+    if (main) safely(function () { markStatus(main); });  /* before the first paint: the pill must not reflow the page later */
+    if (cached) safely(function () { mountShell({ catalog: cached, book: manualBook || cachedBook }); });
 
     Promise.all([catalogPromise(), bookP]).then(function (pair) {
       var catalog = pair[0];
       var book = pair[1];
-      if (!mounted && (catalog || book)) mountShell({ catalog: catalog, book: book });
-      else if (mounted && catalog && JSON.stringify(catalog) !== JSON.stringify(cached)) mountShell({ catalog: catalog, book: book });
-      if (!mounted) document.body.classList.add("hb-no-side");
-      else applyBook(book);
-      linkRefs(main, compileRefs(catalog && catalog.refs));
+      safely(function () {
+        if (!mounted && (catalog || book || manualBook)) mountShell({ catalog: catalog, book: manualBook || book });
+        else if (mounted && catalog && JSON.stringify(catalog) !== JSON.stringify(cached)) mountShell({ catalog: catalog });
+        if (!mounted) document.body.classList.add("hb-no-side");
+        else if (!manualBook && book) applyBook(book);
+      });
+      safely(function () { linkRefs(main, compileRefs(catalog && catalog.refs)); });
     });
 
-    initTabs();
-    initDefnLinks();
-    initBacklinks();
-    initAnnotate();
-    initPalette();
-    initPeeks();
-    initPrefetch();
-    var h1 = document.querySelector("main h1");
-    var here = canon(location.href);
-    if (h1 && here && here.indexOf("/content/") === 0) remember((h1.textContent || "").replace(/\s+/g, " ").trim(), here);
+    /* everything a page's own script may build on runs after the page's DOMContentLoaded
+       handlers, as in 0.4: tabs, popovers and backlink lists that a page creates are wired */
+    function late() {
+      [initTabs, initDefnLinks, initBacklinks, initAnnotate, initPalette, initPeeks, initPrefetch].forEach(safely);
+      safely(function () {
+        var h1 = document.querySelector("main h1");
+        var here = canon(location.href);
+        if (h1 && here && here.indexOf("/content/") === 0) remember((h1.textContent || "").replace(/\s+/g, " ").trim(), here);
+      });
+    }
+    if (viaLoaded || document.readyState === "complete") late();
+    else document.addEventListener("DOMContentLoaded", late);
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
-  else start();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { start(true); });
+  else start(false);
 })();

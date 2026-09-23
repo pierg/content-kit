@@ -807,6 +807,30 @@ def main(argv: list[str]) -> int:
             if (zrepo.content / "catalog.json").read_text() != before:
                 failures.append("the dates must be stable: a lint on a later day with nothing changed rewrote the catalog")
             planted += 4
+            # a checkout that turns LF into CRLF changes no entry: the sha reads normalised line endings
+            two_path = zrepo.content / "notes" / "two.html"
+            two_path.write_bytes(two_path.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                rc_crlf = check.run(load_repo(zrepo.root))
+            if rc_crlf != 0:
+                failures.append("a CRLF checkout of an unchanged page must leave the catalog current")
+            planted += 1
+            # resolving a merge conflict in catalog.json by `ckit lint` keeps the committed dates
+            if shutil.which("git"):
+                gitenv = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+                          "GIT_COMMITTER_EMAIL": "t@t", "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+                import subprocess
+                for args in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "fixture"]):
+                    subprocess.run(["git", "-C", str(zrepo.root), *args], env=gitenv, capture_output=True, check=True)
+                committed = (zrepo.content / "catalog.json").read_text()
+                (zrepo.content / "catalog.json").write_text("<<<<<<< HEAD\n" + committed + "=======\n{}\n>>>>>>> other\n")
+                os.environ["CKIT_TODAY"] = "2026-04-04"
+                _lint(zrepo)
+                resolved = json.loads((zrepo.content / "catalog.json").read_text())
+                one = next(n for n in resolved["notes"] if n["slug"] == "one")
+                if (one.get("created"), one.get("updated")) != ("2026-01-01", "2026-02-02"):
+                    failures.append(f"a lint that resolves a conflicted catalog.json must keep the committed dates: {one}")
+                planted += 1
 
             # --- files are revalidated (Last-Modified → 304), generated pages never stored, the
             #     home page is built from the catalog, and /shell/pagefind.json says whether full
@@ -817,11 +841,17 @@ def main(argv: list[str]) -> int:
             try:
                 port3 = httpd3.server_address[1]
                 st, hd, _ = _get(port3, "/content/notes/one.html")
-                if st != 200 or hd.get("cache-control") != "no-cache" or not hd.get("last-modified"):
-                    failures.append(f"a file must be served no-cache with a Last-Modified: {st} {hd.get('cache-control')}")
-                st2, _, body2 = _get(port3, "/content/notes/one.html", {"If-Modified-Since": hd.get("last-modified", "")})
+                if st != 200 or hd.get("cache-control") != "no-cache" or not hd.get("etag"):
+                    failures.append(f"a file must be served no-cache with an ETag: {st} {hd.get('cache-control')}")
+                st2, _, body2 = _get(port3, "/content/notes/one.html", {"If-None-Match": hd.get("etag", "")})
                 if st2 != 304 or body2:
-                    failures.append(f"an unchanged file asked for with If-Modified-Since must answer 304 and no body, got {st2}")
+                    failures.append(f"an unchanged file asked for by its ETag must answer 304 and no body, got {st2}")
+                one_path = zrepo.content / "notes" / "one.html"
+                one_path.write_text(one_path.read_text() + "\n")  # rewritten within the same second
+                st3, _, _ = _get(port3, "/content/notes/one.html", {"If-None-Match": hd.get("etag", "")})
+                if st3 != 200:
+                    failures.append(f"a file rewritten within the same second must not answer 304, got {st3}")
+                planted += 1
                 st, hd, body = _get(port3, "/")
                 if st != 200 or hd.get("cache-control") != "no-store" or b"The kitchen" not in body \
                         or b"Search everything" not in body:

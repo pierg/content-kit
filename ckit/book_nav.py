@@ -87,11 +87,13 @@ def today() -> str:
 
 
 def _sha(files: list[Path]) -> str:
+    """What an entry covers, hashed with line endings normalised — a checkout that turns LF into
+    CRLF (Windows autocrlf) must not re-date, or stale, every page."""
     h = hashlib.sha1()
     for f in files:
         h.update(f.name.encode("utf-8"))
         h.update(b"\0")
-        h.update(f.read_bytes())
+        h.update(f.read_bytes().replace(b"\r\n", b"\n"))
     return h.hexdigest()[:12]
 
 
@@ -119,18 +121,35 @@ def _git_history(repo: Repo) -> dict[str, tuple[str, str]]:
     return hist
 
 
-def _previous_catalog(repo: Repo) -> dict[str, dict]:
-    p = repo.content / "catalog.json"
-    try:
-        cat = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
+def _catalog_entries(cat: object) -> dict[str, dict]:
     out: dict[str, dict] = {}
+    if not isinstance(cat, dict):
+        return out
     for g in cat.get("groups") or []:
-        for item in cat.get(g.get("key"), []) if isinstance(g, dict) else []:
+        items = cat.get(g.get("key")) if isinstance(g, dict) else None
+        for item in items if isinstance(items, list) else []:
             if isinstance(item, dict) and isinstance(item.get("href"), str):
                 out[item["href"]] = item
     return out
+
+
+def _previous_catalog(repo: Repo) -> dict[str, dict]:
+    """The dates the catalog already carries: the file on disk, or — when it does not parse, as
+    after a merge conflict in it, the moment `ckit lint` is run to resolve one — the committed
+    one at HEAD, so resolving a conflict never re-dates the library from git history."""
+    p = repo.content / "catalog.json"
+    try:
+        got = _catalog_entries(json.loads(p.read_text(encoding="utf-8")))
+        if got or p.read_text(encoding="utf-8").strip().startswith("{"):
+            return got
+    except (OSError, ValueError):
+        pass
+    try:
+        r = subprocess.run(["git", "-C", str(repo.root), "show", f"HEAD:./{repo.rel(p)}"],
+                           capture_output=True, text=True, timeout=30)
+        return _catalog_entries(json.loads(r.stdout)) if r.returncode == 0 else {}
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return {}
 
 
 def date_items(repo: Repo, entries: list[tuple[dict, list[Path]]]) -> None:

@@ -21,8 +21,9 @@ One write endpoint exists, for the annotation layer:
 
 Reads of a sidecar are plain static GETs of `<page>.annotations.json`.
 
-Files are served `Cache-Control: no-cache` with a `Last-Modified`: the browser keeps its copy and
-asks each time, so an edited page shows on reload and an unchanged one costs a 304. Where pagefind
+Files are served `Cache-Control: no-cache` with an `ETag` built from the file's mtime (to the
+nanosecond) and size: the browser keeps its copy and asks each time, so an edited page shows on
+reload — even one written twice in a second — and an unchanged one costs a 304. Where pagefind
 is installed (see pagefind.py), a full-text index of the content is built in the background at
 start and served at /pagefind/ — the palette and the search page use it when it answers.
 """
@@ -280,29 +281,25 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
             pass
 
         def _send(self, status: int, data: bytes, ctype: str, body: bool = True,
-                  modified: float | None = None) -> None:
+                  etag: str | None = None, modified: float | None = None) -> None:
             self.send_response(status)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(data)))
-            if modified is None:
+            if etag is None:
                 self.send_header("Cache-Control", "no-store")
             else:  # a file: keep it, but ask every time — an edit shows on the next reload
                 self.send_header("Cache-Control", "no-cache")
-                self.send_header("Last-Modified", email.utils.formatdate(modified, usegmt=True))
+                self.send_header("ETag", etag)
+                if modified is not None:
+                    self.send_header("Last-Modified", email.utils.formatdate(modified, usegmt=True))
             self.end_headers()
             if body:
                 self.wfile.write(data)
 
-        def _fresh(self, mtime: float) -> bool:
-            """The browser's copy is current (If-Modified-Since at or after the file's mtime)."""
-            ims = self.headers.get("If-Modified-Since")
-            if not ims:
-                return False
-            try:
-                since = email.utils.parsedate_to_datetime(ims).timestamp()
-            except (TypeError, ValueError, IndexError, OverflowError):
-                return False
-            return int(mtime) <= int(since)
+        def _fresh(self, etag: str) -> bool:
+            """The browser's copy is this file's current bytes (If-None-Match names its ETag)."""
+            got = self.headers.get("If-None-Match") or ""
+            return any(t.strip() in (etag, "*") for t in got.split(","))
 
         def _json(self, status: int, obj: object, body: bool = True) -> None:
             self._send(status, json.dumps(obj).encode("utf-8"), "application/json; charset=utf-8", body)
@@ -397,20 +394,21 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
                     return
                 self.send_error(404, "Not found")
                 return
-            mtime = target.stat().st_mtime
+            st = target.stat()
+            etag = f'W/"{st.st_mtime_ns:x}-{st.st_size:x}"'
             ctype, _ = mimetypes.guess_type(str(target))
             ctype = ctype or "application/octet-stream"
             if (ctype.startswith("text/") or ctype in
                     ("application/javascript", "application/json", "image/svg+xml")) \
                     and "charset" not in ctype:
                 ctype = f"{ctype}; charset=utf-8"
-            if self._fresh(mtime):
+            if self._fresh(etag):
                 self.send_response(304)
                 self.send_header("Cache-Control", "no-cache")
-                self.send_header("Last-Modified", email.utils.formatdate(mtime, usegmt=True))
+                self.send_header("ETag", etag)
                 self.end_headers()
                 return
-            self._send(200, target.read_bytes(), ctype, body, modified=mtime)
+            self._send(200, target.read_bytes(), ctype, body, etag=etag, modified=st.st_mtime)
 
     return Handler
 

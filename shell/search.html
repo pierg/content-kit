@@ -76,12 +76,9 @@
   function titleCase(s) { return String(s).replace(/[-_]+/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
   function clean(sub) { return window.hbCleanSub ? window.hbCleanSub(sub) : String(sub || ""); }
   function words(q) { return q.toLowerCase().split(/\s+/).filter(function (w) { return w.length > 1; }); }
-  function highlight(text, q) {
-    var s = esc(text);
-    words(q).forEach(function (w) {
-      s = s.replace(new RegExp("(" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>");
-    });
-    return s;
+  function highlight(text, q) {  /* marks on the raw text, then escapes every piece (lib.js) */
+    if (window.hbHighlight) return window.hbHighlight(text, q);
+    return esc(text);
   }
   function fmtDate(iso) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
@@ -94,7 +91,7 @@
   function list(name) { return (params.get(name) || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean); }
   var state = { q: params.get("q") || "", kinds: new Set(list("kind")), topics: new Set(list("topic")),
                 tags: new Set(list("tag")), allTags: false };
-  var idx = [], KINDS = [], TOPICS = [], TAGS = [], labels = {}, dates = {};
+  var idx = [], KINDS = [], TOPICS = [], TAGS = [], labels = Object.create(null), dates = Object.create(null);
 
   function sync() {
     var p = new URLSearchParams();
@@ -120,7 +117,7 @@
 
   function score(r, q) {
     if (!q) return 1;
-    if (window.hbScore) return window.hbScore(r, q, labels[r.topic] || r.topic || "");
+    if (window.hbScore) return window.hbScore(r, q, String(labels[r.topic] || r.topic || ""));
     var t = (r.title + " " + (r.sub || "")).toLowerCase();
     return q.toLowerCase().split(/\s+/).every(function (w) { return t.indexOf(w) !== -1; }) ? 1 : 0;
   }
@@ -219,7 +216,7 @@
       return Promise.all(s.results.slice(0, 12).map(function (x) { return x.data(); }));
     }).then(function (docs) {
       if (!docs || seq !== ftSeq) return;
-      var shown = {};
+      var shown = Object.create(null);
       hits.forEach(function (h) { shown[u(h.r.href)] = 1; });
       docs = docs.filter(function (d) { return !shown[d.url.replace(/index\.html$/, "")]; });
       box.innerHTML = docs.length ? '<div class="br-section">Also in the text</div><ul class="hits">' + docs.map(function (d) {
@@ -272,17 +269,18 @@
         idx = [].concat.apply([], lists.map(function (l) {
           return Array.isArray(l) ? l : (l && Array.isArray(l.records) ? l.records : []);
         }));
-        labels = (catalog && catalog.topics) || {};
+        var got = (catalog && catalog.topics) || {};
+        Object.keys(got).forEach(function (k) { labels[k] = got[k]; });
         ((catalog && catalog.groups) || []).forEach(function (g) {
           if (KINDS.indexOf(g.kind) === -1) KINDS.push(g.kind);
           (catalog[g.key] || []).forEach(function (it) { if (it.updated) dates[it.href] = it.updated; });
         });
         idx.forEach(function (r) { if (KINDS.indexOf(r.kind) === -1) KINDS.push(r.kind); });
         KINDS = KINDS.filter(function (k) { return k !== "page"; }).concat(["page"]);
-        var seenT = {};
+        var seenT = Object.create(null);
         Object.keys(labels).forEach(function (t) { seenT[t] = 1; TOPICS.push(t); });
         idx.forEach(function (r) { if (r.topic && !r.origin && !seenT[r.topic]) { seenT[r.topic] = 1; TOPICS.push(r.topic); } });
-        var counts = {};
+        var counts = Object.create(null);
         idx.forEach(function (r) { if (!r.origin) (r.tags || []).forEach(function (t) { counts[t] = (counts[t] || 0) + 1; }); });
         TAGS = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || a.localeCompare(b); })
           .map(function (t) { return { name: t, n: counts[t] }; });
