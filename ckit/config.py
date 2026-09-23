@@ -129,26 +129,11 @@ def problems(repo: Repo) -> list[str]:
     if not isinstance(got, dict):
         out.append('kit.json moved: must be an object {"<old address>": "<new address>"} (ckit mv writes it)')
     else:
-        from . import links
-        res = links.Resolver(repo)
-        moved = links.moved_map(repo)
+        from .links import address_problem
         for old, new in got.items():
-            if not isinstance(old, str) or not isinstance(new, str) or not old.startswith("/") \
-                    or not new.startswith("/"):
-                out.append(f"kit.json moved: {old!r} → {new!r} — both are site addresses, starting with /")
-                continue
-            seen, cur = set(), links.canon(old).rstrip("/")
-            while cur in moved and cur not in seen:
-                seen.add(cur)
-                cur = moved[cur].rstrip("/")
-            if cur in moved:
-                out.append(f"kit.json moved: {old} is part of a cycle of redirects")
-                continue
-            if res.target(links.canon(old).strip("/")) is not None:
-                out.append(f"kit.json moved: {old} still exists — drop the entry, or the page")
-            final = links.follow(moved, old) or new
-            if res.target(final.strip("/")) is None:
-                out.append(f"kit.json moved: {old} ends at {final}, where no page lives")
+            why = address_problem(old) or address_problem(new)
+            if why:
+                out.append(f"kit.json moved: {old!r} → {new!r} — {why}")
 
     got = cfg.get("indices") or []
     if not isinstance(got, list):

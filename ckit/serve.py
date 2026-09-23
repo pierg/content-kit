@@ -15,13 +15,14 @@ That split is why a repo vendors only the shell, and why every page's absolute
 
 One write endpoint exists, for the annotation layer:
 
-An address kit.json `moved` names answers 301 to where the page lives now (`ckit mv`).
-
   GET  /__annotations/ping          → {"ok": true, "engine": "<version>"}  (lib.js probes this;
                                        static hosting answers 404 and the affordance never appears)
   POST /__annotations               → {"op": "add" | "reply" | "state", ...}  writes the sidecar
 
 Reads of a sidecar are plain static GETs of `<page>.annotations.json`.
+
+An address kit.json `moved` names, where no file answers, is a 301 to where the page lives now
+(`ckit mv`, `ckit rm --to`).
 
 Files are served `Cache-Control: no-cache` with an `ETag` built from the file's mtime (to the
 nanosecond) and size: the browser keeps its copy and asks each time, so an edited page shows on
@@ -410,7 +411,7 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
                     return
             if not target.is_file():
                 new = links.follow(links.moved_now(repo), path)
-                if new:  # kit.json `moved`: the page lives on at its new address
+                if new and not links.address_problem(new):  # kit.json `moved`: it lives on there
                     query = urlparse(self.path).query
                     self.send_response(301)
                     self.send_header("Location", quote(new) + (f"?{query}" if query else ""))

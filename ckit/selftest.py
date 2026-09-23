@@ -141,7 +141,7 @@ def _organise_cases(failures: list[str]) -> int:
     """0.5: every link resolves, prose is one paragraph per line, tags are a vocabulary, the gate
     reports every stage at once, dates ignore whitespace, and topics, tags and pages reorganise
     without breaking a link — each checked on planted pages."""
-    from . import export, organize, prose
+    from . import export, links, organize, prose
     from .book_nav import _sha, tags_of, topic_of
     from .text import page_text
     planted = 0
@@ -219,7 +219,8 @@ def _organise_cases(failures: list[str]) -> int:
         wp = _write(repo, "notes/wrapped.html", _page("Wrapped",
                     "<p>one line\ncontinues here</p>\n<p>a verse<br>\nnext line</p>\n<p>$$\na = b\n$$</p>\n"
                     "<ul>\n<li>one</li>\n<li>two\nwrapped</li>\n</ul>\n<pre>code\nkeeps\nlines</pre>\n"
-                    "<table><tr><td>cell\nwrapped</td></tr></table>"))
+                    "<table><tr><td>cell\nwrapped</td></tr></table>\n<p>$a + b % the sum\n+ c$ and so</p>\n"
+                    '<p>see <a title="two\nlines" href="/">this</a> link</p>'))
         got = [p for p in _lint(repo) if "notes/wrapped.html" in p]
         if len(got) != 1 or "3 hard-wrapped elements" not in got[0] or "ckit unwrap" not in got[0]:
             failures.append(f"three hard-wrapped elements must be reported once, with the fix: {got}")
@@ -227,8 +228,10 @@ def _organise_cases(failures: list[str]) -> int:
         text, n = prose.unwrap(wp.read_text())
         wp.write_text(text)
         if n != 3 or page_text(text) != before or "a verse<br>\nnext line" not in text \
-                or "$$\na = b\n$$" not in text or "code\nkeeps\nlines" not in text:
-            failures.append(f"unwrap must join exactly the wrapped elements and leave <br>, math and code (joined {n})")
+                or "$$\na = b\n$$" not in text or "code\nkeeps\nlines" not in text \
+                or "% the sum\n+ c$" not in text or 'title="two\nlines"' not in text:
+            failures.append(f"unwrap must join exactly the wrapped elements and leave <br>, math (a TeX % "
+                            f"inline too), code and attribute values (joined {n})")
         if any("notes/wrapped.html" in p for p in _lint(repo)):
             failures.append("an unwrapped page must lint clean")
         planted += 3
@@ -276,6 +279,21 @@ def _organise_cases(failures: list[str]) -> int:
         if catalog_item("b").get("updated") != "2026-05-02" or catalog_item("b").get("sha") != _sha([b]):
             failures.append(f"a 0.5.0.dev0 catalog entry must keep its dates and take the new sha: {catalog_item('b')}")
         planted += 2
+        w2 = _write(repo, "notes/w2.html", _page("W2", "<p>two\nlines</p>"))
+        _lint(repo)
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        for item in cat["notes"]:
+            if item["slug"] == "w2":
+                item["sha"] = _sha([w2], legacy=True)
+        (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
+        os.environ["CKIT_TODAY"] = "2026-05-05"
+        prose.unwrap_repo(repo, [w2])
+        os.environ["CKIT_TODAY"] = "2026-05-04"
+        if catalog_item("w2").get("updated") != "2026-05-04" or "two lines" not in w2.read_text():
+            failures.append(f"`ckit unwrap` on a 0.5.0.dev0 catalog must keep a joined page's dates: {catalog_item('w2')}")
+        w2.unlink()
+        _lint(repo)
+        planted += 1
 
         # topics: add (listed with no hub yet), rename (pages, kit.json and the hub move together,
         # the hub's old address redirected), merge (old slugs kept as tags), assign
@@ -306,6 +324,15 @@ def _organise_cases(failures: list[str]) -> int:
         if "2 hubs" not in said:
             failures.append(f"a merge that leaves a topic two hubs must say so: {said!r}")
         planted += 2
+        quiet(organize.topics_add, repo, "delta")
+        quiet(organize.topics_add, repo, "beta")
+        repo = load_repo(repo.root)
+        _write(repo, "hubs/delta.html", _page("Delta", head='<meta name="topic" content="delta">'))
+        _write(repo, "hubs/beta.html", _page("Beta", head='<meta name="topic" content="beta">'))
+        repo, said = quiet(organize.topics_merge, repo, ["beta"], "delta")
+        if "ckit rm content/hubs/beta.html --to content/hubs/delta.html" not in said:
+            failures.append(f"a merge must keep the hub named for the surviving topic: {said!r}")
+        planted += 1
         quiet(organize.topics_assign, repo, "larder", ["/content/notes/salt.html"])
         if topic_of(salt.read_text()) != "larder":
             failures.append("topics assign must put the page on the topic")
@@ -319,6 +346,13 @@ def _organise_cases(failures: list[str]) -> int:
         if tags_of(heaty.read_text()) != ["heat", "salt"]:
             failures.append(f"tags rename must rewrite the tag on every page: {tags_of(heaty.read_text())}")
         planted += 2
+        up = _write(repo, "notes/up.html", _page("Up", head='<meta name="tags" content="LLM">'))
+        low = _write(repo, "notes/low.html", _page("Low", head='<meta name="tags" content="llm">'))
+        if "ckit tags rename LLM llm" not in organize.tags_report(repo):
+            failures.append(f"the suggested spelling must be one `ckit tags rename` accepts: {organize.tags_report(repo)}")
+        up.unlink()
+        low.unlink()
+        planted += 1
 
         # mv: a note promoted to an entry — links in (absolute and relative) and its own relative
         # links rewritten, its sidecar and dates carried, the old address redirected
@@ -371,23 +405,77 @@ def _organise_cases(failures: list[str]) -> int:
         if not stub.is_file() or "url=/content/entries/pepper/" not in stub.read_text():
             failures.append("export must leave a refresh at a moved address")
         planted += 2
+        x1 = _write(repo, "notes/x1.html", _page("X1", "<p>X.</p>"))
+        cc = _write(repo, "notes/cc.html", _page("Cc", "<p>C.</p>"))
+        _lint(repo)
+        repo, _ = quiet(organize.move, repo, x1, repo.content / "notes" / "x2.html")
+        repo, _ = quiet(organize.move, repo, cc, repo.content / "notes" / "x1.html")
+        k = kit().get("moved", {})
+        if "/content/notes/x1.html" in k or k.get("/content/notes/cc.html") != "/content/notes/x1.html" or _lint(repo):
+            failures.append(f"a page moved onto a redirected address takes it back, and the gate stays clean: {k}")
+        repo, _ = quiet(organize.move, repo, repo.content / "notes" / "x1.html", repo.content / "notes" / "cc.html")
+        planted += 1
+        rs = _write(repo, "notes/rs.html", _page("Rs", '<p><a href="../../shell/search.html">browse</a> '
+                                                       '<a href=b.html>b</a></p>'))
+        uq = _write(repo, "notes/uq.html", _page("Uq", '<p><a href=/content/notes/nowhere.html>x</a> '
+                                                       '<a href=/content/notes/rs.html>rs</a></p>'))
+        if not any("uq.html" in p and "/content/notes/nowhere.html — nothing lives there" in p for p in _lint(repo)):
+            failures.append("a dead link in an unquoted attribute must be reported")
+        uq.write_text(uq.read_text().replace("<a href=/content/notes/nowhere.html>x</a> ", ""))
+        repo, _ = quiet(organize.move, repo, rs, repo.content / "entries" / "rs" / "index.html")
+        moved_rs = (repo.content / "entries" / "rs" / "index.html").read_text()
+        if 'href="/shell/search.html"' not in moved_rs or 'href="/content/notes/b.html"' not in moved_rs \
+                or 'href="/content/entries/rs/"' not in uq.read_text() or _lint(repo):
+            failures.append("mv must pin a moved page's relative links (shell ones too), rewrite unquoted links "
+                            "to it, and leave the gate clean: " + " | ".join(_lint(repo)))
+        planted += 2
+        e1 = _write(repo, "entries/e1/index.html", _page("E1", '<p><img src="fig.svg" alt=""> '
+                                                               '<a href="../e1/fig.svg">the figure</a></p>'))
+        (e1.parent / "fig.svg").write_text("<svg/>")
+        _lint(repo)
+        repo, _ = quiet(organize.move, repo, e1, repo.content / "entries" / "renamed" / "index.html")
+        renamed = (repo.content / "entries" / "renamed" / "index.html").read_text()
+        if 'src="fig.svg"' not in renamed or 'href="/content/entries/renamed/fig.svg"' not in renamed or _lint(repo):
+            failures.append("a whole-folder move keeps relative links that still hold and rewrites those naming "
+                            "the old folder: " + renamed[renamed.find("<main>"):renamed.find("</main>")])
+        planted += 1
+        orphan = repo.content / "notes" / "orph.annotations.json"
+        orphan.write_text(json.dumps({"version": 1, "page": "/content/notes/orph.html", "threads": []}))
+        try:
+            quiet(organize.move, repo, repo.content / "notes" / "cc.html", repo.content / "notes" / "orph.html")
+            failures.append("mv onto a page whose sidecar already exists must be refused")
+        except SystemExit as exc:
+            if "sidecar already sits" not in str(exc):
+                failures.append(f"the refusal must name the sidecar in the way: {exc}")
+        orphan.unlink()
+        planted += 1
         stale = _write(repo, "notes/stale.html", _page("Stale", '<p><a href="/content/notes/pepper.html">old</a></p>'))
         if not any("moved to /content/entries/pepper/" in p for p in _lint(repo) if "notes/stale.html" in p):
             failures.append("a link to a moved address must be reported, naming the new one")
         stale.unlink()
         planted += 1
-        for bad, needle in (({"/content/notes/salt.html": "/content/notes/b.html"}, "still exists"),
+        for bad, needle in (({"/content/notes/salt.html": "/content/notes/b.html"}, "lives at /content/notes/salt.html again"),
                             ({"/content/notes/gone.html": "/content/notes/nowhere.html"}, "where no page lives"),
                             ({"/x.html": "/y.html", "/y.html": "/x.html"}, "cycle")):
             saved = repo.cfg.get("moved")
             repo.cfg["moved"] = bad
-            if not any(needle in p for p in config.problems(repo)):
-                failures.append(f"a malformed kit.json moved ({bad}) must fail the gate saying {needle!r}")
+            if not any(needle in p for p in links.moved_problems(repo)):
+                failures.append(f"a kit.json moved that the tree contradicts ({bad}) must be reported saying {needle!r}")
             repo.cfg["moved"] = saved
             planted += 1
+        saved = repo.cfg.get("moved")
+        repo.cfg["moved"] = {"/../../escaped.html": "/content/notes/b.html", "/x.html": "//evil.example/"}
+        got = config.problems(repo)
+        if not any(". or .. segment" in p for p in got) or not any("not a site address" in p for p in got):
+            failures.append(f"a moved address with .. or a // target must fail the declarations: {got}")
+        quiet(export.run, repo, otmp / "dist2")
+        if (otmp.parent / "escaped.html").exists() or (otmp / "escaped.html").exists():
+            failures.append("export must never write a moved address outside --out")
+        repo.cfg["moved"] = saved
+        planted += 2
 
-        # rm: a page with an open thread is refused; once settled it retires into another page,
-        # its links and its address with it
+        # rm: refused with an open thread, outside git, or on what git cannot bring back; then it
+        # retires a page into another, its links and its address with it
         extra = _write(repo, "notes/extra.html", _page("Extra", "<p>Extra words.</p>"))
         points = _write(repo, "notes/points.html", _page("Points", '<p><a href="extra.html">extra</a></p>'))
         _lint(repo)
@@ -396,27 +484,103 @@ def _organise_cases(failures: list[str]) -> int:
         if "Waiting for you · 2 open threads" not in served or "keep?" not in served or "Waiting for you" in exported:
             failures.append("the served home page must open with the open threads; the exported one must not")
         planted += 1
-        try:
-            quiet(organize.remove, repo, extra, salt)
-            failures.append("rm must refuse a page with an open annotation thread")
-        except SystemExit as exc:
-            if "open annotation" not in str(exc):
-                failures.append(f"rm's refusal must name the open thread: {exc}")
+
+        def refused(needle: str, *args, **kw) -> None:
+            try:
+                quiet(organize.remove, *args, **kw)
+                failures.append(f"rm must be refused ({needle})")
+            except SystemExit as exc:
+                if needle not in str(exc):
+                    failures.append(f"rm's refusal must say {needle!r}: {exc}")
+
+        refused("open annotation", repo, extra, salt)
         ann.reply(repo, "/content/notes/extra.html", t["id"], "folded into salt", author="tester", state="addressed")
-        repo, _ = quiet(organize.remove, repo, extra, salt)
-        if extra.exists() or ann.sidecar_for(extra).exists() \
-                or 'href="/content/notes/salt.html"' not in points.read_text() \
-                or kit().get("moved", {}).get("/content/notes/extra.html") != "/content/notes/salt.html":
-            failures.append("rm must retire the page and its sidecar, rewrite links to it and redirect its address")
-        if _lint(repo):
-            failures.append("after rm the gate must be clean: " + " | ".join(_lint(repo)))
-        planted += 3
+        refused("not a git work tree", repo, extra, salt)
+        planted += 2
+        if shutil.which("git"):
+            import subprocess
+            gitenv = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+                      "GIT_COMMITTER_EMAIL": "t@t", "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+
+            def commit() -> None:
+                for args in (["add", "-A"], ["commit", "-q", "--allow-empty", "-m", "fixture"]):
+                    subprocess.run(["git", "-C", str(repo.root), *args], env=gitenv, capture_output=True, check=True)
+
+            subprocess.run(["git", "-C", str(repo.root), "init", "-q"], env=gitenv, capture_output=True, check=True)
+            commit()
+            extra.write_text(extra.read_text().replace("Extra words.", "Extra words, edited."))
+            refused("not committed", repo, extra, salt)
+            _lint(repo)
+            commit()
+            repo, _ = quiet(organize.remove, repo, extra, salt)
+            if extra.exists() or ann.sidecar_for(extra).exists() \
+                    or 'href="/content/notes/salt.html"' not in points.read_text() \
+                    or kit().get("moved", {}).get("/content/notes/extra.html") != "/content/notes/salt.html":
+                failures.append("rm must retire the page and its sidecar, rewrite links to it and redirect its address")
+            if _lint(repo):
+                failures.append("after rm the gate must be clean: " + " | ".join(_lint(repo)))
+            planted += 3
+            # a folder: an open thread on any page in it, an untracked file, or --to inside it refuses
+            new.create(repo, "book", "bk", title="Bk")
+            ch = new.create(repo, "chapter", "bk/01-one", title="One")
+            for f in (repo.content / "books" / "bk").glob("*.html"):
+                _settle(f)
+            _lint(repo)
+            quote = next(q for q in ("Chapter title", "One") if q in page_text(ch.read_text()))
+            t2 = ann.add(repo, "/content/books/bk/01-one.html", "hold on", author="tester", target={"exact": quote})
+            commit()
+            bk = repo.content / "books" / "bk" / "index.html"
+            refused("01-one.annotations.json", repo, bk, salt, folder=True)
+            ann.reply(repo, "/content/books/bk/01-one.html", t2["id"], "ok", author="tester", state="addressed")
+            commit()
+            (bk.parent / "draft.txt").write_text("mine")
+            refused("draft.txt", repo, bk, salt, folder=True)
+            (bk.parent / "draft.txt").unlink()
+            refused("inside content/books/bk", repo, bk, ch, folder=True)
+            repo, _ = quiet(organize.remove, repo, bk, salt, folder=True)
+            k = kit().get("moved", {})
+            if bk.parent.exists() or k.get("/content/books/bk/01-one.html") != "/content/notes/salt.html" or _lint(repo):
+                failures.append("rm --folder must retire the book and redirect every page in it: " + " | ".join(_lint(repo)))
+            planted += 4
+            # a new page at a redirected address takes it back
+            again, _ = quiet(new.create, repo, "note", "extra", title="Extra, again")
+            _settle(again)
+            if "/content/notes/extra.html" in kit().get("moved", {}) or _lint(repo):
+                failures.append("a new page at a redirected address must take it back: " + " | ".join(_lint(repo)))
+            planted += 1
     finally:
         if saved_today is None:
             os.environ.pop("CKIT_TODAY", None)
         else:
             os.environ["CKIT_TODAY"] = saved_today
         shutil.rmtree(otmp, ignore_errors=True)
+    ltmp, lrepo = _scratch()
+    try:
+        cfg = json.loads((lrepo.root / "kit.json").read_text())
+        cfg["topics"] = ["alpha", "beta"]
+        (lrepo.root / "kit.json").write_text(json.dumps(cfg, indent=2) + "\n")
+        lrepo = load_repo(lrepo.root)
+        try:
+            new.create(lrepo, "note", "n1", topic="nonexistent")
+            failures.append("with topics as a list, an undeclared topic must be refused")
+        except SystemExit:
+            pass
+        if topic_of(new.create(lrepo, "hub", "alpha").read_text()) != "alpha":
+            failures.append("with topics as a list, a hub named for one must take it")
+        quiet(organize.topics_add, lrepo, "gamma", "Gamma G")
+        got = json.loads((lrepo.root / "kit.json").read_text())["topics"]
+        if got != {"alpha": "alpha", "beta": "beta", "gamma": "Gamma G"}:
+            failures.append(f"a label on a list of topics must turn it into an object, keeping every slug: {got}")
+        planted += 3
+    finally:
+        shutil.rmtree(ltmp, ignore_errors=True)
+    # metadata: a meta's other attributes survive a new value; a meta alone on its line leaves with it
+    from .text import set_meta
+    h = '<head>\n  <meta charset="utf-8">\n  <meta name="tags" content="a" data-keep="y">\n  <title>T</title>\n</head>'
+    if 'data-keep="y"' not in set_meta(h, "tags", "b") \
+            or set_meta(set_meta(h, "tags", "b"), "tags", None) != h.replace('  <meta name="tags" content="a" data-keep="y">\n', ""):
+        failures.append("set_meta must keep a meta's other attributes, and remove a lone meta with its line")
+    planted += 1
     return planted
 
 

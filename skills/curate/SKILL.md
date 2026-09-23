@@ -52,9 +52,9 @@ Open one: `ckit topics add <slug> --label "Label"`, then `ckit new hub <slug> --
 | Split a topic | `ckit topics add <new>`, `ckit new hub <new>`, `ckit topics assign <new> <page>…` | move those pages' rows from the old hub to the new one |
 | Merge or rename a tag | `ckit tags rename <old> <new>` | — |
 | Promote or move a page | `ckit mv <page> <new place>` (`content/entries/<slug>/` for a folder page) | rewrite it in its new genre's voice (a note promoted to an entry grows sections) |
-| Retire a page | `ckit rm <page> --to <page that takes over>` | settle its open threads first (`/address`); pass `--folder` to retire a folder page's figures too |
+| Retire a page | `ckit rm <page> --to <page that takes over>` | commit first, and settle its open threads (`/address`); `--folder` retires a folder page with everything in it |
 
-`ckit mv` and `ckit rm` rewrite every link to the page (and a moved page's own relative links), carry its annotation sidecar and its dates, and record the old address in kit.json `moved`, which `ckit serve` and the exported site redirect. `git mv` does none of that. What a move cannot carry is anything kept outside the repo by address: a folio's flashcard revision history restarts for the moved page's cards, and `ckit mv` says so.
+`ckit mv` and `ckit rm` rewrite every link to the page (and a moved page's own relative links), carry its annotation sidecar and its created date (its updated date becomes the day it moved), and record the old address in kit.json `moved`, which `ckit serve` and the exported site redirect. `git mv` does none of that. `ckit rm` deletes only what git can bring back: commit first, and settle every open thread on what it retires. What a move cannot carry is anything kept outside the repo by address: a folio's flashcard revision history restarts for the moved page's cards, and `ckit mv` says so.
 
 ## 4 · Keep hubs current
 
@@ -82,7 +82,7 @@ ckit annotations add <page> --author agent:<name> --quote "<exact passage>" \
   --body "Added — not in the source. Keep, edit or cut?"
 ```
 
-A page drafted wholly from general knowledge gets one page-level thread (no `--quote`) and the status DRAFT. The served home page lists open threads under "Waiting for you"; `/address` settles them.
+A page drafted wholly from general knowledge gets one page-level thread (no `--quote`) and the status DRAFT. `ckit annotations list` lists the open threads — and so does the generated home page, under "Waiting for you", in a library whose kit.json names no `home`. `/address` settles them.
 
 ## 7 · Record and land
 

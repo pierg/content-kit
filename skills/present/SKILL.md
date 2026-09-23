@@ -70,7 +70,7 @@ A long page is drafted in passes, and the passes are kept separate on purpose:
 2. **Verify against the sources with a second model**, given only the page and what it cites, reporting every number, id, verdict word and bound that does not match.
 3. **Repair what verification found, then re-verify.** The draft is not the artifact until that pass is clean.
 4. **Reader-test the front door** on someone who has never seen the work. If they cannot say what was found and what it does not show, it is not plain yet.
-5. **Independent review before it lands** — fresh context, no write tools, reading the page against its sources rather than the summary of them. The author never self-certifies. Where no reviewer is available (a solo session), say so plainly and make the owner the reviewer: the threads of rule 7 stay open until they are settled, and the served home page lists them. A layer may name its own review.
+5. **Independent review before it lands** — fresh context, no write tools, reading the page against its sources rather than the summary of them. The author never self-certifies. Where no reviewer is available (a solo session), say so plainly and make the owner the reviewer: the threads of rule 7 stay open until they are settled (`ckit annotations list` shows them; so does the generated home page, where kit.json names no `home`). A layer may name its own review.
 
 ## Before finishing
 

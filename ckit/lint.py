@@ -375,6 +375,7 @@ def run(repo: Repo, paths: list[Path] | None = None, *, nav: bool = True) -> tup
             if d.is_dir() and (d / "book.js").is_file():
                 probs.append(f"{repo.rel(d)}/book.js: retired — use book.json and `ckit nav`")
     probs.extend(annotations.check_all(repo))
+    probs.extend(links.moved_problems(repo))
     if nav and repo.content.is_dir():
         written = book_nav.regenerate(repo)
         if written:

@@ -40,9 +40,9 @@ def _retitle(html: str, title: str) -> str:
 def _topic_and_tags(repo: Repo, g, slug: str, topic: str | None,
                     tags: list[str] | None) -> tuple[str | None, list[str]]:
     """The topic and tags a new page declares, checked before anything is written."""
-    from .book_nav import topic_labels
     from .lint import TAG_SLUG
-    declared = topic_labels(repo)
+    from .organize import declared as declared_topics
+    declared = declared_topics(repo)
     if topic is None and g.name == "hub" and slug in declared:
         topic = slug  # a hub named for a declared topic is that topic's front door
     if topic is not None and declared and topic not in declared:
@@ -86,6 +86,10 @@ def create(repo: Repo, genre_name: str, slug: str, *, title: str | None = None,
     if tags:
         html = set_meta(html, "tags", ", ".join(tags))
     dest.write_text(html, encoding="utf-8")
+    from .organize import reclaim
+    was = reclaim(repo, dest)
+    if was:
+        print(f"  {repo.rel(dest)} takes back an address kit.json `moved` sent to {was}: the redirect is dropped")
     return dest
 
 
@@ -110,8 +114,9 @@ def main(argv: list[str]) -> int:
     tags = args.tags.split(",") if args.tags else None
     dest = create(repo, args.genre, args.slug, title=args.title, topic=args.topic, tags=tags)
     print(f"created {repo.rel(dest)}")
-    from .book_nav import topic_labels, topic_of
-    declared = topic_labels(repo)
+    from .book_nav import topic_of
+    from .organize import declared as declared_topics
+    declared = declared_topics(repo)
     if declared and not topic_of(dest.read_text(encoding="utf-8")):
         print(f"  no topic set — this library declares: {', '.join(declared)} (--topic)")
     print(voice_card(repo, args.genre))

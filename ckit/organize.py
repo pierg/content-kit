@@ -13,8 +13,10 @@
 
 A page's address is part of the library: other pages link to it, its annotation sidecar sits
 beside it, the catalog dates it by it, and readers bookmark it. `ckit mv` and `ckit rm` rewrite
-every link to it (and a moved page's own relative links), carry its sidecar and its dates, and
-record the old address in kit.json `moved`, which `ckit serve` and the exported site redirect.
+every link to it (and a moved page's own relative links), carry its sidecar and its created
+date (its updated date becomes the day it moved), and record the old address in kit.json
+`moved`, which `ckit serve` and the exported site redirect. `ckit rm` deletes only what git can
+bring back, and never a page with an open annotation thread.
 A topic is metadata, not a folder, so re-topicking a page never changes its address.
 
 Every verb edits pages in place and regenerates the indices; the gate then names what is left
@@ -26,9 +28,13 @@ from __future__ import annotations
 import argparse
 import html as html_mod
 import json
+import os
+import posixpath
 import re
 import shutil
+import subprocess
 from pathlib import Path
+from urllib.parse import unquote
 
 from . import annotations as ann
 from . import book_nav, links
@@ -141,6 +147,9 @@ def topics_add(repo: Repo, slug: str, label: str | None = None) -> Repo:
         raise SystemExit(f"topic {slug!r} is already declared")
     cfg = _load_cfg(repo)
     t = cfg.setdefault("topics", {})
+    if isinstance(t, list) and label:  # a label needs the object form; the others keep their slugs
+        cfg["topics"] = t = {str(x): str(x) for x in t}
+        print("  kit.json topics: a list of slugs, now an object of slug → label")
     label = label or _label(slug)
     if isinstance(t, list):
         t.append(slug)
@@ -186,6 +195,8 @@ def topics_rename(repo: Repo, old: str, new: str, label: str | None = None) -> R
         raise SystemExit(f"topic {new!r}: a lowercase slug (a-z 0-9 -)")
     cfg = _load_cfg(repo)
     t = cfg["topics"]
+    if isinstance(t, list) and label:  # a label needs the object form
+        t = {str(x): str(x) for x in t}
     if isinstance(t, dict):
         cfg["topics"] = {(new if k == old else k): ((label or v) if k == old else v) for k, v in t.items()}
     else:
@@ -238,9 +249,10 @@ def topics_merge(repo: Repo, olds: list[str], into: str, label: str | None = Non
     hub_dir = _hub_dir(repo)
     hubs = [p for p in _on(repo, {into}) if hub_dir is not None and p.parent == hub_dir]
     if len(hubs) > 1:
-        rels = [repo.rel(h) for h in hubs]
-        print(f"  {into!r} now has {len(hubs)} hubs ({', '.join(rels)}): fold them into one, then "
-              f"retire the rest into it — ckit rm {rels[-1]} --to {rels[0]}")
+        keep = next((h for h in hubs if h.name == f"{into}.html"), hubs[0])
+        rest = [h for h in hubs if h != keep]
+        print(f"  {into!r} now has {len(hubs)} hubs: fold their maps into {repo.rel(keep)}, then retire "
+              "the others into it — " + "; ".join(f"ckit rm {repo.rel(h)} --to {repo.rel(keep)}" for h in rest))
     return repo
 
 
@@ -274,7 +286,10 @@ def tags_report(repo: Repo) -> str:
     for t in count:
         groups.setdefault(_alike(t), []).append(t)
     for same in (sorted(g) for g in groups.values() if len(g) > 1):
-        lines.append(f"alike: {' · '.join(same)} — one spelling: ckit tags rename {same[-1]} {same[0]}")
+        ok = [t for t in same if TAG_SLUG.match(t)]
+        keep = ok[0] if ok else (re.sub(r"[^a-z0-9._-]+", "-", same[0].lower()).strip("-") or "tag")
+        lines.append(f"alike: {' · '.join(same)} — one spelling: "
+                     + "; ".join(f"ckit tags rename {t} {keep}" for t in same if t != keep))
     return "\n".join(lines)
 
 
@@ -313,30 +328,35 @@ def _file_of(res: links.Resolver, rel: str) -> str | None:
     return rel
 
 
-def _rewrite(repo: Repo, res: links.Resolver, page: Path, text: str, mapping: dict[str, str],
-             moved_with: set[str] | None = None) -> tuple[str, int]:
-    """`text` (the page at `page`, before anything moves) with every link into `mapping` pointed at
-    its new address. A page that moves itself also has its relative links made root-absolute, so
-    they survive the move — except those to files moving with it (`moved_with`, a whole folder
-    moving at once), which still hold."""
+def _rewrite(res: links.Resolver, page: Path, text: str, mapping: dict[str, str],
+             new_page: str | None = None) -> tuple[str, int]:
+    """`text` (the page at `page`, read before anything moves) with every link into `mapping`
+    pointed at its new address. When the page itself moves to `new_page` (repo-relative), each of
+    its relative links is kept only if it still names the same target from the new place, and is
+    otherwise made root-absolute — shell and generated addresses included."""
     n = 0
-    for start, end, _attr, url in reversed(links.links_in(text)):
+    for start, end, _attr, url, quoted in reversed(links.links_in(text)):
         got = res.address(url, page)
         if got is None:
             continue
-        rel = _file_of(res, got[0])
-        if rel is None:
-            continue
+        rel0, as_dir = got
+        if rel0 == ".." or rel0.startswith("../"):
+            continue  # leaves the repository: the gate reports it
+        rel = _file_of(res, rel0)
         relative = not url.startswith("/")
-        if moved_with is not None and relative and rel in moved_with:
-            continue  # moves with the page: the relative link still holds
-        if rel in mapping:
-            new = mapping[rel] + _suffix(url)
-        elif moved_with is not None and relative:
-            new = links.canon(rel) + _suffix(url)
+        if rel is not None and rel in mapping:
+            target = mapping[rel]
+        elif new_page is not None and relative:
+            target = links.canon(rel) if rel is not None else "/" + rel0 + ("/" if as_dir and rel0 else "")
         else:
             continue
-        text = text[:start] + html_mod.escape(new, quote=True) + text[end:]
+        if new_page is not None and relative:
+            path = unquote(url.split("#", 1)[0].split("?", 1)[0])
+            there = posixpath.normpath(posixpath.join(posixpath.dirname(new_page), path))
+            if links.canon(there).rstrip("/") == target.rstrip("/"):
+                continue  # still names the same target from the new place
+        new = html_mod.escape(target + _suffix(url), quote=True)
+        text = text[:start] + (new if quoted else f'"{new}"') + text[end:]
         n += 1
     return text, n
 
@@ -351,7 +371,10 @@ def _record_moves(repo: Repo, addresses: dict[str, str]) -> Repo:
             if links.canon(v).rstrip("/") == links.canon(old).rstrip("/"):
                 moved[k] = new
         moved[old] = new
-    moved = {k: v for k, v in moved.items() if links.canon(k).rstrip("/") != links.canon(v).rstrip("/")}
+    live = {links.canon(v).rstrip("/") for v in addresses.values()}
+    moved = {k: v for k, v in moved.items()
+             if links.canon(k).rstrip("/") != links.canon(v).rstrip("/")  # moved back where it was
+             and links.canon(k).rstrip("/") not in live}                   # a page lives there again
     cfg["moved"] = dict(sorted(moved.items()))
     if not cfg["moved"]:
         cfg.pop("moved")
@@ -364,6 +387,28 @@ def _record_moves(repo: Repo, addresses: dict[str, str]) -> Repo:
                 and links.canon(item["href"]).rstrip("/") in canon_map:
             item["href"] = canon_map[links.canon(item["href"]).rstrip("/")]
     return _save_cfg(repo, cfg)
+
+
+def reclaim(repo: Repo, page: Path) -> str | None:
+    """A new page at an address kit.json `moved` redirects takes the address back: the entry is
+    dropped. Returns where it redirected, or None."""
+    here = links.canon(ann.href_of(repo, page)).rstrip("/")
+    cfg = _load_cfg(repo)
+    moved = cfg.get("moved") or {}
+    if not isinstance(moved, dict):
+        return None
+    was = next((v for k, v in moved.items() if links.canon(str(k)).rstrip("/") == here), None)
+    if was is None:
+        return None
+    cfg["moved"] = {k: v for k, v in moved.items() if links.canon(str(k)).rstrip("/") != here}
+    if not cfg["moved"]:
+        cfg.pop("moved")
+    _save_cfg(repo, cfg)
+    if cfg.get("moved"):  # the caller's view of kit.json follows the file
+        repo.cfg["moved"] = cfg["moved"]
+    else:
+        repo.cfg.pop("moved", None)
+    return str(was)
 
 
 def _carry_dates(repo: Repo, hrefs: dict[str, str]) -> None:
@@ -402,7 +447,7 @@ def move(repo: Repo, src: Path, dst: Path) -> Repo:
     """Move the page at `src` to `dst` (a page path; a folder page moves with all it holds)."""
     genres = load_genres(repo)
     src, dst = src.resolve(), dst.resolve()
-    if dst.exists():
+    if dst.exists() and not _same(src, dst):
         raise SystemExit(f"{repo.rel(dst)} already exists")
     try:
         dst.relative_to(repo.content.resolve())
@@ -415,7 +460,7 @@ def move(repo: Repo, src: Path, dst: Path) -> Repo:
     whole = _owns_folder(repo, src) and dst.name == "index.html"
     files: dict[Path, Path] = {}
     if whole:
-        if dst.parent.exists():
+        if dst.parent.exists() and not _same(src.parent, dst.parent):
             raise SystemExit(f"{repo.rel(dst.parent)} already exists")
         if src.parent in dst.parents:
             raise SystemExit(f"cannot move {repo.rel(src.parent)} into itself")
@@ -431,19 +476,21 @@ def move(repo: Repo, src: Path, dst: Path) -> Repo:
                                  + ") — move it as a folder: ckit mv "
                                  + f"{repo.rel(src)} {repo.rel(dst)[:-len('.html')]}/")
         files[src] = dst
+        if ann.sidecar_for(dst).exists() and not _same(ann.sidecar_for(src), ann.sidecar_for(dst)):
+            raise SystemExit(f"an annotation sidecar already sits at {repo.rel(ann.sidecar_for(dst))} — "
+                             "an orphan from an earlier page: resolve it before moving a page there")
         if ann.sidecar_for(src).is_file():
             files[ann.sidecar_for(src)] = ann.sidecar_for(dst)
     rel = {f: f.relative_to(root).as_posix() for f in files}
     mapping = {rel[f]: (links.canon(t.relative_to(root).as_posix()) if f.suffix == ".html"
                         else "/" + t.relative_to(root).as_posix()) for f, t in files.items()}
-    moving = set(mapping) if whole else set()
     res = links.Resolver(repo)
     texts: dict[Path, str] = {}
     touched = rewritten = 0
     for p in _all_pages(repo):
         p = p.resolve()
         text = _read(p)
-        out, n = _rewrite(repo, res, p, text, mapping, moving if p in files else None)
+        out, n = _rewrite(res, p, text, mapping, files[p].relative_to(root).as_posix() if p in files else None)
         if n or p in files:
             texts[files.get(p, p)] = out
         if n and p not in files:
@@ -453,11 +500,11 @@ def move(repo: Repo, src: Path, dst: Path) -> Repo:
     # every read is done: now move, then write
     if whole:
         dst.parent.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(src.parent), str(dst.parent))
+        os.rename(src.parent, dst.parent) if _same(src.parent, dst.parent) else shutil.move(str(src.parent), str(dst.parent))
     else:
         for f, t in files.items():
             t.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(f), str(t))
+            os.rename(f, t) if _same(f, t) else shutil.move(str(f), str(t))
         if _owns_folder(repo, src) and src.parent.is_dir() and not any(src.parent.iterdir()):
             src.parent.rmdir()
     for p, text in texts.items():
@@ -481,29 +528,69 @@ def move(repo: Repo, src: Path, dst: Path) -> Repo:
     return repo
 
 
+def _same(a: Path, b: Path) -> bool:
+    """One file under two spellings — a case-only rename on a case-insensitive filesystem."""
+    try:
+        return os.path.samefile(a, b)
+    except OSError:
+        return False
+
+
+def _uncommitted(repo: Repo, paths: list[Path]) -> list[str] | None:
+    """What among `paths` git could not bring back (untracked, ignored, or changed since the last
+    commit), or None when the repo is not a git work tree."""
+    try:
+        r = subprocess.run(["git", "-C", str(repo.root), "status", "--porcelain=v1", "-z", "--ignored",
+                            "--untracked-files=all", "--", *[str(p) for p in paths]],
+                           capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if r.returncode != 0:
+        return None
+    return [e[3:].decode("utf-8", "replace") for e in r.stdout.split(b"\0") if len(e) > 3]
+
+
+def _open_threads(sidecars: list[Path]) -> list[Path]:
+    return [sc for sc in sidecars if sc.is_file()
+            and any(t.get("state") == "open" for t in ann.load(sc).get("threads", []))]
+
+
 def remove(repo: Repo, page: Path, into: Path, *, folder: bool = False) -> Repo:
-    """Retire `page` into `into`: links to it point there, and so does its old address."""
+    """Retire `page` into `into`: links to it point there, and so does its old address. Only what
+    git can bring back is deleted, and never a page with an open annotation thread."""
     page, into = page.resolve(), into.resolve()
     if page == into:
         raise SystemExit("a page cannot be retired into itself")
-    sidecar = ann.sidecar_for(page)
-    if sidecar.is_file():
-        live = [t for t in ann.load(sidecar).get("threads", []) if t.get("state") == "open"]
-        if live:
-            raise SystemExit(f"{repo.rel(page)} has {len(live)} open annotation thread(s) — settle them "
-                             "first (/address), or keep the page and move it")
     root = repo.root.resolve()
-    gone: list[Path] = [page]
     owns = _owns_folder(repo, page)
+    sidecar = ann.sidecar_for(page)
     if owns:
+        if into.parent == page.parent or page.parent in into.parents:
+            raise SystemExit(f"--to names a page inside {repo.rel(page.parent)}, which is being retired")
         extra = [f for f in page.parent.rglob("*") if f.is_file() and f not in (page, sidecar)]
         if extra and not folder:
             raise SystemExit(f"{repo.rel(page.parent)} holds more than its page ("
                              + ", ".join(repo.rel(f) for f in extra[:4])
-                             + ") — pass --folder to retire all of it (git keeps it)")
-        gone = [f for f in page.parent.rglob("*.html")]
+                             + ") — pass --folder to retire all of it")
+        doomed = [page.parent]
+        live = _open_threads(sorted(page.parent.rglob("*.annotations.json")))
+        gone = sorted(page.parent.rglob("*.html"))
+    else:
+        doomed = [page, sidecar] if sidecar.exists() else [page]
+        live = _open_threads([sidecar])
+        gone = [page]
+    if live:
+        raise SystemExit(f"open annotation threads on {', '.join(repo.rel(x) for x in live)} — settle them "
+                         "first (/address), or keep the page and move it")
+    loose = _uncommitted(repo, doomed)
+    if loose is None:
+        raise SystemExit("not a git work tree — `ckit rm` deletes only what git can bring back; retire "
+                         "the page by hand")
+    if loose:
+        raise SystemExit("not committed, so nothing could bring it back: " + ", ".join(loose[:6])
+                         + (" …" if len(loose) > 6 else "") + " — commit it, or move it out, first")
     target = links.canon(into.relative_to(root).as_posix())
-    mapping = {f.relative_to(root).as_posix(): target for f in gone}
+    mapping = {f.resolve().relative_to(root).as_posix(): target for f in gone}
     res = links.Resolver(repo)
     touched = rewritten = 0
     writes: dict[Path, str] = {}
@@ -512,7 +599,7 @@ def remove(repo: Repo, page: Path, into: Path, *, folder: bool = False) -> Repo:
         if p in gone or (owns and page.parent in p.parents):
             continue
         text = _read(p)
-        out, n = _rewrite(repo, res, p, text, mapping)
+        out, n = _rewrite(res, p, text, mapping)
         if n:
             writes[p] = out
             touched += 1
@@ -520,9 +607,8 @@ def remove(repo: Repo, page: Path, into: Path, *, folder: bool = False) -> Repo:
     if owns:
         shutil.rmtree(page.parent)
     else:
-        page.unlink()
-        if sidecar.is_file():
-            sidecar.unlink()
+        for f in doomed:
+            f.unlink()
     for p, text in writes.items():
         _write(p, text)
     repo = _record_moves(repo, {links.canon(k): v for k, v in mapping.items()})

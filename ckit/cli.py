@@ -123,23 +123,15 @@ def _unwrap(argv: list[str]) -> int:
     from pathlib import Path
 
     from . import prose
-    from .lint import iter_pages
     from .paths import load_repo
 
     ap = argparse.ArgumentParser(prog="ckit unwrap", description="join hard-wrapped prose")
     ap.add_argument("paths", nargs="*", type=Path, help="pages or directories (default: every page)")
     args = ap.parse_args(argv)
-    repo = load_repo()
-    joined = files = 0
-    for page in iter_pages(repo, args.paths):
-        text = page.read_text(encoding="utf-8")
-        out, n = prose.unwrap(text)
-        if n:
-            page.write_text(out, encoding="utf-8")
-            joined += n
-            files += 1
-            print(f"  {repo.rel(page)}: {n}")
-    print(f"joined {joined} hard-wrapped element(s) in {files} page(s)" if joined
+    joined, pages = prose.unwrap_repo(load_repo(), args.paths)
+    for rel, n in pages:
+        print(f"  {rel}: {n}")
+    print(f"joined {joined} hard-wrapped element(s) in {len(pages)} page(s)" if joined
           else "no hard-wrapped prose")
     return 0
 

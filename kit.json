@@ -5,6 +5,6 @@
   "shell": "shell",
   "host": "127.0.0.1",
   "port": 5190,
-  "ckit": "0.5.0.dev0",
+  "ckit": "0.5.0.dev1",
   "home": "content/hubs/content-kit.html"
 }

@@ -2,7 +2,9 @@
 
 Every release names what it breaks and how to move across. A repo pins the engine version it was checked against (`"ckit"` in `kit.json`), so an upgrade is always a deliberate act per repo.
 
-## 0.5.0.dev0 — unreleased
+## 0.5.0.dev1 — unreleased
+
+0.5.0.dev0 was this work's prototype, on a branch. The version moved so that a repo pinned to the prototype fails the pin loudly (re-pin with `ckit init .`) instead of meeting the new checks unannounced.
 
 A shell for reading and for finding: the library organised by topic, a reading measure, a palette, peeks, a page rail and a generated home page — and the catalog grows what a knowledge base needs (topics by name, tags, dates). Every class and token of 0.4 is kept, the chrome still lives outside `<main>` (wherever `<main>` sits), and the script APIs keep their 0.4 timing — tabs, popovers, backlink lists and `libBook()` set up by a page's own `DOMContentLoaded` handler are wired, and a failure in the chrome cannot take them down.
 
@@ -15,8 +17,8 @@ And a library an agent can organise without guessing and without breaking it: wh
 3. **The reading column narrows** to ~70 characters a line (`--measure`); figures, tables, code and side-by-side blocks break out to `--wide`. Pages whose prose sits inside a classed wrapper keep the wide column.
 4. **The generated home page** (no `home` in kit.json) is built from the committed indices: topics as cards (with each hub's opening line), recently updated, a shelf per genre, the repo's links and record files.
 5. `ckit serve` sends files `Cache-Control: no-cache` with an `ETag` (mtime to the nanosecond, and size) and answers a matching `If-None-Match` with 304 (was `no-store`); generated responses stay `no-store`.
-6. **Every internal link must resolve**, as the exported site will serve it (`ckit/links.py`): no address nothing answers, no directory without an `index.html`, no bare slug, no letter-case mismatch, no git-ignored target, no address kit.json `moved` redirects. `data-unchecked` exempts one link the gate cannot see. Fix what it names; `ckit mv` fixes links for you when it moves a page.
-7. **One paragraph per line is checked** (`ckit/prose.py`): a p, li, td, figcaption, blockquote… broken across lines at a column fails, reported once per page. `ckit unwrap` joins them (a break after `<br>`, display math and code keep their lines); the text a reader sees does not change.
+6. **Every internal link must resolve** (quoted attribute or not), as the exported site will serve it (`ckit/links.py`): no address nothing answers, no directory without an `index.html`, no bare slug, no letter-case mismatch, no git-ignored target, no address kit.json `moved` redirects. `data-unchecked` exempts one link the gate cannot see. Fix what it names; `ckit mv` fixes links for you when it moves a page.
+7. **One paragraph per line is checked** (`ckit/prose.py`): a p, li, td, figcaption, blockquote… whose text is broken across lines at a column fails, reported once per page. `ckit unwrap` joins them: a break after `<br>`, a break inside a tag, math (display, and inline math holding a TeX `%`) and code keep their lines, and the catalog is regenerated first so a joined page keeps its dates. The text a reader sees does not change — unless the page's CSS makes whitespace significant (`white-space: pre`).
 8. **Tags are lowercase slugs, each once** (`a-z 0-9 - . _`). The lint prints the slug to use.
 9. **Skeletons**: placeholder links are `…/OTHER…` — reported until each points at a real page — and skeletons carry no placeholder tags. The hub skeleton no longer links a book from another repo, and the concept skeleton's comment says what it means.
 10. **`ckit check` reports every stage in one run**: the pin, the shell and the declarations are preconditions and still stop it; the indices, the lint and the books all run, and the gate fails at the end naming each stage that failed.
@@ -35,10 +37,10 @@ And a library an agent can organise without guessing and without breaking it: wh
 - **A weight budget for the shell**, checked by the selftest: `lib.css` + `lib.js` ≤ 32 KiB gzipped (28.1 KiB now, from 11.8 KiB in 0.4), fonts ≤ 200 KiB (147 KiB).
 - `data-hb-app` on the shell's own pages (full width, sans, no page rail).
 - **`ckit topics`**: each topic with its label, hub and page count, pages with no topic, topics no one declared; `add`, `rename` (its hub moves with it), `merge … --into` (the old slugs become tags; the gate names the hubs to fold), `assign` (how a topic is split). **`ckit tags`**: each tag and its pages, spellings that look alike; `rename`.
-- **`ckit mv <page> <to>`**: moves a page, or a folder page with everything in it, rewriting every link to it (and its own relative links), carrying its annotation sidecar (re-addressed) and its catalog dates, and recording the old address in kit.json `moved`. **`ckit rm <page> --to <page>`** retires a page into another the same way (refused while it has open threads). `ckit serve` answers a moved address with a 301; `ckit export` leaves a refresh there; `ckit check` rejects a `moved` entry whose old page still exists, whose target does not, or that loops.
-- **`ckit new … --topic <slug> --tags a,b`** writes the page's metas (an undeclared topic or a malformed tag is refused before anything is written); a hub named for a declared topic takes it.
+- **`ckit mv <page> <to>`**: moves a page, or a folder page with everything in it, rewriting every link to it (and each of its own relative links that would no longer hold), carrying its annotation sidecar (re-addressed) and its created date (its updated date becomes the day of the move), and recording the old address in kit.json `moved`. **`ckit rm <page> --to <page>`** retires a page into another the same way; it deletes only what git can bring back, so it is refused outside a git work tree, for anything untracked, ignored or changed since the last commit, while any page it would retire has an open annotation thread, and for a `--to` inside the folder it retires. `ckit serve` answers a moved address with a 301; `ckit export` leaves a refresh there (never outside `--out`). A malformed `moved` address (a `.` or `..` segment, `//`, a scheme) fails the declarations; an old address a page lives at again, a chain that ends where no page lives, or a cycle is reported with the lint.
+- **`ckit new … --topic <slug> --tags a,b`** writes the page's metas (an undeclared topic or a malformed tag is refused before anything is written); a hub named for a declared topic takes it; a new page at an address kit.json `moved` redirects takes the address back.
 - **`ckit unwrap [paths]`**, the fixer for rule 7.
-- **The served home page opens with the open annotation threads** ("Waiting for you"): what a reader left, and what an agent flagged as written beyond its source. The exported site omits them.
+- **The generated home page, served, opens with the open annotation threads** ("Waiting for you"): what a reader left, and what an agent flagged as written beyond its source. The exported site omits them, and a repo whose kit.json names its own `home` does not get the generated page (`ckit annotations list` works everywhere).
 - **`/curate`**, a new skill vendored by `ckit init` beside `/present` and `/address`: topic or tag, opening, renaming, merging and splitting topics, keeping hubs current, reusing tags, promoting, moving and retiring pages, a health pass. `/present` gains two rules: flag what an agent writes beyond its source (an annotation thread per passage, so the owner reviews it), and organising is `/curate`'s — never `git mv` a page.
 
 ### Fixed
@@ -50,7 +52,7 @@ And a library an agent can organise without guessing and without breaking it: wh
 
 ```bash
 git -C ../content-kit pull                                  # main: the engine and the kit
-ckit init .                                                 # re-vendors kit/ (and links /curate), pins "ckit": "0.5.0.dev0"
+ckit init .                                                 # re-vendors kit/ (and links /curate), pins "ckit": "0.5.0.dev1"
 ckit unwrap && ckit lint                                    # one paragraph per line; regenerates the indices
 make check                                                  # then fix what it names — dead links, malformed tags
 git add kit kit.json content .claude && git commit          # the files that changed, reviewed first

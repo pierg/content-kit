@@ -138,9 +138,16 @@ def run(repo: Repo, out: Path, base: str = "/") -> int:
     full = bool(cmd) and pagefind.build(cmd, out, f"{repo.content_name}/**/*.html", out / "pagefind")
     _write(out / "shell" / "pagefind.json", '{"available": %s}\n' % ("true" if full else "false"), base)
     n_moved = 0
-    for old in links.moved_map(repo):  # after the full-text build, so a redirect is never indexed
-        new = links.follow(links.moved_map(repo), old) or "/"
+    moved = links.moved_map(repo)
+    for old in moved:  # after the full-text build, so a redirect is never indexed
+        if links.address_problem(old) or links.address_problem(moved[old]):
+            continue  # malformed: `ckit check` reports it; never written, wherever it points
+        new = links.follow(moved, old) or "/"
         dest = out / old.lstrip("/") if old.endswith(".html") else out / old.lstrip("/") / "index.html"
+        try:
+            dest.resolve().relative_to(out)
+        except ValueError:
+            continue
         if not dest.exists():
             _write(dest, _redirect(new, base), base)
             n_moved += 1

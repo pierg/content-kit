@@ -37,7 +37,7 @@ from .paths import Repo
 
 SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 TAG = re.compile(r"<([A-Za-z][\w:-]*)\b((?:[^>\"']|\"[^\"]*\"|'[^']*')*)>", re.S)
-URL_ATTR = re.compile(r"""(?<![\w:-])(href|src)\s*=\s*(?:"([^"]*)"|'([^']*)')""", re.I)
+URL_ATTR = re.compile(r"""(?<![\w:-])(href|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))""", re.I)
 UNCHECKED = re.compile(r"(?<![\w:-])data-unchecked(?![\w-])", re.I)
 COMMENT = re.compile(r"<!--.*?-->", re.S)
 BODY = re.compile(r"(<(script|style|noscript|template)\b[^>]*>)(.*?)(</\2\s*>)", re.S | re.I)
@@ -57,20 +57,21 @@ def served_markup(text: str) -> str:
     return BODY.sub(lambda m: m.group(1) + _blank(m.group(3)) + m.group(4), text)
 
 
-def links_in(text: str) -> list[tuple[int, int, str, str]]:
-    """(start, end, attribute, url) of every href and src on the served page — the offsets are
-    those of the quoted value in `text`, so a rewrite can replace exactly it."""
+def links_in(text: str) -> list[tuple[int, int, str, str, bool]]:
+    """(start, end, attribute, url, quoted) of every href and src on the served page — the
+    offsets are those of the value in `text` (inside its quotes, when it has them), so a rewrite
+    can replace exactly it."""
     masked = served_markup(text)
-    out: list[tuple[int, int, str, str]] = []
+    out: list[tuple[int, int, str, str, bool]] = []
     for t in TAG.finditer(masked):
         attrs = t.group(2)
         if UNCHECKED.search(attrs):
             continue
         for a in URL_ATTR.finditer(attrs):
-            g = 2 if a.group(2) is not None else 3
+            g = next(i for i in (2, 3, 4) if a.group(i) is not None)
             start = t.start(2) + a.start(g)
             end = t.start(2) + a.end(g)
-            out.append((start, end, a.group(1).lower(), html_mod.unescape(a.group(g))))
+            out.append((start, end, a.group(1).lower(), html_mod.unescape(a.group(g)), g != 4))
     return out
 
 
@@ -226,9 +227,6 @@ class Resolver:
         rel, as_dir = got
         if rel == ".." or rel.startswith("../"):
             return "leaves the repository"
-        new = follow(self.moved, "/" + rel)
-        if new:
-            return f"moved to {new} (kit.json `moved`) — link the new address"
         if rel == "" or rel in GENERATED or rel.startswith(GENERATED_PREFIX):
             return None
         shell = rel.startswith("shell/") or rel == "shell"
@@ -238,6 +236,9 @@ class Resolver:
         base = self.shell if shell else self.root
         found = self.exact(base, tail)
         if found is None:
+            new = None if shell else follow(self.moved, "/" + rel)  # only a missing address has moved
+            if new:
+                return f"moved to {new} (kit.json `moved`) — link the new address"
             if PLACEHOLDER.search(rel):
                 return "a skeleton's placeholder — link a real page, or drop the link"
             slug = self._slug(rel) if not shell and "/" not in rel else None
@@ -267,9 +268,49 @@ class Resolver:
         return _href_of(self.repo, p) if p is not None else None
 
 
+def address_problem(address: object) -> str | None:
+    """Why `address` cannot be a kit.json `moved` address, or None: a site path from the root —
+    one leading slash, no `.` or `..` segment, no backslash, no scheme."""
+    if not isinstance(address, str) or not address.startswith("/") or address.startswith("//"):
+        return "is not a site address (one leading /)"
+    if "\\" in address or SCHEME.match(address.lstrip("/")) or any(c in address for c in "?#\0"):
+        return "is not a plain path"
+    if any(part in (".", "..") for part in address.split("/")):
+        return "has a . or .. segment"
+    return None
+
+
+def moved_problems(repo: Repo) -> list[str]:
+    """kit.json `moved`, read against the tree: an old address where a page lives again, a chain
+    that ends where no page lives, a cycle. Reported with the lint, so the rest of the gate runs."""
+    got = repo.cfg.get("moved") or {}
+    if not isinstance(got, dict):
+        return []
+    res = Resolver(repo)
+    moved = moved_map(repo)
+    out: list[str] = []
+    for old in got:
+        if address_problem(old) or address_problem(got[old]):
+            continue  # a malformed entry is config's to report
+        seen, cur = set(), canon(old).rstrip("/")
+        while cur in moved and cur not in seen:
+            seen.add(cur)
+            cur = moved[cur].rstrip("/")
+        if cur in moved:
+            out.append(f"kit.json moved: {old} is part of a cycle of redirects")
+            continue
+        if res.target(canon(old).strip("/")) is not None:
+            out.append(f"kit.json moved: a page lives at {old} again — drop the entry (the page keeps "
+                       "the address), or move the page")
+        final = follow(moved, old) or got[old]
+        if res.target(final.strip("/")) is None:
+            out.append(f"kit.json moved: {old} ends at {final}, where no page lives")
+    return out
+
+
 def check_page(resolver: Resolver, rel: str, page: Path, text: str) -> list[str]:
     out: list[str] = []
-    for start, _end, attr, url in links_in(text):
+    for start, _end, attr, url, _quoted in links_in(text):
         why = resolver.problem(url, page)
         if why:
             line = text.count("\n", 0, start) + 1

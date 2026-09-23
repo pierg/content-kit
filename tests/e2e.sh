@@ -15,6 +15,12 @@ SPORT=5397
 trap 'cd /; [ -f "$REPO/.serve.pid" ] && kill "$(cat "$REPO/.serve.pid")" 2>/dev/null; [ -n "${HTTPD:-}" ] && kill "$HTTPD" 2>/dev/null; rm -rf "$TMP"' EXIT
 fail() { echo "e2e: $*" >&2; exit 1; }
 edit() { sed -i.bak "$1" "$2" && rm -f "$2.bak"; }   # in place, on GNU and BSD sed alike
+serves() {  # serves <url> <grep args…>: the body is read whole first — `curl | grep -q` races
+  local body   # (grep exits at its first match, curl meets a closed pipe, and pipefail fails the line)
+  body="$(curl -fsS "$1")" || return 1
+  shift
+  grep -q "$@" <<<"$body"
+}
 fill() {  # point every skeleton placeholder link at a real page, as an author would
   grep -rl 'OTHER' "$REPO/content" --include='*.html' | while read -r f; do
     edit 's#href="/content/[^"]*OTHER[^"]*"#href="/content/concepts/thing/"#g' "$f"
@@ -128,18 +134,18 @@ echo "--- serve, and the annotation round-trip ---"
 ( cd "$REPO" && make docs >/dev/null )
 sleep 0.7
 B="http://127.0.0.1:$PORT"
-curl -fsS "$B/" | grep -q "Scratch Repo" || fail "landing page did not render"
-curl -fsS "$B/" | grep -q ">Board &rarr;<" || fail "landing lacks the declared link"
-curl -fsS "$B/shell/lib.css" | grep -q '@import url("theme.css")' || fail "/shell/lib.css does not import the theme"
-curl -fsS "$B/shell/theme.css" | grep -q -- "--glacier" || fail "/shell/theme.css does not serve the declared theme"
-curl -fsS "$B/shell/board.html" | grep -q "X board" || fail "the declared shell page is not served"
-curl -fsS "$B/shell/search.html" | grep -q "search-index" || fail "search page not served from the shell"
-curl -fsS "$B/shell/record.html?p=record/log.md" | grep -q "marked.umd.js" || fail "record viewer not served"
+serves "$B/" "Scratch Repo" || fail "landing page did not render"
+serves "$B/" ">Board &rarr;<" || fail "landing lacks the declared link"
+serves "$B/shell/lib.css" '@import url("theme.css")' || fail "/shell/lib.css does not import the theme"
+serves "$B/shell/theme.css" -- "--glacier" || fail "/shell/theme.css does not serve the declared theme"
+serves "$B/shell/board.html" "X board" || fail "the declared shell page is not served"
+serves "$B/shell/search.html" "search-index" || fail "search page not served from the shell"
+serves "$B/shell/record.html?p=record/log.md" "marked.umd.js" || fail "record viewer not served"
 curl -fsS "$B/shell/vendor/marked/marked.umd.js" >/dev/null || fail "marked not served"
 curl -fsS "$B/shell/chronicle.html" >/dev/null || fail "chronicle page not served"
-curl -fsS "$B/content/chronicle.json" | grep -q "direction changed" || fail "chronicle.json not served"
-curl -fsS "$B/" | grep -q "Chronicle" || fail "landing lacks the chronicle link"
-curl -fsS "$B/content/notes/hello.html" | grep -q "Status: LIVE" || fail "scaffolded page lacks its status line"
+serves "$B/content/chronicle.json" "direction changed" || fail "chronicle.json not served"
+serves "$B/" "Chronicle" || fail "landing lacks the chronicle link"
+serves "$B/content/notes/hello.html" "Status: LIVE" || fail "scaffolded page lacks its status line"
 
 echo "--- a home written to kit.json on disk reaches the handler through load_repo ---"
 json_set "$REPO/kit.json" 'c["home"] = "content/concepts/thing"'
@@ -150,18 +156,18 @@ curl -sI "$B/" | grep -q '^Location: /content/concepts/thing/' || fail "content-
 json_set "$REPO/kit.json" 'c["home"] = "board"'
 ( cd "$REPO" && ckit down >/dev/null && ckit up >/dev/null )
 sleep 0.5
-curl -fsS "$B/" | grep -q "X board" || fail "a home naming a shell page did not serve it at /"
+serves "$B/" "X board" || fail "a home naming a shell page did not serve it at /"
 json_set "$REPO/kit.json" 'del c["home"]'
 ( cd "$REPO" && ckit down >/dev/null && ckit up >/dev/null )
 sleep 0.5
 echo "home ok"
 
-curl -fsS "$B/__annotations/ping" | grep -q '"ok": true' || fail "annotation ping failed"
+serves "$B/__annotations/ping" '"ok": true' || fail "annotation ping failed"
 curl -fsS -X POST -H 'Content-Type: application/json' "$B/__annotations" \
   -d '{"op":"add","page":"/content/notes/hello.html","author":"e2e","body":"tighten this","target":{"type":"TextQuoteSelector","exact":"Atomic-thought unit"}}' \
   | grep -q '"ok": true' || fail "annotation add via HTTP failed"
 [ -f "$REPO/content/notes/hello.annotations.json" ] || fail "sidecar not written"
-curl -fsS "$B/content/notes/hello.annotations.json" | grep -q "tighten this" || fail "sidecar not readable as a static file"
+serves "$B/content/notes/hello.annotations.json" "tighten this" || fail "sidecar not readable as a static file"
 CODE="$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' "$B/__annotations" \
   -d '{"op":"add","page":"/content/notes/hello.html","author":"e2e","body":"x","target":{"type":"TextQuoteSelector","exact":"text that is nowhere"}}')"
 [ "$CODE" = "400" ] || fail "a quote not on the page was accepted (HTTP $CODE)"
@@ -185,10 +191,10 @@ cmp -s "$REPO/content/notes/hello.html" "$TMP/site/content/notes/hello.html" || 
 python3 -m http.server "$SPORT" -d "$TMP/site" -b 127.0.0.1 >/dev/null 2>&1 & HTTPD=$!
 sleep 0.7
 S="http://127.0.0.1:$SPORT"
-curl -fsS "$S/" | grep -q "Scratch Repo" || fail "exported landing did not serve"
-curl -fsS "$S/shell/theme.css" | grep -q -- "--glacier" || fail "exported theme did not serve"
-curl -fsS "$S/content/concepts/thing/" | grep -q 'href="/shell/lib.css"' || fail "exported page did not serve"
-curl -fsS "$S/content/catalog.json" | grep -q '"groups"' || fail "exported catalog did not serve"
+serves "$S/" "Scratch Repo" || fail "exported landing did not serve"
+serves "$S/shell/theme.css" -- "--glacier" || fail "exported theme did not serve"
+serves "$S/content/concepts/thing/" 'href="/shell/lib.css"' || fail "exported page did not serve"
+serves "$S/content/catalog.json" '"groups"' || fail "exported catalog did not serve"
 kill "$HTTPD"; HTTPD=""
 mkdir -p "$TMP/pages"
 ( cd "$REPO" && ckit export --out "$TMP/pages/proj" --base /proj/ >/dev/null ) || fail "ckit export --base failed"
@@ -198,9 +204,9 @@ grep -q 'href="/shell/' "$TMP/pages/proj/content/notes/hello.html" && fail "--ba
 grep -q '"href": "/content/' "$TMP/pages/proj/content/catalog.json" || fail "--base must leave the JSON indices alone"
 python3 -m http.server "$SPORT" -d "$TMP/pages" -b 127.0.0.1 >/dev/null 2>&1 & HTTPD=$!
 sleep 0.7
-curl -fsS "$S/proj/" | grep -q 'href="/proj/shell/lib.css"' || fail "the based landing did not serve under /proj/"
+serves "$S/proj/" 'href="/proj/shell/lib.css"' || fail "the based landing did not serve under /proj/"
 curl -fsS "$S/proj/shell/lib.css" >/dev/null || fail "the based shell did not serve under /proj/"
-curl -fsS "$S/proj/content/notes/hello.html" | grep -q "Status: LIVE" || fail "a based page did not serve under /proj/"
+serves "$S/proj/content/notes/hello.html" "Status: LIVE" || fail "a based page did not serve under /proj/"
 kill "$HTTPD"; HTTPD=""
 echo "export ok"
 

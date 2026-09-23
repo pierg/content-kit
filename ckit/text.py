@@ -103,26 +103,41 @@ def meta_content(html: str, name: str) -> str | None:
     return None
 
 
+_CONTENT_ATTR = re.compile(r"""(\bcontent\s*=\s*)("[^"]*"|'[^']*'|[^\s"'>]+)""", re.I)
+
+
 def set_meta(html: str, name: str, value: str | None) -> str:
-    """The page with <meta name="…"> set to `value` (added after the head's last <meta> when it
-    has none), or removed when `value` is None."""
+    """The page with <meta name="…">'s content set to `value` — its other attributes kept — or
+    added after the head's last <meta> when it has none; with `value` None, the tag removed (its
+    line too, when it stood alone on one)."""
     found = [(s, e) for s, e, attrs in meta_tags(html) if attrs.get("name", "").lower() == name]
-    tag = f'<meta name="{name}" content="{html_mod.escape(value, quote=True)}">' if value is not None else ""
+    quoted = f'"{html_mod.escape(value, quote=True)}"' if value is not None else ""
     if found:
         s, e = found[0]
+        tag = html[s:e]
         if value is None:
-            if html[e:e + 1] == "\n":
+            line = html.rfind("\n", 0, s) + 1
+            if not html[line:s].strip() and html[e:e + 1] in ("\n", ""):
+                s, e = line, e + 1  # alone on its line: the line goes
+            elif html[e:e + 1] == "\n":
                 e += 1
             return html[:s] + html[e:]
+        m = _CONTENT_ATTR.search(tag)
+        if m:
+            tag = tag[:m.start(2)] + quoted + tag[m.end(2):]
+        else:
+            close = "/>" if tag.endswith("/>") else ">"
+            tag = tag[: -len(close)].rstrip() + f" content={quoted}" + (" />" if close == "/>" else ">")
         return html[:s] + tag + html[e:]
     if value is None:
         return html
+    new = f'<meta name="{name}" content={quoted}>'
     masked = _mask_inert(html)
     head = _HEAD_END.search(masked)
     limit = head.start() if head else len(html)
     ends = [e for s, e, _a in meta_tags(html) if s < limit]
     if ends:
-        return html[:ends[-1]] + "\n" + tag + html[ends[-1]:]
+        return html[:ends[-1]] + "\n" + new + html[ends[-1]:]
     if head:
-        return html[:head.start()] + tag + "\n" + html[head.start():]
-    return tag + "\n" + html
+        return html[:head.start()] + new + "\n" + html[head.start():]
+    return new + "\n" + html
