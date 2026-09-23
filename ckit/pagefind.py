@@ -58,6 +58,22 @@ def build(cmd: list[str], site: Path, glob: str, out: Path) -> bool:
     return (out / "pagefind.js").is_file()
 
 
+def _sweep() -> None:
+    """Remove this user's build directories whose server is gone (killed without its cleanup).
+    A directory names the process that owns it; a live server's, or another user's, is left."""
+    tmp = Path(tempfile.gettempdir())
+    for d in tmp.glob("ckit-pagefind-*-*"):
+        try:
+            pid = int(d.name.split("-")[2])
+            if not d.is_dir() or d.stat().st_uid != os.getuid() or pid == os.getpid():
+                continue
+            os.kill(pid, 0)  # alive: leave it
+        except ProcessLookupError:
+            shutil.rmtree(d, ignore_errors=True)
+        except (ValueError, IndexError, OSError, AttributeError):
+            continue
+
+
 class Index:
     """The index `ckit serve` keeps: built in a private temporary directory (mkdtemp — this
     process's, unguessable, 0700), swapped in whole, rebuilt when the committed catalog changes
@@ -87,9 +103,11 @@ class Index:
                 return
             self._building = True
         try:
+            if self._repo is None:
+                _sweep()
             self._repo = repo
             stamp = self._catalog_mtime()
-            out = Path(tempfile.mkdtemp(prefix="ckit-pagefind-"))
+            out = Path(tempfile.mkdtemp(prefix=f"ckit-pagefind-{os.getpid()}-"))
             if build(self.cmd, repo.root, f"{repo.content_name}/**/*.html", out):
                 gone, self.prev, self.dir = self.prev, self.dir, out
                 if gone:

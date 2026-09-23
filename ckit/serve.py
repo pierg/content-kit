@@ -394,7 +394,12 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
                     return
                 self.send_error(404, "Not found")
                 return
-            st = target.stat()
+            try:  # a file can go between finding it and reading it (a full-text rebuild swapping in)
+                st = target.stat()
+                data = target.read_bytes()  # HEAD too: its Content-Length is the file's
+            except OSError:
+                self.send_error(404, "Not found")
+                return
             etag = f'W/"{st.st_mtime_ns:x}-{st.st_size:x}"'
             ctype, _ = mimetypes.guess_type(str(target))
             ctype = ctype or "application/octet-stream"
@@ -408,7 +413,7 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
                 self.send_header("ETag", etag)
                 self.end_headers()
                 return
-            self._send(200, target.read_bytes(), ctype, body, etag=etag, modified=st.st_mtime)
+            self._send(200, data, ctype, body, etag=etag, modified=st.st_mtime)
 
     return Handler
 

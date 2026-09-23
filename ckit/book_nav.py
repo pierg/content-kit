@@ -133,38 +133,46 @@ def _catalog_entries(cat: object) -> dict[str, dict]:
     return out
 
 
-def _previous_catalog(repo: Repo) -> dict[str, dict]:
-    """The dates the catalog already carries: the file on disk, or — when it does not parse, as
-    after a merge conflict in it, the moment `ckit lint` is run to resolve one — the committed
-    one at HEAD, so resolving a conflict never re-dates the library from git history."""
+def _previous_catalogs(repo: Repo) -> list[dict[str, dict]]:
+    """The dates the catalog already carries: the file on disk — or, when it does not parse (a
+    merge conflict in it, the moment `ckit lint` is run to resolve one), both sides of the
+    conflict and then HEAD, so resolving a conflict never re-dates the library: a page kept from
+    either side keeps that side's dates."""
     p = repo.content / "catalog.json"
     try:
-        got = _catalog_entries(json.loads(p.read_text(encoding="utf-8")))
-        if got or p.read_text(encoding="utf-8").strip().startswith("{"):
-            return got
+        text = p.read_text(encoding="utf-8")
+        got = _catalog_entries(json.loads(text))
+        if got or text.strip().startswith("{"):
+            return [got]
     except (OSError, ValueError):
         pass
-    try:
-        r = subprocess.run(["git", "-C", str(repo.root), "show", f"HEAD:./{repo.rel(p)}"],
-                           capture_output=True, text=True, timeout=30)
-        return _catalog_entries(json.loads(r.stdout)) if r.returncode == 0 else {}
-    except (OSError, subprocess.SubprocessError, ValueError):
-        return {}
+    out: list[dict[str, dict]] = []
+    for rev in (":2:", ":3:", "HEAD:"):  # ours and theirs while a merge is unresolved, else HEAD
+        try:
+            r = subprocess.run(["git", "-C", str(repo.root), "show", f"{rev}./{repo.rel(p)}"],
+                               capture_output=True, text=True, timeout=30)
+            if r.returncode == 0:
+                out.append(_catalog_entries(json.loads(r.stdout)))
+        except (OSError, subprocess.SubprocessError, ValueError):
+            continue
+    return out
 
 
 def date_items(repo: Repo, entries: list[tuple[dict, list[Path]]]) -> None:
     """Stamp each catalog item with created / updated / sha (see the module docstring)."""
-    prev = _previous_catalog(repo)
+    prevs = _previous_catalogs(repo)
     hist: dict[str, tuple[str, str]] | None = None
     now = today()
     for item, files in entries:
         files = [f for f in files if f.is_file()]
         sha = _sha(files)
-        old = prev.get(item["href"])
-        if old and old.get("sha") == sha and old.get("created") and old.get("updated"):
-            created, updated = old["created"], old["updated"]
-        elif old and old.get("created"):
-            created, updated = old["created"], now
+        olds = [c[item["href"]] for c in prevs if item["href"] in c]
+        same = next((o for o in olds if o.get("sha") == sha and o.get("created") and o.get("updated")), None)
+        born = sorted(str(o["created"]) for o in olds if o.get("created"))
+        if same:
+            created, updated = same["created"], same["updated"]
+        elif born:
+            created, updated = born[0], now
         else:
             if hist is None:
                 hist = _git_history(repo)

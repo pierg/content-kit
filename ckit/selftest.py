@@ -831,6 +831,39 @@ def main(argv: list[str]) -> int:
                 if (one.get("created"), one.get("updated")) != ("2026-01-01", "2026-02-02"):
                     failures.append(f"a lint that resolves a conflicted catalog.json must keep the committed dates: {one}")
                 planted += 1
+                # two branches change one page; the merge conflicts; the page is taken from theirs —
+                # it keeps their dates (read from the conflict's stages), not today's
+                mtmp, mrepo = _scratch()
+
+                def g(*args, ok=True):
+                    r = subprocess.run(["git", "-C", str(mrepo.root), *args], env=gitenv, capture_output=True, text=True)
+                    if ok and r.returncode != 0:
+                        raise RuntimeError(f"git {' '.join(args)}: {r.stderr.strip()}")
+                    return r
+
+                def stamp(day: str, text: str) -> None:
+                    os.environ["CKIT_TODAY"] = day
+                    _write(mrepo, "notes/m.html", _page("M", f"<p>{text}</p>"))
+                    _lint(mrepo)
+
+                stamp("2026-01-01", "base")
+                g("init", "-q"); g("add", "-A"); g("commit", "-q", "-m", "base")
+                g("checkout", "-q", "-b", "theirs")
+                stamp("2026-03-03", "their revision")
+                g("commit", "-q", "-am", "theirs")
+                g("checkout", "-q", "-")
+                stamp("2026-02-02", "our revision")
+                g("commit", "-q", "-am", "ours")
+                if g("merge", "--no-edit", "theirs", ok=False).returncode == 0:
+                    failures.append("the merge fixture must conflict (both sides changed one page)")
+                g("checkout", "--theirs", "content/notes/m.html")
+                os.environ["CKIT_TODAY"] = "2026-04-04"
+                _lint(mrepo)
+                m = next(n for n in json.loads((mrepo.content / "catalog.json").read_text())["notes"] if n["slug"] == "m")
+                if (m.get("created"), m.get("updated")) != ("2026-01-01", "2026-03-03"):
+                    failures.append(f"a page kept from the other side of a conflicted merge keeps that side's dates: {m}")
+                planted += 1
+                shutil.rmtree(mtmp, ignore_errors=True)
 
             # --- files are revalidated (Last-Modified → 304), generated pages never stored, the
             #     home page is built from the catalog, and /shell/pagefind.json says whether full
