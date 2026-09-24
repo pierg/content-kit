@@ -26,16 +26,19 @@
 .fchip .n { color: var(--ink-3); margin-left: 4px; font-variant-numeric: tabular-nums; }
 .rv-meta { font: 13px/1.4 var(--font-sans); color: var(--ink-3); margin: 6px 0 18px; }
 .rv-group { margin: 22px 0 10px; }
-.rv-group h2 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 17px; margin: 0 0 6px;
-               padding-bottom: 6px; border-bottom: 1.5px solid var(--baseline); }
-.rv-group h2 a { color: var(--ink-1); text-decoration: none; }
-.rv-group h2 a:hover { color: var(--link); }
-.rv-group h2 .n { font: 500 12px var(--font-mono); color: var(--ink-3); }
-.rv-group h2 .act { margin-left: auto; }
+.rv-ghead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 6px; padding-bottom: 6px;
+            border-bottom: 1.5px solid var(--baseline); }
+.rv-ghead h2 { font-size: 17px; margin: 0; }
+.rv-ghead h2 a { color: var(--ink-1); text-decoration: none; }
+.rv-ghead h2 a:hover { color: var(--link); }
+.rv-ghead .n { font: 500 12px var(--font-mono); color: var(--ink-3); }
+.rv-ghead .act { margin-left: auto; }
+.rv-meta:focus { outline: none; }
 .rv-btn { font: 700 11.5px var(--font-mono); padding: 4px 9px; border-radius: 6px; border: 1.5px solid var(--baseline);
           background: var(--page); color: var(--ink-2); cursor: pointer; }
 .rv-btn:hover, .rv-btn.primary { border-color: var(--violet); color: var(--violet); }
 .rv-btn:disabled { opacity: 0.5; cursor: default; }
+@media (pointer: coarse) { .rv-btn, .fchip { padding: 9px 12px; } }
 .rv-item { border: 1px solid var(--grid); border-left: 3px solid var(--amber); border-radius: 0 8px 8px 0; background: var(--surface-1);
            padding: 8px 12px; margin: 0 0 8px; font: 13.5px/1.5 var(--font-sans); }
 .rv-item.noted { border-left-color: var(--azure); border-left-style: dotted; }
@@ -74,9 +77,9 @@
 <p class="sub">Every annotation thread in the library: the questions waiting for an answer, the passages an agent flagged as written beyond its source, and what was settled. Jump to a thread on its page to reply, keep, decline or ask for a change; keep a whole group at once from here.</p>
 
 <div class="rv-wrap">
-  <div class="rv-row"><span class="rv-label">Show</span><span id="states"></span></div>
-  <div class="rv-row"><span class="rv-label">Group by</span><span id="modes"></span></div>
-  <div class="rv-meta" id="meta">Loading…</div>
+  <div class="rv-row" role="group" aria-labelledby="rv-show"><span class="rv-label" id="rv-show">Show</span><span id="states"></span></div>
+  <div class="rv-row" role="group" aria-labelledby="rv-by"><span class="rv-label" id="rv-by">Group by</span><span id="modes"></span></div>
+  <div class="rv-meta" id="meta" role="status" tabindex="-1">Loading…</div>
   <div id="groups" data-norefs></div>
 </div>
 
@@ -90,7 +93,7 @@
   var view = { state: url.searchParams.get("state") || "live", mode: url.searchParams.get("by") || "page" };
   if (!STATES.some(function (s) { return s[0] === view.state; })) view.state = "live";
   if (!MODES.some(function (m) { return m[0] === view.mode; })) view.mode = "page";
-  var data = { threads: [], counts: {} }, live = false;
+  var data = { threads: [], counts: {} }, live = false, said = "";
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function u(href) { return window.hbUrl ? window.hbUrl(href) : href; }
@@ -153,10 +156,10 @@
     document.getElementById("states").innerHTML = STATES.map(function (s) {
       var n = s[0] === "live" ? (c.open || 0) + (c.noted || 0) : s[0] === "closed" ? (c.addressed || 0) + (c.declined || 0) + (c.withdrawn || 0)
             : s[0] === "all" ? data.threads.length : (c[s[0]] || 0);
-      return '<button type="button" class="fchip' + (view.state === s[0] ? " on" : "") + '" data-state="' + s[0] + '">' + esc(s[1]) + '<span class="n">' + n + "</span></button>";
+      return '<button type="button" class="fchip' + (view.state === s[0] ? " on" : "") + '" aria-pressed="' + (view.state === s[0]) + '" data-state="' + s[0] + '">' + esc(s[1]) + '<span class="n">' + n + "</span></button>";
     }).join(" ");
     document.getElementById("modes").innerHTML = MODES.map(function (m) {
-      return '<button type="button" class="fchip' + (view.mode === m[0] ? " on" : "") + '" data-mode="' + m[0] + '">' + esc(m[1]) + "</button>";
+      return '<button type="button" class="fchip' + (view.mode === m[0] ? " on" : "") + '" aria-pressed="' + (view.mode === m[0]) + '" data-mode="' + m[0] + '">' + esc(m[1]) + "</button>";
     }).join(" ");
     var rows = data.threads.filter(wanted);
     var groups = {}, order = [];
@@ -168,19 +171,25 @@
     order.sort(function (a, b) { return groups[a].title.localeCompare(groups[b].title); });
     var meta = rows.length + " thread" + (rows.length === 1 ? "" : "s") + " shown · " + (c.open || 0) + " waiting · " + (c.noted || 0) + " noted";
     if (!live) meta += " · read-only here: keep, reply and decline on the served library";
-    document.getElementById("meta").textContent = meta;
+    document.getElementById("meta").textContent = (said ? said + " " : "") + meta;
+    said = "";
     var out = order.map(function (k) {
       var g = groups[k];
       var liveN = g.items.filter(isLive).length;
-      var head = '<h2>' + (g.page ? '<a href="' + esc(u(g.page)) + '">' + esc(g.title) + "</a>" : esc(g.title)) +
+      var head = '<div class="rv-ghead"><h2>' + (g.page ? '<a href="' + esc(u(g.page)) + '">' + esc(g.title) + "</a>" : esc(g.title)) + "</h2>" +
         '<span class="n">' + g.items.length + "</span>" +
-        (live && liveN ? '<span class="act"><button type="button" class="rv-btn primary" data-keep-group="' + esc(k) + '" title="Close every waiting or noted thread in this group as kept">Keep all ' + liveN + "</button></span>" : "") + "</h2>";
+        (live && liveN ? '<span class="act"><button type="button" class="rv-btn primary" data-keep-group="' + esc(k) + '" title="Close every waiting or noted thread in this group as kept">Keep all ' + liveN + "</button></span>" : "") + "</div>";
       return '<div class="rv-group" data-group="' + esc(k) + '">' + head + g.items.map(item).join("") + "</div>";
     });
     document.getElementById("groups").innerHTML = out.length ? out.join("") :
       '<div class="empty">Nothing ' + (view.state === "live" ? "waiting or noted" : "here") + ".</div>";
     if (!data.threads.length) document.getElementById("groups").innerHTML +=
       '<div class="hint">Threads are left on a page with ✎ Annotate, or by an agent flagging what it wrote beyond its source.</div>';
+  }
+
+  function refocus(sel) {  // a filter rebuilt under the reader's focus: the focus stays on it
+    var b = document.querySelector("#states " + sel + ", #modes " + sel);
+    if (b) b.focus();
   }
 
   function keep(threads, btn) {
@@ -191,13 +200,18 @@
     threads.forEach(function (t) {
       chain = chain.then(function () { return post({ op: "reply", page: t.page, id: t.id, author: who, body: "Kept.", state: "addressed" }); });
     });
-    chain.then(load).catch(function (ex) { alert(ex.message); btn.disabled = false; });
+    chain.then(function () {
+      said = "Kept " + threads.length + " thread" + (threads.length === 1 ? "" : "s") + ".";
+      return load();
+    }).then(function () {  // the button went with its row: the focus waits on the status line
+      if (!document.activeElement || document.activeElement === document.body) document.getElementById("meta").focus();
+    }).catch(function (ex) { alert(ex.message); btn.disabled = false; });
   }
   document.addEventListener("click", function (e) {
     var b = e.target.closest("[data-state], [data-mode], [data-keep], [data-keep-group]");
     if (!b) return;
-    if (b.dataset.state) { view.state = b.dataset.state; pushUrl(); render(); return; }
-    if (b.dataset.mode) { view.mode = b.dataset.mode; pushUrl(); render(); return; }
+    if (b.dataset.state) { view.state = b.dataset.state; pushUrl(); render(); refocus('[data-state="' + view.state + '"]'); return; }
+    if (b.dataset.mode) { view.mode = b.dataset.mode; pushUrl(); render(); refocus('[data-mode="' + view.mode + '"]'); return; }
     if (b.dataset.keep) {
       var t = data.threads.filter(function (x) { return x.id === b.dataset.keep && x.page === b.dataset.page; })[0];
       if (t) keep([t], b);
