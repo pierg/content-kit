@@ -1,93 +1,41 @@
-<svg width="880" height="560" viewBox="0 0 880 560" role="img" xmlns="http://www.w3.org/2000/svg">
+<svg width="800" height="300" viewBox="0 0 800 300" role="img" xmlns="http://www.w3.org/2000/svg">
   <style>text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:#1d1b17}.t2{fill:#57524a}.t3{fill:#8b857a}</style>
-<rect width="880" height="560" rx="14" fill="#faf9f6"/>
+<rect width="800" height="300" rx="14" fill="#faf9f6"/>
 <defs>
-    <marker id="hs-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 z" style="fill: #57524a"/>
+    <marker id="hs-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: #2563eb"/>
     </marker>
     <marker id="hs-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" style="fill: #0f766e"/>
-    </marker>
-    <marker id="hs-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 z" style="fill: #2563eb"/>
     </marker>
     <marker id="hs-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" style="fill: #d97706"/>
     </marker>
   </defs>
-  <rect x="20" y="20" width="560" height="150" rx="14" style="fill: #f3f1ec; stroke: #4f46e5; stroke-width: 2.5"/>
-  <text x="34" y="42" style="fill: #4f46e5; font-weight: 700; font-size: 12px">upstream — github.com/pierg/content-kit, one repository</text>
-  <rect x="36" y="58" width="250" height="96" rx="10" style="fill: #ffffff; stroke: #2563eb; stroke-width: 2"/>
-  <text x="161" y="80" text-anchor="middle" style="fill: #2563eb; font-weight: 700; font-size: 12px">the engine · ckit/</text>
-  <text x="161" y="97" text-anchor="middle" class="t2" style="font-size: 10px">lint · check · serve · annotate · indices</text>
-  <text x="161" y="112" text-anchor="middle" class="t3" style="font-size: 9.5px">code: installed once per machine</text>
-  <text x="161" y="127" text-anchor="middle" class="t3" style="font-size: 9.5px">never copied into a repo</text>
-  <text x="161" y="142" text-anchor="middle" class="t3" style="font-size: 9.5px">a release, or a checkout on PATH</text>
-  <rect x="314" y="58" width="250" height="96" rx="10" style="fill: #ffffff; stroke: #0f766e; stroke-width: 2"/>
-  <text x="439" y="80" text-anchor="middle" style="fill: #0f766e; font-weight: 700; font-size: 12px">the kit · the rules</text>
-  <text x="439" y="97" text-anchor="middle" class="t2" style="font-size: 10px">shell/ · genres/ · craft/ · skills/</text>
-  <text x="439" y="112" text-anchor="middle" class="t3" style="font-size: 9.5px">/present · /address · /curate</text>
-  <text x="439" y="127" text-anchor="middle" class="t3" style="font-size: 9.5px">copied into each repo, readable there</text>
-  <text x="439" y="142" text-anchor="middle" class="t3" style="font-size: 9.5px">changed only here, then re-vendored</text>
-  <rect x="610" y="20" width="250" height="150" rx="14" style="fill: #f3f1ec; stroke: #d97706; stroke-width: 2"/>
-  <text x="624" y="42" style="fill: #d97706; font-weight: 700; font-size: 12px">a layer — lab-kit, folio</text>
-  <text x="624" y="62" class="t2" style="font-size: 10px">its own rules, beside the kit:</text>
-  <text x="624" y="77" class="t3" style="font-size: 9.5px">kit/&lt;layer&gt;/: tools · genres · skills · pages</text>
-  <text x="624" y="97" class="t2" style="font-size: 10px">registered in kit.json through</text>
-  <text x="624" y="112" class="t3" style="font-size: 9.5px">extension points: genres · checks ·</text>
-  <text x="624" y="127" class="t3" style="font-size: 9.5px">generators · shell pages · theme · links</text>
-  <text x="624" y="150" class="t3" style="font-size: 9.5px">the engine knows no layer</text>
-  <rect x="20" y="205" width="280" height="100" rx="12" style="fill: #ffffff; stroke: #2563eb; stroke-width: 2"/>
-  <text x="34" y="227" style="fill: #2563eb; font-weight: 700; font-size: 12px">on each machine, once</text>
-  <text x="34" y="245" class="t2" style="font-size: 10px">uv tool install …@v0.5, or a checkout's bin/ckit</text>
-  <text x="34" y="262" class="t3" style="font-size: 9.5px">one ckit serves every repo on the machine</text>
-  <text x="34" y="277" class="t3" style="font-size: 9.5px">upgrading it changes no repo until that repo</text>
-  <text x="34" y="292" class="t3" style="font-size: 9.5px">moves its pin on purpose</text>
-  <path d="M161 154 L161 203" style="stroke: #2563eb; stroke-width: 1.5" marker-end="url(#hs-b)"/>
-  <text x="168" y="185" class="t3" style="font-size: 9.5px">installs</text>
-  <rect x="560" y="205" width="300" height="120" rx="12" style="fill: #ffffff; stroke: #dc2626; stroke-width: 2"/>
-  <text x="574" y="227" style="fill: #dc2626; font-weight: 700; font-size: 12px">kept current, on purpose</text>
-  <text x="574" y="245" class="t2" style="font-size: 10px">make check: kit/ must hash to kit/PIN, and the</text>
-  <text x="574" y="259" class="t2" style="font-size: 10px">engine must be the version kit.json pins</text>
-  <text x="574" y="277" class="t3" style="font-size: 9.5px">make kit-sync: re-vendor from the pinned sources,</text>
-  <text x="574" y="291" class="t3" style="font-size: 9.5px">then re-pin; git shows exactly what changed</text>
-  <text x="574" y="311" class="t3" style="font-size: 9.5px">drift fails loud; a fix goes upstream, then to each repo</text>
-  <path d="M380 154 L380 343" style="stroke: #0f766e; stroke-width: 1.5" marker-end="url(#hs-t)"/>
-  <text x="372" y="336" text-anchor="end" class="t3" style="font-size: 9.5px">copies into kit/ and pins: ckit init · make kit-sync</text>
-  <path d="M735 170 L735 190 L500 190 L500 343" style="fill: none; stroke: #d97706; stroke-width: 1.5; stroke-dasharray: 5 3" marker-end="url(#hs-m)"/>
-  <text x="492" y="250" text-anchor="end" class="t3" style="font-size: 9px">a layer's install.sh</text>
-  <text x="492" y="262" text-anchor="end" class="t3" style="font-size: 9px">adds kit/&lt;layer&gt;/,</text>
-  <text x="492" y="274" text-anchor="end" class="t3" style="font-size: 9px">registers kit.json</text>
-  <path d="M150 345 L730 345" style="stroke: #0f766e; stroke-width: 1.5"/>
-  <path d="M150 345 L150 378" style="stroke: #0f766e; stroke-width: 1.5" marker-end="url(#hs-t)"/>
-  <path d="M440 345 L440 378" style="stroke: #0f766e; stroke-width: 1.5" marker-end="url(#hs-t)"/>
-  <path d="M730 345 L730 378" style="stroke: #0f766e; stroke-width: 1.5" marker-end="url(#hs-t)"/>
-  <rect x="20" y="380" width="260" height="140" rx="12" style="fill: #ffffff; stroke: #0f766e; stroke-width: 2"/>
-  <text x="34" y="402" style="fill: #0f766e; font-weight: 700; font-size: 12px">a lab (lab-kit)</text>
-  <text x="34" y="422" class="t2" style="font-size: 9.5px">kit/  shell · genres · craft · skills — the copy</text>
-  <text x="34" y="437" class="t3" style="font-size: 9.5px">kit/PIN  source@commit · hash of the tree</text>
-  <text x="34" y="452" class="t3" style="font-size: 9.5px">kit.json  the engine pin · extensions</text>
-  <text x="34" y="467" class="t3" style="font-size: 9.5px">.claude/skills → kit/skills (symlinks)</text>
-  <text x="34" y="482" class="t3" style="font-size: 9.5px">content/  pages · indices · sidecars</text>
-  <text x="34" y="497" class="t2" style="font-size: 9.5px">kit/lab/  the record ladder and its checks</text>
-  <text x="34" y="512" class="t3" style="font-size: 9.5px">make check · make docs · make kit-sync</text>
-  <rect x="310" y="380" width="260" height="140" rx="12" style="fill: #ffffff; stroke: #0f766e; stroke-width: 2"/>
-  <text x="324" y="402" style="fill: #0f766e; font-weight: 700; font-size: 12px">a folio</text>
-  <text x="324" y="422" class="t2" style="font-size: 9.5px">kit/  shell · genres · craft · skills — the copy</text>
-  <text x="324" y="437" class="t3" style="font-size: 9.5px">kit/PIN  source@commit · hash of the tree</text>
-  <text x="324" y="452" class="t3" style="font-size: 9.5px">kit.json  the engine pin · extensions</text>
-  <text x="324" y="467" class="t3" style="font-size: 9.5px">.claude/skills → kit/skills (symlinks)</text>
-  <text x="324" y="482" class="t3" style="font-size: 9.5px">content/  pages · indices · sidecars</text>
-  <text x="324" y="497" class="t2" style="font-size: 9.5px">kit/folio/  topics · journal · /ingest · /quiz</text>
-  <text x="324" y="512" class="t3" style="font-size: 9.5px">make check · make docs · make kit-sync</text>
-  <rect x="600" y="380" width="260" height="140" rx="12" style="fill: #ffffff; stroke: #0f766e; stroke-width: 2"/>
-  <text x="614" y="402" style="fill: #0f766e; font-weight: 700; font-size: 12px">a docs repo</text>
-  <text x="614" y="422" class="t2" style="font-size: 9.5px">kit/  shell · genres · craft · skills — the copy</text>
-  <text x="614" y="437" class="t3" style="font-size: 9.5px">kit/PIN  source@commit · hash of the tree</text>
-  <text x="614" y="452" class="t3" style="font-size: 9.5px">kit.json  the engine pin · extensions</text>
-  <text x="614" y="467" class="t3" style="font-size: 9.5px">.claude/skills → kit/skills (symlinks)</text>
-  <text x="614" y="482" class="t3" style="font-size: 9.5px">content/  pages · indices · sidecars</text>
-  <text x="614" y="497" class="t2" style="font-size: 9.5px">no layer: the core genres alone</text>
-  <text x="614" y="512" class="t3" style="font-size: 9.5px">make check · make docs · make kit-sync</text>
-  <text x="20" y="548" class="t3" style="font-size: 9.5px">one engine, many repos, no copied code; the rules travel as pinned copies, and every gate run checks the pins</text>
+  <rect x="20" y="16" width="400" height="108" rx="14" style="fill: #f3f1ec; stroke: #4f46e5; stroke-width: 2"/>
+  <text x="34" y="38" style="font-size: 12px; font-weight: 700; fill: #4f46e5">content-kit, upstream</text>
+  <rect x="36" y="50" width="176" height="60" rx="10" style="fill: #ffffff; stroke: #2563eb; stroke-width: 2"/>
+  <text x="124" y="74" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: #2563eb">the engine</text>
+  <text x="124" y="93" text-anchor="middle" class="t2" style="font-size: 11px">code: check, serve, lint</text>
+  <rect x="228" y="50" width="176" height="60" rx="10" style="fill: #ffffff; stroke: #0f766e; stroke-width: 2"/>
+  <text x="316" y="74" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: #0f766e">the kit</text>
+  <text x="316" y="93" text-anchor="middle" class="t2" style="font-size: 11px">rules: shell, genres, skills</text>
+  <rect x="580" y="50" width="200" height="60" rx="10" style="fill: #ffffff; stroke: #d97706; stroke-width: 2"/>
+  <text x="680" y="74" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: #d97706">a layer</text>
+  <text x="680" y="93" text-anchor="middle" class="t2" style="font-size: 11px">lab-kit, folio: more rules</text>
+  <path d="M124 110 L124 220" style="stroke: #2563eb; stroke-width: 1.5" marker-end="url(#hs-b)"/>
+  <text x="132" y="170" class="t3" style="font-size: 11px">installs</text>
+  <path d="M316 110 L316 204" style="stroke: #0f766e; stroke-width: 1.5" marker-end="url(#hs-t)"/>
+  <text x="324" y="160" class="t3" style="font-size: 11px">copies</text>
+  <path d="M680 110 L680 246 L570 246" style="fill: none; stroke: #d97706; stroke-width: 1.5" marker-end="url(#hs-m)"/>
+  <text x="688" y="180" class="t3" style="font-size: 11px">adds</text>
+  <rect x="36" y="222" width="176" height="60" rx="10" style="fill: #ffffff; stroke: #2563eb; stroke-width: 2"/>
+  <text x="124" y="246" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: #2563eb">this machine</text>
+  <text x="124" y="265" text-anchor="middle" class="t2" style="font-size: 11px">ckit, installed once</text>
+  <path d="M212 252 L266 252" style="stroke: #2563eb; stroke-width: 1.5" marker-end="url(#hs-b)"/>
+  <text x="239" y="244" text-anchor="middle" class="t3" style="font-size: 11px">checks</text>
+  <rect x="268" y="206" width="300" height="80" rx="12" style="fill: #ffffff; stroke: #0f766e; stroke-width: 2"/>
+  <text x="418" y="230" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: #0f766e">each repository</text>
+  <text x="418" y="250" text-anchor="middle" class="t2" style="font-size: 11px">kit/ — the rules, copied and pinned</text>
+  <text x="418" y="268" text-anchor="middle" class="t2" style="font-size: 11px">kit.json — the engine it expects</text>
 </svg>

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Put this checkout's `ckit` on PATH — for working on the kit itself. Users install a release:
 #
-#   uv tool install git+https://github.com/pierg/content-kit@v0.4.0
+#   uv tool install git+https://github.com/pierg/content-kit@v0.5.0
 #
 # Here, `git pull` in this checkout is the upgrade, and each repo's kit.json pin decides whether
 # that upgrade is accepted (`ckit check` fails loud on a mismatch).

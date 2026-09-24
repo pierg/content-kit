@@ -1,4 +1,4 @@
-# Comparison — options, before/after, ours vs theirs — LIVE
+# Comparison — options, before/after, ours vs theirs
 
 **When.** The reader must hold two or more things side by side and see where they differ. If they differ on one axis, that is a sentence, not a comparison.
 

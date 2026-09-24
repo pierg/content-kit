@@ -19,8 +19,8 @@ USAGE = f"""ckit {__version__} — serve, lint, navigate, scaffold and annotate 
   ckit tags [rename <old> <new>]     the tags and their pages; spellings that look alike
   ckit mv <page> <to>                move a page: links rewritten, sidecar and dates kept, redirected
   ckit rm <page> --to <page>         retire a page into another, its links and address with it
-  ckit unwrap [paths]                join hard-wrapped prose: one paragraph per line
-  ckit serve [--host --port]         foreground server
+  ckit unwrap [paths] [--status]     join hard-wrapped prose; --status drops a stated LIVE (the default)
+  ckit serve [--host --port --expose] foreground server, on 127.0.0.1 unless --expose
   ckit up | down | status            background server
   ckit export [--out dist] [--base /] the site as static files (--base /<repo>/ for a project site)
   ckit annotations <verb> …          list · show · add · reply · state · relabel · resolve · prune · check
@@ -182,12 +182,16 @@ def _unwrap(argv: list[str]) -> int:
 
     ap = argparse.ArgumentParser(prog="ckit unwrap", description="join hard-wrapped prose")
     ap.add_argument("paths", nargs="*", type=Path, help="pages or directories (default: every page)")
+    ap.add_argument("--status", action="store_true",
+                    help="also drop a stated LIVE from each opening line: it is the default")
     args = ap.parse_args(argv)
-    joined, pages = prose.unwrap_repo(load_repo(), args.paths)
+    joined, pages, dropped = prose.unwrap_repo(load_repo(), args.paths, status=args.status)
     for rel, n in pages:
         print(f"  {rel}: {n}")
     print(f"joined {joined} hard-wrapped element(s) in {len(pages)} page(s)" if joined
           else "no hard-wrapped prose")
+    if args.status:
+        print(f"dropped a stated LIVE from {len(dropped)} page(s)" if dropped else "no stated LIVE")
     return 0
 
 

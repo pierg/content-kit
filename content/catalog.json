@@ -69,7 +69,7 @@
       ],
       "created": "2026-09-22",
       "updated": "2026-09-24",
-      "sha": "9d1b08c50a2f"
+      "sha": "42b93c1111ae"
     }
   ],
   "projects": [],
@@ -85,7 +85,7 @@
       ],
       "created": "2026-09-22",
       "updated": "2026-09-24",
-      "sha": "24be333b9630"
+      "sha": "79cb32a8c990"
     }
   ],
   "related": [
@@ -102,8 +102,8 @@
         "web-annotation"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "51ea7ce4e43a"
+      "updated": "2026-09-24",
+      "sha": "9a8bc2eaba67"
     }
   ],
   "entries": [
@@ -119,8 +119,8 @@
         "design-decision"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "8c35760faa1e"
+      "updated": "2026-09-24",
+      "sha": "539e03f0da11"
     }
   ],
   "notes": [
@@ -136,7 +136,7 @@
       ],
       "created": "2026-09-22",
       "updated": "2026-09-23",
-      "sha": "ccf2b7398da1"
+      "sha": "3cb6712e1baf"
     },
     {
       "slug": "the-placement-rule",
@@ -151,7 +151,7 @@
       ],
       "created": "2026-09-22",
       "updated": "2026-09-23",
-      "sha": "25d0bbef9c0c"
+      "sha": "5eb1c8da69a3"
     },
     {
       "slug": "twins-drift",
@@ -165,7 +165,7 @@
       ],
       "created": "2026-09-22",
       "updated": "2026-09-23",
-      "sha": "247f3d9eed09"
+      "sha": "6890d399db7c"
     }
   ],
   "concepts": [
@@ -181,7 +181,7 @@
       ],
       "created": "2026-09-22",
       "updated": "2026-09-24",
-      "sha": "cb9c925dac45"
+      "sha": "5652e61ed484"
     },
     {
       "slug": "chronicle",
@@ -194,8 +194,8 @@
         "generated-index"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "6b15530d77fb"
+      "updated": "2026-09-24",
+      "sha": "87305de410cf"
     },
     {
       "slug": "extension-point",
@@ -208,8 +208,8 @@
         "plugin"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "02e38fb1176e"
+      "updated": "2026-09-24",
+      "sha": "02bcbcd2b8aa"
     },
     {
       "slug": "gate",
@@ -222,8 +222,8 @@
         "ci"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-22",
-      "sha": "bf36e19296f5"
+      "updated": "2026-09-24",
+      "sha": "4d358ed326a3"
     },
     {
       "slug": "genre",
@@ -236,8 +236,8 @@
         "taxonomy"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-22",
-      "sha": "2aea4df745aa"
+      "updated": "2026-09-24",
+      "sha": "0f7df2e6e0d4"
     },
     {
       "slug": "record",
@@ -250,8 +250,8 @@
         "markdown"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-22",
-      "sha": "cf03661b8c05"
+      "updated": "2026-09-24",
+      "sha": "bf6e36aff595"
     },
     {
       "slug": "skeleton",
@@ -263,8 +263,8 @@
         "ckit-new"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "e85f5ee44205"
+      "updated": "2026-09-24",
+      "sha": "951cdd78c457"
     }
   ],
   "record": []

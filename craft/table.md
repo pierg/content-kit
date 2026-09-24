@@ -1,4 +1,4 @@
-# Table — records a reader scans, not reads — LIVE
+# Table — records a reader scans, not reads
 
 **When.** Many things with the same fields: results per benchmark, works in a cluster, milestones with dates. If there are two rows, it is a comparison; if the fields differ per row, it is a list.
 

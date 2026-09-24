@@ -1,6 +1,6 @@
 """Start / stop / status a repo's reader server in the background.
 
-    ckit up [--host H] [--port P]     # background; URL from kit.json unless overridden
+    ckit up [--host H] [--port P] [--expose]   # background; URL from kit.json unless overridden
     ckit down
     ckit status
 
@@ -81,7 +81,9 @@ def _free_port(port: int) -> None:
         time.sleep(0.1)
 
 
-def up(repo: Repo, host: str | None, port: int | None) -> int:
+def up(repo: Repo, host: str | None, port: int | None, expose: bool = False) -> int:
+    from .serve import refuse_host
+    refuse_host(host or repo.cfg["host"], expose, "--host" if host else "kit.json host")
     pid = _pid(repo)
     if pid:
         print(f"already running at {_url(repo, host, port)}  (pid {pid})")
@@ -92,6 +94,8 @@ def up(repo: Repo, host: str | None, port: int | None) -> int:
         cmd += ["--host", host]
     if port:
         cmd += ["--port", str(port)]
+    if expose:
+        cmd += ["--expose"]
     log = open(repo.root / LOGFILE, "ab")
     proc = subprocess.Popen(cmd, stdout=log, stderr=log, stdin=subprocess.DEVNULL,
                             start_new_session=True, cwd=repo.root)
@@ -129,11 +133,12 @@ def main(argv: list[str], verb: str) -> int:
     ap = argparse.ArgumentParser(prog=f"ckit {verb}")
     ap.add_argument("--host")
     ap.add_argument("--port", type=int)
+    ap.add_argument("--expose", action="store_true", help="allow a host that is not this machine")
     args = ap.parse_args(argv)
     repo = load_repo()
     if verb == "up":
         return up(repo, args.host or os.environ.get("HOST") or None,
-                  args.port or (int(os.environ["PORT"]) if os.environ.get("PORT") else None))
+                  args.port or (int(os.environ["PORT"]) if os.environ.get("PORT") else None), args.expose)
     if verb == "down":
         return down(repo)
     return status(repo)

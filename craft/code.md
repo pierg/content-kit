@@ -1,4 +1,4 @@
-# Code — source, patches, listings walked through — LIVE
+# Code — source, patches, listings walked through
 
 **When.** The exact text matters: a lemma as written, a config as committed, a command as run. If only the idea matters, it is prose with `<code>` spans.
 

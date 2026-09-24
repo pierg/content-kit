@@ -1,10 +1,10 @@
-# Genres and voice — LIVE
+# Genres and voice
 
 Where a page lives is its genre. A genre is a **structure** (the path, the skeleton, the shape) and a **voice** (the register, the assumed reader, the moves that are forbidden). The structure was always here; the voice is what makes a concept page read like a definition and a hub read like a map, whoever wrote them.
 
 Every rule below names what checks it. A rule nothing checks is a suggestion, and suggestions drift — this repo's own pages proved it. The machine spec is `genres.json` beside this file (the engine's copy is authoritative; this one is vendored for reading). A repo extends or overrides it under `genres` in `kit.json`, same shape, deep-merged per genre.
 
-**Every genre:** the first `<p class="sub">` declares the page's status — LIVE · HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT — so a reader can tell in one line whether it is still true. *Checked: `status`.*
+**Every genre:** a page that is not current says so at the head of its first `<p class="sub">` — `<b>Status: DRAFT</b> —`, or HISTORICAL · PARKED · RETIRED · FROZEN — so a reader can tell in one line; a page that states nothing is LIVE, the default. *Checked: `status` (a stated word is one of these).*
 
 ## note — `content/notes/<slug>.html`
 

@@ -40,6 +40,10 @@
                             U+2212, U+2215, U+FEFF, U+FFFD; }
 
 html:has(> body.hb) { margin: 0; background: #faf9f6; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* the reader's type size scales every rem: the text, the measure and the wide column with it, so a
+   figure or a table keeps its proportion to the prose; the chrome is sized in px and stays put */
+html[data-size="small"]:has(> body.hb) { font-size: 93.75%; }
+html[data-size="large"]:has(> body.hb) { font-size: 112.5%; }
 html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 @media (prefers-color-scheme: dark) { html:not([data-theme="light"]):has(> body.hb) { background: #131312; } }
 
@@ -80,6 +84,8 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
   --gutter: 40px;
 }
 .hb[data-hb-font="sans"], :root[data-font="sans"] .hb { --font-body: var(--font-sans); }
+:root[data-measure="narrow"] .hb { --measure: 32rem; }
+:root[data-measure="wide"] .hb { --measure: 44rem; }
 
 /* dark — by the system's preference, or by the reader's choice (html[data-theme]) */
 :root[data-theme="dark"] .hb {
@@ -152,14 +158,14 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb code { font-family: var(--font-mono); font-size: 0.84em; background: var(--surface-2);
            border: 1px solid var(--grid); border-radius: 5px; padding: 0.08em 0.36em; }
 .hb pre { background: var(--surface-2); border: 1px solid var(--grid); border-radius: 10px;
-          padding: 14px 16px; overflow-x: auto; font-size: 13.5px; line-height: 1.55; margin: 1.3em 0; }
+          padding: 14px 16px; overflow-x: auto; font-size: .84375rem; line-height: 1.55; margin: 1.3em 0; }
 .hb pre code { border: 0; background: none; padding: 0; font-size: inherit; }
-.hb table { border-collapse: collapse; width: 100%; margin: 1.3em 0; font: 14.5px/1.5 var(--font-sans);
+.hb table { border-collapse: collapse; width: 100%; margin: 1.3em 0; font: .90625rem/1.5 var(--font-sans);
             font-variant-numeric: tabular-nums; }
-.hb th { text-align: left; color: var(--ink-2); font-weight: 600; font-size: 13px;
+.hb th { text-align: left; color: var(--ink-2); font-weight: 600; font-size: .8125rem;
          border-bottom: 1px solid var(--baseline); padding: 8px 12px 8px 0; }
 .hb td { border-bottom: 1px solid var(--grid); padding: 9px 12px 9px 0; vertical-align: top; }
-.hb .mono { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.9; }
+.hb .mono { font-family: var(--font-mono); font-size: .78125rem; line-height: 1.9; }
 
 /* the opening line: a lede, with the status as a pill (lib.js marks the <b>Status: …</b>) */
 .hb main > h1 + p.sub, .hb main > p.sub:first-of-type { font-size: 1.14rem; line-height: 1.55; color: var(--ink-2);
@@ -178,7 +184,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
              border-radius: 14px; padding: 18px 18px 12px; }
 .hb figure img { max-width: 100%; border-radius: 6px; display: block; margin: 0 auto; }
 .hb figure > svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-.hb figcaption { color: var(--ink-2); font: 13.5px/1.55 var(--font-sans); margin-top: 10px; }
+.hb figcaption { color: var(--ink-2); font: .84375rem/1.55 var(--font-sans); margin-top: 10px; }
 .hb svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-1); }
 .hb svg .t2 { fill: var(--ink-2); } .hb svg .t3 { fill: var(--ink-3); }
 
@@ -193,11 +199,11 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb .law { font-weight: 700; color: var(--violet); }
 .hb .q { color: var(--ink-2); font-style: italic; border-left: 3px solid var(--baseline);
          padding: 2px 14px; margin-top: 8px; margin-bottom: 16px; }
-.hb .anchors { color: var(--ink-3); font: 13px/1.55 var(--font-sans); border-top: 1px dashed var(--grid);
+.hb .anchors { color: var(--ink-3); font: .8125rem/1.55 var(--font-sans); border-top: 1px dashed var(--grid);
                padding-top: 10px; margin-top: 2em; }
 .hb .idx { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px;
            padding: 14px 18px; margin: 1.4em 0; font-family: var(--font-sans); font-size: 0.9rem; }
-.hb .idx table { font-size: 12.5px; margin: 8px 0; }
+.hb .idx table { font-size: .78125rem; margin: 8px 0; }
 .hb .idx td, .hb .idx th { padding: 3px 10px 3px 0; }
 .hb .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 1.4em 0; }
 @media (max-width: 760px) { .hb .cols { grid-template-columns: 1fr; } }
@@ -245,7 +251,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb-peek .hb-peek-sub { color: var(--ink-2, #57524a); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* ------------------------------------------------------------ verdict chips */
-.hb .v { display: inline-block; font: 650 11.5px/1.5 var(--font-sans); border-radius: 6px;
+.hb .v { display: inline-block; font: 650 .71875rem/1.5 var(--font-sans); border-radius: 6px;
          padding: 0 7px; border-width: 1.5px; border-style: solid; background: var(--surface-1); white-space: nowrap; }
 .hb .v-kept { color: var(--kept-text); border-color: var(--kept); }
 .hb .v-disc { color: var(--ink-1); border-color: var(--discarded); }
@@ -254,7 +260,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb .v-gen  { color: var(--azure); border-color: var(--azure); }  /* non-verdict callout chip */
 
 /* ----------------------------------------------------------- evidence chips */
-.hb .ev { display: inline-block; font: 650 11px/1.55 var(--font-sans); border-radius: 999px;
+.hb .ev { display: inline-block; font: 650 .6875rem/1.55 var(--font-sans); border-radius: 999px;
           padding: 0 9px; border-width: 1.5px; border-style: solid; white-space: nowrap; }
 .hb .ev-m { color: var(--kept-text); border-color: var(--kept); }      /* MEASURED — ran live   */
 .hb .ev-b { color: var(--azure); border-color: var(--azure); }         /* BUILT — landed        */
@@ -262,12 +268,12 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb .ev-o { color: var(--ink-3); border-color: var(--baseline); }      /* NOT CLAIMED           */
 
 /* ----------------------------------------------- number-ownership stamps */
-.hb .own { display: inline-block; font: 700 10.5px var(--font-mono);
+.hb .own { display: inline-block; font: 700 .65625rem var(--font-mono);
            color: var(--ink-3); border: 1px dashed var(--baseline); border-radius: 4px;
            padding: 0 5px; white-space: nowrap; }
 
 /* --------------------------------------------------------- census status */
-.hb .st { display: inline-block; font: 650 11px/1.55 var(--font-sans); border-radius: 999px;
+.hb .st { display: inline-block; font: 650 .6875rem/1.55 var(--font-sans); border-radius: 999px;
           padding: 0 9px; border-width: 1.5px; border-style: solid; white-space: nowrap; }
 .hb .st-done { color: var(--kept-text); border-color: var(--kept); }      /* ADDRESSED → anchor  */
 .hb .st-plan { color: var(--azure); border-color: var(--azure); }         /* PLANNED → chapter   */
@@ -275,10 +281,10 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 
 /* -------------------------------------------------------- interactive bits */
 .hb .dhead { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
-.hb .did { font-family: var(--font-mono); font-size: 12px;
+.hb .did { font-family: var(--font-mono); font-size: .75rem;
            font-weight: 700; color: var(--violet); border: 1.5px solid var(--violet);
            border-radius: 6px; padding: 1px 8px; }
-.hb .tbtn { font: 600 12.5px/1.2 var(--font-sans); padding: 6px 12px; border-radius: 999px;
+.hb .tbtn { font: 600 .78125rem/1.2 var(--font-sans); padding: 6px 12px; border-radius: 999px;
             border: 1.5px solid var(--baseline); background: var(--surface-1); color: var(--ink-2);
             cursor: pointer; }
 .hb .tbtn:hover { border-color: var(--ink-3); color: var(--ink-1); }
@@ -305,7 +311,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
   background: var(--surface-1); border: 1px solid var(--grid); border-radius: 12px;
   padding: 12px 18px; margin-top: 12px; margin-bottom: 12px; }
 .hb details.check summary, .hb details.fcard summary {
-  cursor: pointer; font: 600 15px/1.45 var(--font-sans); color: var(--ink-1); list-style: none; }
+  cursor: pointer; font: 600 .9375rem/1.45 var(--font-sans); color: var(--ink-1); list-style: none; }
 .hb details.check summary::-webkit-details-marker, .hb details.fcard summary::-webkit-details-marker { display: none; }
 .hb details.check summary::before { content: "✓ "; color: var(--kept); font-weight: 700; }
 .hb details.fcard summary::before { content: "▸ "; color: var(--azure); font-weight: 700; }
@@ -328,7 +334,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
     padding-right: calc(var(--rail-w) + var(--gutter)); }
   body.hb.hb-has-rail .hb-top .hb-norail { display: none; }
 }
-.hb .hb-stage { min-width: 0; }
+.hb .hb-stage { min-width: 0; position: relative; }
 .hb .hb-stage > main { max-width: var(--wide); margin: 0 auto; }
 /* app pages (the shell's own: browse, chronicle, record; a layer's dashboard or revise) are
    tools, not reading: full width, the sans face, no measure */
@@ -389,6 +395,9 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb .hb-side-nav a.here { background: var(--surface-1); color: var(--ink-1); font-weight: 600;
                           box-shadow: 0 0 0 1px var(--grid); }
 .hb .hb-side-nav .hb-ext { margin-left: auto; color: var(--ink-3); font-size: 11px; }
+.hb .hb-side-nav .hb-badge { margin-left: auto; min-width: 8px; padding: 3px 6px; border-radius: 999px; text-align: center;
+                             font: 650 10.5px/1 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--amber);
+                             background: color-mix(in srgb, var(--amber) 15%, transparent); }
 .hb .hb-side-label { font: 650 10.5px/1.2 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase;
                      color: var(--ink-3); margin: 18px 8px 6px; }
 .hb .hb-tree, .hb .hb-tree ul { list-style: none; padding: 0; margin: 0; }
@@ -414,7 +423,9 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
                          color: var(--ink-3); }
 .hb .hb-side-foot { display: flex; align-items: center; gap: 2px; padding: 8px 10px; border-top: 1px solid var(--grid);
                     background: var(--rail-bg); }
-.hb .hb-side-foot .hb-spacer { flex: 1; }
+.hb .hb-seg { display: inline-flex; margin-left: 4px; border: 1px solid var(--grid); border-radius: 9px; padding: 1px; }
+.hb .hb-seg .hb-iconbtn { width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; }
+.hb .hb-seg .hb-iconbtn[aria-pressed="true"] { background: var(--surface-1); color: var(--ink-1); box-shadow: 0 0 0 1px var(--grid); }
 
 .hb .hb-side-toggle { display: none; }
 .hb .hb-side-backdrop { display: none; position: fixed; inset: 0; z-index: 35; background: rgba(0,0,0,0.3); }
@@ -443,12 +454,14 @@ body.hb.hb-has-rail .hb-top { right: 0; }
 .hb .hb-book a.hb-planned { opacity: 0.45; cursor: default; }
 
 /* ----------------------------------------------------------- the page rail */
-.hb .hb-rail { position: fixed; top: 0; bottom: 0; right: 0; width: var(--rail-w); box-sizing: border-box;
-               overflow-y: auto; padding: 72px 20px 32px 8px; font: 13px/1.45 var(--font-sans); color: var(--ink-3);
-               scrollbar-width: thin; scrollbar-color: var(--baseline) transparent; }
+/* its slot: a column right after the reading column (main is centred, so 50% is its middle), its
+   sections sticky in it — the annotation panel takes the same slot (annotate.css) */
+.hb .hb-rail { position: absolute; top: 0; bottom: 0; left: calc(50% + min(var(--wide), 100%) / 2 + var(--gutter));
+               width: var(--rail-w); font: 13px/1.45 var(--font-sans); color: var(--ink-3); }
+.hb .hb-rail-in { position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; overflow-y: auto; padding: 20px 8px 64px;
+                  scrollbar-width: thin; scrollbar-color: var(--baseline) transparent; }
 @media (max-width: 1239px) { .hb .hb-rail { display: none; } }
 body.hb-ann-on .hb-rail { display: none; }
-body.hb.hb-ann-on { padding-right: var(--gutter); }
 .hb .hb-rail-label { font: 650 10.5px/1.2 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase;
                      color: var(--ink-3); margin: 0 0 8px; }
 .hb .hb-rail-sec { margin: 0 0 26px; }
@@ -458,25 +471,28 @@ body.hb.hb-ann-on { padding-right: var(--gutter); }
 .hb .hb-toc-list a.hb-l3 { padding-left: 24px; font-size: 12.5px; }
 .hb .hb-toc-list a:hover { color: var(--ink-1); }
 .hb .hb-toc-list a.on { color: var(--ink-1); border-left-color: var(--accent); }
-.hb .hb-facts { display: grid; gap: 7px; }
+.hb .hb-facts { display: grid; gap: 8px; }
 .hb .hb-facts .hb-fact { display: flex; align-items: flex-start; gap: 7px; color: var(--ink-2); }
 .hb .hb-facts .hb-fact > .hb-ico { margin-top: 1px; }
 .hb .hb-facts .hb-fact > span { min-width: 0; }
 .hb .hb-facts .hb-fact a { color: var(--ink-2); }
+.hb .hb-when { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 2px 0; color: var(--ink-2); }
+.hb .hb-when dt { color: var(--ink-3); }
+.hb .hb-when dd { margin: 0; }
+.hb .hb-when .hb-status { vertical-align: 1px; padding: 3px 7px 2px; font-size: 10px; }
 .hb .hb-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
 .hb .hb-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .hb .hb-links a { color: var(--ink-2); text-decoration: none; display: block; line-height: 1.35; }
 .hb .hb-links a:hover { color: var(--ink-1); }
 .hb .hb-links .hb-kind { font-size: 9px; margin-right: 5px; }
 
-/* contents and "linked from" when the page rail is hidden */
+/* the page rail's sections, in the top bar's Contents menu when the rail is hidden */
 .hb .hb-contents { position: relative; }
-.hb .hb-contents-panel { position: absolute; right: 0; top: calc(100% + 6px); width: 300px; max-height: 60vh; overflow: auto;
-                         background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px; box-shadow: var(--shadow);
-                         padding: 12px 14px; z-index: 45; font-size: 13px; }
-.hb .hb-after { max-width: var(--measure); margin: 56px auto 0; font: 13.5px/1.5 var(--font-sans); color: var(--ink-3);
-                border-top: 1px solid var(--grid); padding-top: 18px; }
-@media (min-width: 1240px) { body.hb-has-rail .hb-after { display: none; } }
+.hb .hb-contents-panel { position: absolute; right: 0; top: calc(100% + 6px); width: 320px; box-sizing: border-box; max-height: 70vh;
+                         overflow: auto; background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px;
+                         box-shadow: var(--shadow); padding: 14px 16px 0; z-index: 45; font: 13px/1.45 var(--font-sans);
+                         color: var(--ink-3); white-space: normal; }
+.hb .hb-contents-panel .hb-rail-sec { margin-bottom: 18px; }
 
 /* backlink lists an author placed in the page (ul[data-backlinks]) */
 .hb ul[data-backlinks] { list-style: none; padding-left: 0; font: 15px/1.5 var(--font-sans); }
@@ -578,6 +594,7 @@ body.hb.hb-ann-on { padding-right: var(--gutter); }
                 backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--grid); padding: 0 10px; }
   .hb .hb-top .hb-only-narrow { display: inline-flex; }
   .hb .hb-top-meta .hb-only-wide { display: none; }
+  .hb .hb-contents-panel { position: fixed; top: calc(var(--top-h) + 6px); left: 10px; right: 10px; width: auto; }
 }
 @media (min-width: 1240px) { .hb .hb-top .hb-contents { display: none; } }
 
@@ -592,7 +609,7 @@ body.hb.hb-ann-on { padding-right: var(--gutter); }
 
 @media print {
   body.hb { padding: 0 !important; }
-  .hb .hb-side, .hb .hb-top, .hb .hb-rail, .hb .hb-foot, .hb .hb-after, .hb-ann-toggle { display: none !important; }
+  .hb .hb-side, .hb .hb-top, .hb .hb-rail, .hb .hb-foot, .hb-ann-ui { display: none !important; }
 }
 
 /* ============================================================ widget primitives
@@ -602,7 +619,7 @@ body.hb.hb-ann-on { padding-right: var(--gutter); }
 
 /* cycle / step chips (machine clock, k-runway) */
 .hb .cyc { display: flex; gap: 3px; margin: 10px 0 4px; flex-wrap: wrap; align-items: center; }
-.hb .cyc span { font: 700 10px var(--font-mono); border: 1.5px solid var(--grid);
+.hb .cyc span { font: 700 .625rem var(--font-mono); border: 1.5px solid var(--grid);
                 border-radius: 4px; padding: 2px 7px; color: var(--ink-3); }
 .hb .cyc span.cur { border-color: var(--azure); color: var(--azure); }
 .hb .cyc span.run { border-color: var(--amber); color: var(--amber); }
@@ -614,10 +631,10 @@ body.hb.hb-ann-on { padding-right: var(--gutter); }
 .hb .prow.skip { color: var(--ink-3); }
 
 /* detail drawer under a picker */
-.hb .drawer { border-top: 1px dashed var(--grid); margin-top: 10px; padding-top: 10px; font-size: 14px; }
+.hb .drawer { border-top: 1px dashed var(--grid); margin-top: 10px; padding-top: 10px; font-size: .875rem; }
 .hb .drawer .hyp { border-left: 3px solid var(--azure); padding: 4px 12px; margin: 8px 0;
-                   color: var(--ink-2); font-size: 13.5px; }
-.hb .drawer table { font-size: 12.5px; }
+                   color: var(--ink-2); font-size: .84375rem; }
+.hb .drawer table { font-size: .78125rem; }
 
 /* toggle-on buttons */
 .hb .tbtn.on { border-color: var(--indigo); color: var(--indigo); }
@@ -636,7 +653,7 @@ body.hb.hb-ann-on { padding-right: var(--gutter); }
 .hb .sw-orange { color: var(--orange); font-weight: 700; }
 
 /* small muted captions under widgets */
-.hb .wcap { font: 13px/1.5 var(--font-sans); color: var(--ink-2); }
-.hb .wcap-sm { font-size: 12px; }
-.hb .wcap-md { font-size: 13px; }
-.hb .wcap-lg { font-size: 13.5px; }
+.hb .wcap { font: .8125rem/1.5 var(--font-sans); color: var(--ink-2); }
+.hb .wcap-sm { font-size: .75rem; }
+.hb .wcap-md { font-size: .8125rem; }
+.hb .wcap-lg { font-size: .84375rem; }

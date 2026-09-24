@@ -17,7 +17,7 @@
 <main>
 
 <h1>Chronicle</h1>
-<p class="sub"><b>Status: LIVE</b> — definition of record. The timeline of a repository, generated from its record, so that nobody writes history twice.</p>
+<p class="sub">Definition of record. The timeline of a repository, generated from its record, so that nobody writes history twice.</p>
 
 <figure class="fig-chr" aria-label="A dated heading in a record file becomes an event, which the chronicle page shows in the Story and Timeline views, and in a Cards view when an extractor supplies cards">
 <svg viewBox="0 0 680 236" role="img" xmlns="http://www.w3.org/2000/svg">
@@ -81,7 +81,7 @@ The chronicle is a timeline generated from the <a class="defn-link" href="/conte
   …
 }</code></pre>
 
-<p>The decision appears in Story and Timeline; the untagged sighting only in Timeline. A heading counts when it is level two to four and reads <code>date — title</code>, the date as <code>YYYY-MM-DD</code> (optionally with a <code>THH:MMZ</code> time). A tag nobody declared fails loud rather than quietly becoming an entry:</p>
+<p>The decision appears in Story and Timeline; the untagged sighting only in Timeline. A heading counts when it is level two to four and reads <code>date — title</code>, the date as <code>YYYY-MM-DD</code> (optionally with a <code>THH:MMZ</code> time). A tag nobody declared stops the lint with an error, rather than quietly becoming an entry:</p>
 
 <pre><code>log/2026.md:11: unknown chronicle tag [sighting] — one of pivot · kill · decision · lesson · instrument · result (or a kind an extractor declares)</code></pre>
 
@@ -110,9 +110,6 @@ The chronicle is a timeline generated from the <a class="defn-link" href="/conte
 <h3>Source of record</h3>
 
 <p>Writing an extractor, with its <code>KINDS</code> and <code>CARDS</code>, is covered in the chapter <a href="/content/books/running-a-library/05-extending.html">Extending the kit</a>. The engine's statement, including the event schema, is the docstring of <code>ckit/chronicle.py</code>.</p>
-
-<h3>Used in</h3>
-<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
 
 </main>
 </body>

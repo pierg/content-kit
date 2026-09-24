@@ -16,9 +16,9 @@
 <main>
 
 <h1>Gate</h1>
-<p class="sub"><b>Status: LIVE</b> — definition of record. The one command that decides whether a library may land, and why it reports instead of repairing.</p>
+<p class="sub">Definition of record. The one command that decides whether a library may land, and why it reports instead of repairing.</p>
 
-<figure class="fig-gate" aria-label="The six stages of ckit check, run in order; the first failure stops the gate">
+<figure class="fig-gate" aria-label="The six stages of ckit check, run in order: a failed precondition stops the gate; after those, every stage runs and reports">
 <svg viewBox="0 0 700 170" role="img" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <marker id="arrow-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
@@ -53,7 +53,7 @@
   <text x="630" y="146" text-anchor="middle" style="font-weight: 700; fill: var(--kept-text)">content check ok</text>
   <text x="630" y="162" text-anchor="middle" class="t3">all six hold</text>
 </svg>
-<figcaption><b>Six stages, in order, and the first failure stops the run.</b> Every stage reads files; none writes one. That is what makes the result the same on a laptop and in CI.</figcaption>
+<figcaption><b>Six stages, one report.</b> The first three are preconditions: if one fails, the run stops there. After them every stage runs, so one run names every problem. Every stage reads files and none writes one, which is what makes the result the same on a laptop and in CI.</figcaption>
 </figure>
 
 <blockquote class="defn" id="gate">
@@ -77,9 +77,10 @@ The gate is the command <code>ckit check</code>, run before anything lands. It f
 indices out of date — run `ckit nav` (or `ckit lint`) and commit the result:
   content/catalog.json
   content/search-index.json
-  content/backlinks.json</code></pre>
+content lint clean — 2 file(s)
+content check failed: indices</code></pre>
 
-<p>Exit status 1. The two new pages are not in the catalog yet. <code>ckit lint</code> writes the three files, the author commits them with the pages, and the gate passes:</p>
+<p>Exit status 1. The two new pages are not in the catalog yet. The gate still ran the lint, which found nothing else, and named the failed stage at the end. <code>ckit lint</code> writes the two files, the author commits them with the pages, and the gate passes:</p>
 
 <pre><code>$ ckit check
 content lint clean — 2 file(s)
@@ -98,9 +99,6 @@ content check ok</code></pre>
 <h3>Source of record</h3>
 
 <p>The chapter <a href="/content/books/running-a-library/03-the-gate.html">The gate</a> walks each stage with its failure messages. The engine's own statement is the docstring of <code>ckit/check.py</code>.</p>
-
-<h3>Used in</h3>
-<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
 
 </main>
 </body>

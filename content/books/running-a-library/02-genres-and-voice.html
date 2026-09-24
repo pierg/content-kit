@@ -16,7 +16,7 @@ td.mono, td code { overflow-wrap: anywhere; }
 <main>
 
 <h1>Genres and voice</h1>
-<p class="sub"><b>Status: LIVE</b> — you leave able to decide what a page is, scaffold it, write it so it reads like the rest of its kind, and say in its first line whether it is still true.</p>
+<p class="sub">You leave able to decide what a page is, scaffold it, write it so it reads like the rest of its kind, and say in its first line whether it is still true.</p>
 
 <h2 id="s1">§1 · Decide what the page is</h2>
 
@@ -64,7 +64,7 @@ no book at content/books/field-guide — `ckit new book field-guide` first</code
 
 <details class="check">
 <summary>Check-yourself: which line of the voice card will the gate never check for you?</summary>
-<div class="ans">The register and the reader. The gate checks the proxies listed under <i>checked</i> (a word bound, no sections, a status line); whether the page sounds assertive and suits a reader who knows the domain is judged by whoever reads it.</div>
+<div class="ans">The register and the reader. The gate checks the proxies listed under <i>checked</i> (a word bound, no sections, a known status); whether the page sounds assertive and suits a reader who knows the domain is judged by whoever reads it.</div>
 </details>
 
 <h2 id="s3">§3 · Write in the voice</h2>
@@ -89,17 +89,21 @@ no book at content/books/field-guide — `ckit new book field-guide` first</code
 <div class="ans">The definition depends on a running count, so it stops being true when the count changes. Define the term without it; if the count matters, give it below the definition with its source, the line of the log it came from.</div>
 </details>
 
-<h2 id="s4">§4 · Status in the first line</h2>
+<h2 id="s4">§4 · Status, when a page is not current</h2>
 
-<p>Every page's first <code>&lt;p class="sub"&gt;</code> says whether the page is still true, in one of six words. The gate checks that the word is there:</p>
+<p>A page that is true now says nothing about it: its status is LIVE by default. A page that is not current says so at the head of its first line, and the shell shows the word as a pill above the text:</p>
 
-<pre><code>content/notes/swifts-follow-weather.html: no status in the opening line — the first &lt;p class="sub"&gt; must say one of LIVE · HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT</code></pre>
+<pre><code>&lt;p class="sub"&gt;&lt;b&gt;Status: DRAFT&lt;/b&gt; — the spring counts, before the second survey.&lt;/p&gt;</code></pre>
+
+<p>The page rail shows every page's status beside its dates, stated or not. The gate checks that a stated word is one it knows:</p>
+
+<pre><code>content/notes/swifts-follow-weather.html: status 'SHIPPED' in the opening line is not one the shell knows — a page that is not current says HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT; a current one says nothing (LIVE is the default)</code></pre>
 
 <p>Which word is right is your call. These are the conventions:</p>
 
 <table>
 <tr><th>Status</th><th>Tells the reader</th></tr>
-<tr><td>LIVE</td><td>maintained, and true now</td></tr>
+<tr><td>LIVE</td><td>maintained, and true now; the default, never written</td></tr>
 <tr><td>DRAFT</td><td>being written; do not rely on it yet</td></tr>
 <tr><td>PARKED</td><td>paused on purpose; true as of when it stopped, and may resume</td></tr>
 <tr><td>FROZEN</td><td>fixed at a moment on purpose, such as a paper at submission, and not revised</td></tr>

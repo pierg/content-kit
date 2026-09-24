@@ -1,4 +1,4 @@
-# Code of conduct — LIVE
+# Code of conduct
 
 This project follows the spirit of the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1.
 

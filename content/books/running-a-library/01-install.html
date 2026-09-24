@@ -12,181 +12,129 @@
 <main>
 
 <h1>Install a library</h1>
-<p class="sub"><b>Status: LIVE</b> — you leave with the engine on your machine, a repository with the kit in it, a gate that passes, and its pages open in your browser.</p>
+<p class="sub">You leave with the engine installed, a repository set up, every check passing, and its pages in your browser.</p>
 
 <h2 id="s1">§1 · The engine</h2>
 
-<p>content-kit comes in two halves. One is an <b>engine</b>, a command called <code>ckit</code>, which you install once per machine. The other is a <b>kit</b> of rules (a shell of styles and scripts, the genres, the layout playbooks, two agent skills) which the engine copies into each repository you use it in. Start with the engine.</p>
+<p>content-kit comes in two halves. The <b>engine</b> is a command, <code>ckit</code>, that you install once per machine. The <b>kit</b> is a set of rules: the shell (a stylesheet and a script), the genres, the layout guides and three agent skills. The engine copies the kit into each repository you use it in. Start with the engine.</p>
 
-<pre><code>uv tool install git+https://github.com/pierg/content-kit@v0.4.0</code></pre>
+<pre><code>uv tool install git+https://github.com/pierg/content-kit@v0.5.0</code></pre>
 
 <pre><code>$ ckit version
-0.4.0</code></pre>
+0.5.0</code></pre>
 
-<p>The engine is plain Python, 3.10 or newer, with no dependencies. It also needs node, for one job: the gate verifies books with it, and asks for it in any library that has a <code>content/books/</code> directory, which every library <code>ckit init</code> scaffolds does. If you do not use <code>uv</code>, clone the repository and run <code>bash install-engine.sh</code> in it: that links the checkout's <code>bin/ckit</code> into <code>~/.local/bin</code>, and from then on <code>git pull</code> in the checkout is how you upgrade.</p>
+<p>The engine is plain Python, 3.10 or newer, with no dependencies. It needs node for one job: checking a library's books, when it has any. Without <code>uv</code>, clone the repository and run <code>bash install-engine.sh</code> in it. That links the checkout's <code>bin/ckit</code> into <code>~/.local/bin</code>, and from then on <code>git pull</code> in the checkout upgrades the engine.</p>
 
-<p>Why install the engine at all, instead of copying it into every repository like the rules? Because it is code, and code you copy ten times you fix ten times. The rules are different: an agent opened in a repository must be able to read them there, with nothing to resolve elsewhere, so they are copied in. The next section shows how the two stay honest with each other.</p>
+<p>Why install the engine, instead of copying it into each repository as the rules are? Because it is code, and code copied ten times has to be fixed ten times. The rules are different. An agent working in a repository must be able to read them there, without looking anywhere else, so they are copied in. The figure shows how the copies stay in step.</p>
 
-<figure data-figure="how-it-stays-current" aria-label="How content-kit reaches every repository and stays current: upstream, one repository holds the engine and the kit, and layers hold their own rules; the engine is installed once per machine; each repository vendors a pinned copy of the kit with ckit init or make kit-sync; make check fails loud when the copy or the engine version drifts from its pin">
-<svg viewBox="0 0 880 560" role="img" xmlns="http://www.w3.org/2000/svg">
+<figure data-figure="how-it-stays-current" aria-label="How a repository gets content-kit and stays current: upstream, content-kit holds the engine and the kit; the engine installs once on each machine; the kit is copied into each repository, pinned; a layer adds its own rules; the engine on the machine checks each repository against its pins">
+<svg viewBox="0 0 800 300" role="img" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <marker id="hs-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
+    <marker id="hs-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--blue)"/>
     </marker>
     <marker id="hs-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" style="fill: var(--teal)"/>
-    </marker>
-    <marker id="hs-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 z" style="fill: var(--blue)"/>
     </marker>
     <marker id="hs-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" style="fill: var(--amber)"/>
     </marker>
   </defs>
-  <rect x="20" y="20" width="560" height="150" rx="14" style="fill: var(--surface-2); stroke: var(--indigo); stroke-width: 2.5"/>
-  <text x="34" y="42" style="fill: var(--indigo); font-weight: 700; font-size: 12px">upstream — github.com/pierg/content-kit, one repository</text>
-  <rect x="36" y="58" width="250" height="96" rx="10" style="fill: var(--surface-1); stroke: var(--blue); stroke-width: 2"/>
-  <text x="161" y="80" text-anchor="middle" style="fill: var(--blue); font-weight: 700; font-size: 12px">the engine · ckit/</text>
-  <text x="161" y="97" text-anchor="middle" class="t2" style="font-size: 10px">lint · check · serve · annotate · indices</text>
-  <text x="161" y="112" text-anchor="middle" class="t3" style="font-size: 9.5px">code: installed once per machine</text>
-  <text x="161" y="127" text-anchor="middle" class="t3" style="font-size: 9.5px">never copied into a repo</text>
-  <text x="161" y="142" text-anchor="middle" class="t3" style="font-size: 9.5px">a release, or a checkout on PATH</text>
-  <rect x="314" y="58" width="250" height="96" rx="10" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
-  <text x="439" y="80" text-anchor="middle" style="fill: var(--teal); font-weight: 700; font-size: 12px">the kit · the rules</text>
-  <text x="439" y="97" text-anchor="middle" class="t2" style="font-size: 10px">shell/ · genres/ · craft/ · skills/</text>
-  <text x="439" y="112" text-anchor="middle" class="t3" style="font-size: 9.5px">/present · /address · /curate</text>
-  <text x="439" y="127" text-anchor="middle" class="t3" style="font-size: 9.5px">copied into each repo, readable there</text>
-  <text x="439" y="142" text-anchor="middle" class="t3" style="font-size: 9.5px">changed only here, then re-vendored</text>
-  <rect x="610" y="20" width="250" height="150" rx="14" style="fill: var(--surface-2); stroke: var(--amber); stroke-width: 2"/>
-  <text x="624" y="42" style="fill: var(--amber); font-weight: 700; font-size: 12px">a layer — lab-kit, folio</text>
-  <text x="624" y="62" class="t2" style="font-size: 10px">its own rules, beside the kit:</text>
-  <text x="624" y="77" class="t3" style="font-size: 9.5px">kit/&lt;layer&gt;/: tools · genres · skills · pages</text>
-  <text x="624" y="97" class="t2" style="font-size: 10px">registered in kit.json through</text>
-  <text x="624" y="112" class="t3" style="font-size: 9.5px">extension points: genres · checks ·</text>
-  <text x="624" y="127" class="t3" style="font-size: 9.5px">generators · shell pages · theme · links</text>
-  <text x="624" y="150" class="t3" style="font-size: 9.5px">the engine knows no layer</text>
-  <rect x="20" y="205" width="280" height="100" rx="12" style="fill: var(--surface-1); stroke: var(--blue); stroke-width: 2"/>
-  <text x="34" y="227" style="fill: var(--blue); font-weight: 700; font-size: 12px">on each machine, once</text>
-  <text x="34" y="245" class="t2" style="font-size: 10px">uv tool install …@v0.5, or a checkout's bin/ckit</text>
-  <text x="34" y="262" class="t3" style="font-size: 9.5px">one ckit serves every repo on the machine</text>
-  <text x="34" y="277" class="t3" style="font-size: 9.5px">upgrading it changes no repo until that repo</text>
-  <text x="34" y="292" class="t3" style="font-size: 9.5px">moves its pin on purpose</text>
-  <path d="M161 154 L161 203" style="stroke: var(--blue); stroke-width: 1.5" marker-end="url(#hs-b)"/>
-  <text x="168" y="185" class="t3" style="font-size: 9.5px">installs</text>
-  <rect x="560" y="205" width="300" height="120" rx="12" style="fill: var(--surface-1); stroke: var(--red); stroke-width: 2"/>
-  <text x="574" y="227" style="fill: var(--red); font-weight: 700; font-size: 12px">kept current, on purpose</text>
-  <text x="574" y="245" class="t2" style="font-size: 10px">make check: kit/ must hash to kit/PIN, and the</text>
-  <text x="574" y="259" class="t2" style="font-size: 10px">engine must be the version kit.json pins</text>
-  <text x="574" y="277" class="t3" style="font-size: 9.5px">make kit-sync: re-vendor from the pinned sources,</text>
-  <text x="574" y="291" class="t3" style="font-size: 9.5px">then re-pin; git shows exactly what changed</text>
-  <text x="574" y="311" class="t3" style="font-size: 9.5px">drift fails loud; a fix goes upstream, then to each repo</text>
-  <path d="M380 154 L380 343" style="stroke: var(--teal); stroke-width: 1.5" marker-end="url(#hs-t)"/>
-  <text x="372" y="336" text-anchor="end" class="t3" style="font-size: 9.5px">copies into kit/ and pins: ckit init · make kit-sync</text>
-  <path d="M735 170 L735 190 L500 190 L500 343" style="fill: none; stroke: var(--amber); stroke-width: 1.5; stroke-dasharray: 5 3" marker-end="url(#hs-m)"/>
-  <text x="492" y="250" text-anchor="end" class="t3" style="font-size: 9px">a layer's install.sh</text>
-  <text x="492" y="262" text-anchor="end" class="t3" style="font-size: 9px">adds kit/&lt;layer&gt;/,</text>
-  <text x="492" y="274" text-anchor="end" class="t3" style="font-size: 9px">registers kit.json</text>
-  <path d="M150 345 L730 345" style="stroke: var(--teal); stroke-width: 1.5"/>
-  <path d="M150 345 L150 378" style="stroke: var(--teal); stroke-width: 1.5" marker-end="url(#hs-t)"/>
-  <path d="M440 345 L440 378" style="stroke: var(--teal); stroke-width: 1.5" marker-end="url(#hs-t)"/>
-  <path d="M730 345 L730 378" style="stroke: var(--teal); stroke-width: 1.5" marker-end="url(#hs-t)"/>
-  <rect x="20" y="380" width="260" height="140" rx="12" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
-  <text x="34" y="402" style="fill: var(--teal); font-weight: 700; font-size: 12px">a lab (lab-kit)</text>
-  <text x="34" y="422" class="t2" style="font-size: 9.5px">kit/  shell · genres · craft · skills — the copy</text>
-  <text x="34" y="437" class="t3" style="font-size: 9.5px">kit/PIN  source@commit · hash of the tree</text>
-  <text x="34" y="452" class="t3" style="font-size: 9.5px">kit.json  the engine pin · extensions</text>
-  <text x="34" y="467" class="t3" style="font-size: 9.5px">.claude/skills → kit/skills (symlinks)</text>
-  <text x="34" y="482" class="t3" style="font-size: 9.5px">content/  pages · indices · sidecars</text>
-  <text x="34" y="497" class="t2" style="font-size: 9.5px">kit/lab/  the record ladder and its checks</text>
-  <text x="34" y="512" class="t3" style="font-size: 9.5px">make check · make docs · make kit-sync</text>
-  <rect x="310" y="380" width="260" height="140" rx="12" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
-  <text x="324" y="402" style="fill: var(--teal); font-weight: 700; font-size: 12px">a folio</text>
-  <text x="324" y="422" class="t2" style="font-size: 9.5px">kit/  shell · genres · craft · skills — the copy</text>
-  <text x="324" y="437" class="t3" style="font-size: 9.5px">kit/PIN  source@commit · hash of the tree</text>
-  <text x="324" y="452" class="t3" style="font-size: 9.5px">kit.json  the engine pin · extensions</text>
-  <text x="324" y="467" class="t3" style="font-size: 9.5px">.claude/skills → kit/skills (symlinks)</text>
-  <text x="324" y="482" class="t3" style="font-size: 9.5px">content/  pages · indices · sidecars</text>
-  <text x="324" y="497" class="t2" style="font-size: 9.5px">kit/folio/  topics · journal · /ingest · /quiz</text>
-  <text x="324" y="512" class="t3" style="font-size: 9.5px">make check · make docs · make kit-sync</text>
-  <rect x="600" y="380" width="260" height="140" rx="12" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
-  <text x="614" y="402" style="fill: var(--teal); font-weight: 700; font-size: 12px">a docs repo</text>
-  <text x="614" y="422" class="t2" style="font-size: 9.5px">kit/  shell · genres · craft · skills — the copy</text>
-  <text x="614" y="437" class="t3" style="font-size: 9.5px">kit/PIN  source@commit · hash of the tree</text>
-  <text x="614" y="452" class="t3" style="font-size: 9.5px">kit.json  the engine pin · extensions</text>
-  <text x="614" y="467" class="t3" style="font-size: 9.5px">.claude/skills → kit/skills (symlinks)</text>
-  <text x="614" y="482" class="t3" style="font-size: 9.5px">content/  pages · indices · sidecars</text>
-  <text x="614" y="497" class="t2" style="font-size: 9.5px">no layer: the core genres alone</text>
-  <text x="614" y="512" class="t3" style="font-size: 9.5px">make check · make docs · make kit-sync</text>
-  <text x="20" y="548" class="t3" style="font-size: 9.5px">one engine, many repos, no copied code; the rules travel as pinned copies, and every gate run checks the pins</text>
+  <rect x="20" y="16" width="400" height="108" rx="14" style="fill: var(--surface-2); stroke: var(--indigo); stroke-width: 2"/>
+  <text x="34" y="38" style="font-size: 12px; font-weight: 700; fill: var(--indigo)">content-kit, upstream</text>
+  <rect x="36" y="50" width="176" height="60" rx="10" style="fill: var(--surface-1); stroke: var(--blue); stroke-width: 2"/>
+  <text x="124" y="74" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--blue)">the engine</text>
+  <text x="124" y="93" text-anchor="middle" class="t2" style="font-size: 11px">code: check, serve, lint</text>
+  <rect x="228" y="50" width="176" height="60" rx="10" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
+  <text x="316" y="74" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--teal)">the kit</text>
+  <text x="316" y="93" text-anchor="middle" class="t2" style="font-size: 11px">rules: shell, genres, skills</text>
+  <rect x="580" y="50" width="200" height="60" rx="10" style="fill: var(--surface-1); stroke: var(--amber); stroke-width: 2"/>
+  <text x="680" y="74" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--amber)">a layer</text>
+  <text x="680" y="93" text-anchor="middle" class="t2" style="font-size: 11px">lab-kit, folio: more rules</text>
+  <path d="M124 110 L124 220" style="stroke: var(--blue); stroke-width: 1.5" marker-end="url(#hs-b)"/>
+  <text x="132" y="170" class="t3" style="font-size: 11px">installs</text>
+  <path d="M316 110 L316 204" style="stroke: var(--teal); stroke-width: 1.5" marker-end="url(#hs-t)"/>
+  <text x="324" y="160" class="t3" style="font-size: 11px">copies</text>
+  <path d="M680 110 L680 246 L570 246" style="fill: none; stroke: var(--amber); stroke-width: 1.5" marker-end="url(#hs-m)"/>
+  <text x="688" y="180" class="t3" style="font-size: 11px">adds</text>
+  <rect x="36" y="222" width="176" height="60" rx="10" style="fill: var(--surface-1); stroke: var(--blue); stroke-width: 2"/>
+  <text x="124" y="246" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--blue)">this machine</text>
+  <text x="124" y="265" text-anchor="middle" class="t2" style="font-size: 11px">ckit, installed once</text>
+  <path d="M212 252 L266 252" style="stroke: var(--blue); stroke-width: 1.5" marker-end="url(#hs-b)"/>
+  <text x="239" y="244" text-anchor="middle" class="t3" style="font-size: 11px">checks</text>
+  <rect x="268" y="206" width="300" height="80" rx="12" style="fill: var(--surface-1); stroke: var(--teal); stroke-width: 2"/>
+  <text x="418" y="230" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--teal)">each repository</text>
+  <text x="418" y="250" text-anchor="middle" class="t2" style="font-size: 11px">kit/ — the rules, copied and pinned</text>
+  <text x="418" y="268" text-anchor="middle" class="t2" style="font-size: 11px">kit.json — the engine it expects</text>
 </svg>
-<figcaption><b>Once upstream, once per machine, a pinned copy per repo.</b> The engine is installed once and never copied; the kit is copied into each repo so an agent can read it there, pinned by a hash and by the engine version, and changed only upstream. A layer adds its own rules beside the kit through the same path. <code>make check</code> fails when either pin is off; <code>make kit-sync</code> is how a repo moves them.</figcaption>
+<figcaption><b>Installed once, copied into each repository.</b> The copy is pinned to a commit and to an engine version. <code>make check</code> fails when either pin is off; <code>make kit-sync</code> moves both.</figcaption>
 </figure>
 
 <details class="check">
 <summary>Check-yourself: which half lives in the repository, and why?</summary>
-<div class="ans">The kit (shell, genres, playbooks, skills) is copied into the repository, because an agent working there must read the rules without looking anywhere else. The engine is installed once per machine, because it is code with one place to update.</div>
+<div class="ans">The kit (the shell, the genres, the layout guides, the skills) is copied into the repository, because an agent working there must read the rules without looking anywhere else. The engine is installed once per machine, because it is code with one place to update.</div>
 </details>
 
 <h2 id="s2">§2 · <code>ckit init</code></h2>
 
-<p>Point <code>ckit init</code> at a directory (new or existing) and give the library a name:</p>
+<p>Point <code>ckit init</code> at a directory, new or existing, and give the library a name:</p>
 
 <pre><code>$ ckit init birding --name "Birding"
-vendoring content-kit 0.4.0 -> …/birding/kit
+vendoring content-kit 0.5.0 -> …/birding/kit
 scaffolding
   create  kit.json
   create  Makefile
   create  .gitignore
   set     kit.json name=Birding
-  pin     kit.json ckit=0.4.0
-pinned  content-kit@v0.4.0
-indices generated: content/catalog.json, content/search-index.json, content/backlinks.json</code></pre>
+  pin     kit.json ckit=0.5.0
+pinned  content-kit@v0.5.0
+indices generated: content/catalog.json, content/search-index.json, content/backlinks.json, content/threads.json</code></pre>
 
-<p>Read it line by line. It <b>vendored</b> the kit into <code>kit/</code>: the shell, the genres, the craft playbooks, the <code>/present</code> and <code>/address</code> skills, a hashing tool and <code>verify.sh</code>. It <b>scaffolded</b> what the directory lacked: <code>kit.json</code>, a <code>Makefile</code>, a <code>.gitignore</code>, and the directories under <code>content/</code> that the core genres live in. It <b>pinned</b> the engine version into <code>kit.json</code> and wrote <code>kit/PIN</code>. It linked the two skills into <code>.claude/skills/</code>, so an agent session opened in the repository finds them. And it generated the three indices an empty library has.</p>
+<p>Read it line by line. It <b>copied</b> the kit into <code>kit/</code>: the shell, the genres, the layout guides, the <code>/present</code>, <code>/address</code> and <code>/curate</code> skills, a hashing tool and <code>verify.sh</code>. It <b>created</b> what the directory lacked: <code>kit.json</code>, a <code>Makefile</code>, a <code>.gitignore</code>, and a folder under <code>content/</code> for each core genre. It <b>pinned</b> the engine version in <code>kit.json</code> and wrote <code>kit/PIN</code>. It linked the skills into <code>.claude/skills/</code>, where an agent opened in the repository finds them. And it generated the four indices an empty library has.</p>
 
-<p>Running it again is safe. It re-vendors <code>kit/</code>, re-pins, and creates only what is missing: your <code>Makefile</code>, your <code>kit.json</code> settings and your pages are kept. It touches only its own paths under <code>kit/</code>, so anything else vendored there survives.</p>
+<p>Running it again is safe. It copies <code>kit/</code> again, moves the pin, and creates only what is missing: your <code>Makefile</code>, your <code>kit.json</code> settings and your pages are kept. It touches only its own files under <code>kit/</code>, so a layer's files there survive.</p>
 
 <blockquote class="defn" id="pin">
 <span class="defn-name">PIN — definition of record</span><br>
-A library's pin is two records of what it was checked against: the engine version in <code>kit.json</code> (the <code>"ckit"</code> key), which <code>ckit check</code> compares with the engine running it, and a hash of the vendored <code>kit/</code> in <code>kit/PIN</code>, which <code>make kit-verify</code> recomputes. Either mismatch fails; neither changes except on purpose.
+A library's pin is two records of what it was checked against: the engine version in <code>kit.json</code> (the <code>"ckit"</code> key), which <code>ckit check</code> compares with the engine running it, and a hash of the copied <code>kit/</code> in <code>kit/PIN</code>, which <code>make kit-verify</code> recomputes. Either mismatch fails, and neither changes except on purpose.
 </blockquote>
 
 <pre><code>$ cat kit/PIN
-source content-kit https://github.com/pierg/content-kit v0.4.0
-hash 722ee4c53ef1b42a8104b2d87f747ce4e06eaa8ffb1c2d3ec51a9b169ddb3684</code></pre>
+source content-kit https://github.com/pierg/content-kit v0.5.0
+hash 667375990f99ed4139e29f659b979c09b3c69d67dd2728c78e5b193a96586593</code></pre>
 
-<p>The <code>source</code> line says where the kit came from and at which release (a commit, when the engine runs from a checkout). The pin is why installing a new engine never silently changes a library: until someone re-runs <code>ckit init</code> in it, the gate refuses to run under a different version.</p>
+<p>The <code>source</code> line says where the kit came from, and at which release (or which commit, when the engine runs from a checkout). The pin is why a new engine never changes a library silently: until someone runs <code>ckit init</code> in it again, the gate refuses to run under a different version.</p>
 
 <details class="check">
 <summary>Check-yourself: you upgrade the engine to a new release and run the gate in an old library. What happens, and what is the deliberate fix?</summary>
-<div class="ans">The gate fails with an engine mismatch: <code>kit.json</code> still declares the old version. Re-running <code>ckit init .</code> with the new engine re-vendors the kit and moves the pin; you then run the gate and commit what changed.</div>
+<div class="ans">The gate fails with an engine mismatch, because <code>kit.json</code> still names the old version. Run <code>ckit init .</code> with the new engine: it copies the kit again and moves the pin. Then run the gate and commit what changed.</div>
 </details>
 
 <h2 id="s3">§3 · The repository layout</h2>
 
 <pre><code>birding/
-  kit.json          name · question · content dir · port · engine pin · home · extensions
+  kit.json          name · question · content folder · port · engine version · home · extensions
   Makefile          make check · docs · down · status · site · kit-verify · kit-sync
-  kit/              vendored by ckit init, pinned in kit/PIN, never edited in place
-    shell/          lib.css · lib.js · search · record viewer · chronicle · annotate · skeletons/
-    genres/         GENRES.md (the voice) · genres.json (what is checked)
-    craft/          how to build a comparison · diagram · table · timeline · code · figure
-    skills/         /present (write a page) · /address (act on annotations)
+  kit/              copied by ckit init, pinned in kit/PIN, never edited here
+    shell/          lib.css · lib.js · search · review · record viewer · chronicle · annotations · page templates
+    genres/         GENRES.md (how each genre reads) · genres.json (what is checked)
+    craft/          how to lay out a comparison · diagram · table · timeline · code · figure
+    skills/         /present (write a page) · /address (answer annotations) · /curate (organise)
   content/          notes/ concepts/ entries/ books/ hubs/ projects/ papers/ related/
-                    catalog.json · search-index.json · backlinks.json</code></pre>
+                    catalog.json · search-index.json · backlinks.json · threads.json</code></pre>
 
-<p><code>kit.json</code> is the one file you configure. Beyond <code>name</code>, <code>content</code>, <code>host</code>, <code>port</code> and the <code>ckit</code> pin, two keys are worth setting now: <code>question</code>, one sentence the landing page shows under the name, and <code>home</code>, a page to serve at <code>/</code> instead of the generated landing page (this library's own <code>home</code> is its hub). The keys that extend the kit come last in this book.</p>
+<p><code>kit.json</code> is the one file you configure. Besides <code>name</code>, <code>content</code>, <code>host</code>, <code>port</code> and the <code>ckit</code> version, two keys are worth setting now. <code>question</code> is one sentence the home page shows under the name. <code>home</code> names a page to serve at <code>/</code> in place of the generated home page; this library's <code>home</code> is its hub. The keys that extend the kit come last in this book.</p>
 
-<p>Two kinds of file under <code>content/</code> are never written by hand. The indices (<code>catalog.json</code>, <code>search-index.json</code>, <code>backlinks.json</code>, and a <code>nav.json</code> per book) are generated from the pages. Annotation sidecars, <code>*.annotations.json</code>, are written by the browser or by <code>ckit annotations</code>. Everything else there is a page you author.</p>
+<p>Two kinds of file under <code>content/</code> are never written by hand. The indices (<code>catalog.json</code>, <code>search-index.json</code>, <code>backlinks.json</code>, <code>threads.json</code>, and a <code>nav.json</code> per book) are generated from the pages. A page's notes, <code>&lt;page&gt;.annotations.json</code>, are written by the browser or by <code>ckit annotations</code>. Everything else there is a page you write.</p>
 
 <details class="check">
 <summary>Check-yourself: a teammate fixes a typo in the shell's stylesheet directly in <code>kit/shell/lib.css</code>. Why is that a problem?</summary>
-<div class="ans">Their library now renders differently from every other library on the same kit, and nothing but the hash would notice. <code>make kit-verify</code> fails on it. The fix belongs upstream, in content-kit, and arrives in each library through a deliberate re-vendor.</div>
+<div class="ans">Their library now looks different from every other library on the same kit, and only the hash notices. <code>make kit-verify</code> fails on it. The fix belongs upstream, in content-kit, and reaches each library when it copies the kit again, on purpose.</div>
 </details>
 
 <h2 id="s4">§4 · <code>make check</code>, <code>make docs</code>, <code>make site</code></h2>
 
-<p>The scaffolded <code>Makefile</code> wraps the engine in the targets you will use daily:</p>
+<p>The <code>Makefile</code> that <code>ckit init</code> created wraps the engine in the targets you use every day:</p>
 
 <table>
 <tr><th>Target</th><th>Runs</th><th>For</th></tr>
@@ -195,20 +143,20 @@ hash 722ee4c53ef1b42a8104b2d87f747ce4e06eaa8ffb1c2d3ec51a9b169ddb3684</code></pr
 <tr><td class="mono">make down</td><td><code>ckit down</code></td><td>stop that server</td></tr>
 <tr><td class="mono">make site</td><td><code>ckit export --out dist --base $(BASE)</code></td><td>the pages as a static site in <code>dist/</code></td></tr>
 <tr><td class="mono">make kit-verify</td><td><code>bash kit/verify.sh</code></td><td>does <code>kit/</code> still match its pin?</td></tr>
-<tr><td class="mono">make kit-sync</td><td><code>bash kit/verify.sh --sync</code></td><td>re-vendor <code>kit/</code> from its pinned sources, on purpose</td></tr>
+<tr><td class="mono">make kit-sync</td><td><code>bash kit/verify.sh --sync</code></td><td>copy <code>kit/</code> again from its pinned sources, on purpose</td></tr>
 </table>
 
 <pre><code>$ make check
-kit ok (content-kit@v0.4.0 )
+kit ok (content-kit@v0.5.0 )
 content lint clean — 0 file(s)
 content check ok
 
 $ make docs
 serving http://127.0.0.1:5180/  (pid …; `ckit down` to stop)</code></pre>
 
-<p>Open the address it prints. With no pages yet you see the landing page: the library's name, its question, a search link, and one empty group per genre, each saying which <code>ckit new</code> command would fill it. Bottom right is the <b>✎ Annotate</b> button; it appears only because the engine is serving the page. <code>make docs PORT=8080</code> overrides the port for one run.</p>
+<p>Open the address it prints. With no pages yet, the home page shows the library's name, its question, a search box, and the <code>ckit new</code> command that writes the first page. Open any page and the <b>✎ Annotate</b> button sits bottom right; it appears only because the engine is serving the page. <code>make docs PORT=8080</code> uses another port for one run.</p>
 
-<p><code>make site</code> writes the same pages as plain files any static host can serve. If the site will live under a path, as a GitHub project site does, say so: <code>make site BASE=/birding/</code>. Pages link the shell and each other with root-absolute URLs (<code>/shell/lib.css</code>, <code>/content/…</code>), and the export prefixes them so they resolve under that path.</p>
+<p><code>make site</code> writes the same pages as plain files that any static host can serve. If the site will live under a path, as a GitHub project site does, say so: <code>make site BASE=/birding/</code>. Pages link the shell and each other with addresses that start at the site root (<code>/shell/lib.css</code>, <code>/content/…</code>), and the export puts the path in front of each.</p>
 
 <details class="check">
 <summary>Check-yourself: your library will be published at <code>https://example.org/birding/</code>. What do you run, and what would break without the base?</summary>

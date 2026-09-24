@@ -46,7 +46,7 @@ PAGE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>{tit
 """
 
 
-def _page(title: str, body: str = "<p>Body.</p>", *, sub: str = "<b>Status: LIVE</b> — fixture.",
+def _page(title: str, body: str = "<p>Body.</p>", *, sub: str = "A fixture.",
           head: str = "") -> str:
     return PAGE.format(title=title, sub=sub, body=body, head=head)
 
@@ -119,6 +119,18 @@ def _get(port: int, path: str, headers: dict | None = None) -> tuple[int, dict, 
         conn.close()
 
 
+def _http(port: int, method: str, path: str, headers: dict | None = None, body: bytes | None = None) -> int:
+    """One request with its own method, headers and body — the status it gets."""
+    conn = HTTPConnection("127.0.0.1", port, timeout=5)
+    try:
+        conn.request(method, path, body=body, headers=headers or {})
+        resp = conn.getresponse()
+        resp.read()
+        return resp.status
+    finally:
+        conn.close()
+
+
 # What every page loads before its own content: the shell's stylesheet and script, gzipped, and the
 # two reading faces. A budget nothing checks gets spent; this one is checked on the kit's own shell.
 SHELL_BUDGET = 32 * 1024
@@ -134,6 +146,21 @@ def shell_weight_problems(shell: Path) -> list[str]:
     fonts = sum(p.stat().st_size for p in (shell / "vendor" / "fonts").glob("*.woff2"))
     if fonts > FONT_BUDGET:
         out.append(f"the shell's fonts are {fonts} bytes, over their {FONT_BUDGET}-byte budget")
+    return out
+
+
+def annotation_layer_problems(shell: Path) -> list[str]:
+    """The annotation layer marks a passage with a CSS highlight over the page's own text: it never
+    splits a text node or wraps one in an element, so the text a reader sees and quotes is the text
+    the page carries. And every element or class it adds — to its own chrome, to <main>, to <body> —
+    is named under hb-ann-, the one prefix the lint refuses in a page."""
+    js = (shell / "annotate.js").read_text(encoding="utf-8")
+    out = [f"annotate.js calls {bad} — a mark must be a highlight over the page's text, not a change to it"
+           for bad in ("splitText(", "surroundContents(", ".normalize(", 'el("mark"') if bad in js]
+    named = re.findall(r'\bel\("[a-z0-9]+", "([^"]*)"', js) + re.findall(r'class="([^"]*)"', js) \
+        + re.findall(r'(?:main|document\.body)\.classList\.\w+\("([^"]+)"', js)
+    out += [f"annotate.js adds the class(es) {c!r} with none under hb-ann-" for c in named
+            if not any(x.startswith("hb-ann") for x in c.split())]
     return out
 
 
@@ -273,7 +300,7 @@ def _organise_cases(failures: list[str]) -> int:
         cat = json.loads((repo.content / "catalog.json").read_text())
         for item in cat["notes"]:
             if item["slug"] == "b":
-                item["sha"] = _sha([b], legacy=True)
+                item["sha"] = _sha([b], scheme="0.5.0.dev0")
         (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
         os.environ["CKIT_TODAY"] = "2026-05-04"
         _lint(repo)
@@ -285,14 +312,53 @@ def _organise_cases(failures: list[str]) -> int:
         cat = json.loads((repo.content / "catalog.json").read_text())
         for item in cat["notes"]:
             if item["slug"] == "w2":
-                item["sha"] = _sha([w2], legacy=True)
+                item["sha"] = _sha([w2], scheme="0.5.0.dev0")
         (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
         os.environ["CKIT_TODAY"] = "2026-05-05"
-        prose.unwrap_repo(repo, [w2])
+        quiet(prose.unwrap_repo, repo, [w2])
         os.environ["CKIT_TODAY"] = "2026-05-04"
         if catalog_item("w2").get("updated") != "2026-05-04" or "two lines" not in w2.read_text():
             failures.append(f"`ckit unwrap` on a 0.5.0.dev0 catalog must keep a joined page's dates: {catalog_item('w2')}")
         w2.unlink()
+        _lint(repo)
+        planted += 1
+
+        # a stated LIVE says nothing: the lint names the pages that still state it (a note, never a
+        # failure); `ckit unwrap --status` drops it, the lede capitalised, the dates kept — also
+        # for a catalog written by 0.5.0.dev1, whose sha kept it; a stated DRAFT stays
+        os.environ["CKIT_TODAY"] = "2026-05-06"
+        lv = _write(repo, "notes/lv.html", _page("Lv", "<p>Lv.</p>", sub="<b>Status: LIVE</b> — what lv says."))
+        dr = _write(repo, "notes/dr.html", _page("Dr", "<p>Dr.</p>", sub="<b>Status: DRAFT</b> — half done."))
+        (probs, _n), said = quiet(lint.run, repo, nav=True)
+        if "state Status: LIVE" not in said or "notes/lv.html" not in said or "notes/dr.html" in said.split("state Status: LIVE")[1].split("\n")[0]:
+            failures.append(f"the lint must name the pages that state LIVE, and only those: {said!r}")
+        if any("notes/lv.html" in p for p in probs):
+            failures.append("a stated LIVE must not fail the lint")
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        for item in cat["notes"]:
+            if item["slug"] == "lv":
+                item["sha"] = _sha([lv], scheme="0.5.0.dev1")
+        (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
+        os.environ["CKIT_TODAY"] = "2026-05-07"
+        (_joined, _pages, dropped), _ = quiet(prose.unwrap_repo, repo, [lv, dr], status=True)
+        if dropped != ["content/notes/lv.html"] or '<p class="sub">What lv says.</p>' not in lv.read_text() \
+                or "<b>Status: DRAFT</b> — half done." not in dr.read_text():
+            failures.append(f"unwrap --status must drop a stated LIVE (capitalising the lede) and leave DRAFT: {dropped}")
+        if catalog_item("lv").get("updated") != "2026-05-06" or catalog_item("lv").get("sha") != _sha([lv]):
+            failures.append(f"dropping a stated LIVE must keep the page's dates, from a 0.5.0.dev1 sha too: {catalog_item('lv')}")
+        if "state Status: LIVE" in quiet(lint.run, repo, nav=True)[1]:
+            failures.append("once dropped, no page states LIVE and the lint says nothing about it")
+        planted += 4
+        lv.unlink()
+        dr.unlink()
+
+        # an in-body backlinks list: still filled on the page, named by the lint as no longer needed
+        # (the page rail shows who links to a page), never failed
+        bl = _write(repo, "notes/bl.html", _page("Bl", '<h3>Cited by</h3><ul data-backlinks></ul>'))
+        (probs, _n), said = quiet(lint.run, repo, nav=True)
+        if "data-backlinks" not in said or "notes/bl.html" not in said or any("notes/bl.html" in p for p in probs):
+            failures.append(f"an in-body backlinks list must be named by the lint, as a note: {said!r}")
+        bl.unlink()
         _lint(repo)
         planted += 1
 
@@ -967,7 +1033,11 @@ def main(argv: list[str]) -> int:
         # a token the page declares itself, or one used with a fallback, is fine
         _write(repo, "notes/owntoken.html", _page("Own token",
                '<p style="--mine: var(--teal); color: var(--mine); border-color: var(--nope2, currentColor)">x</p>'))
-        plant("notes/nostatus.html", _page("No status", sub="Just a lede."), "no status")
+        # the status: none stated is LIVE; a stated one must be one the shell knows
+        plant("notes/badstatus.html", _page("Bad status", sub="<b>Status: SHIPPED</b> — a project's word."),
+              "status 'SHIPPED' in the opening line is not one the shell knows")
+        _write(repo, "notes/drafted.html", _page("Drafted", sub="<b>Status: DRAFT</b> — half done."))
+        _write(repo, "notes/stated.html", _page("Stated", sub="<b>Status: LIVE</b> — still allowed."))
         plant("notes/sections.html", _page("Sections", "<h2>One</h2><p>x</p>"), "<h2>")
         plant("notes/long.html", _page("Long", "<p>" + "word " * 450 + "</p>"), "over the 400")
         plant("concepts/nodefn/index.html", _page("No defn"), 'no <blockquote class="defn">')
@@ -1020,6 +1090,10 @@ def main(argv: list[str]) -> int:
         for rel, needle, _ in cases:
             _expect(probs, rel, needle, failures)
             planted += 1
+        if any(("drafted" in p or "stated" in p) for p in probs):
+            failures.append("a known stated status (DRAFT, or LIVE itself) must pass: "
+                            + " | ".join(p for p in probs if "drafted" in p or "stated" in p))
+        planted += 1
         if any("owntoken" in p for p in probs):
             failures.append("a token the page declares, or one with a fallback, must not be reported: "
                             + " | ".join(p for p in probs if "owntoken" in p))
@@ -1513,6 +1587,79 @@ def main(argv: list[str]) -> int:
         if not any("over its" in x for x in shell_weight_problems(heavy)):
             failures.append("a shell over its size budget must be reported")
         shutil.rmtree(heavy, ignore_errors=True)
+        planted += 2
+
+        # --- the unauthenticated write endpoint stays on this machine: a host beyond it is refused
+        #     without --expose (from the command line or kit.json); a request that names the server
+        #     by another name (a page rebinding its own) is refused; a write must be JSON, and not
+        #     from a page another origin served
+        stmp, srepo = _scratch()
+        _write(srepo, "notes/s.html", _page("S"))
+        class Bound(Exception):
+            pass
+
+        def bind(*_a, **_k):  # were the refusal to fail, the server would bind here — and never return
+            raise Bound()
+
+        real_server, serve.ThreadingHTTPServer = serve.ThreadingHTTPServer, bind
+        try:
+            for argv, needle in ((["--host", "0.0.0.0"], "--host is '0.0.0.0'"), ([], "kit.json host is '192.168.0.9'")):
+                srepo.cfg["host"] = "192.168.0.9" if not argv else "127.0.0.1"
+                (srepo.root / "kit.json").write_text(json.dumps(srepo.cfg))
+                try:
+                    serve.main(["--root", str(srepo.root), *argv])
+                except SystemExit as exc:
+                    if needle not in str(exc) or "--expose" not in str(exc):
+                        failures.append(f"the refusal must name the host and --expose: {exc}")
+                except Bound:
+                    failures.append(f"serving on a host beyond this machine must be refused without --expose: {argv}")
+            try:
+                serve.main(["--root", str(srepo.root), "--expose"])
+                failures.append("--expose must let a host beyond this machine through to the bind")
+            except Bound:
+                pass
+        finally:
+            serve.ThreadingHTTPServer = real_server
+        if not all(serve.is_loopback(h) for h in ("127.0.0.1", "localhost", "::1", "[::1]")) \
+                or any(serve.is_loopback(h) for h in ("0.0.0.0", "::", "192.168.0.9", "example.org")):
+            failures.append("is_loopback must accept this machine's names and only those")
+        planted += 4
+        for exposed in (False, True):
+            httpd = ThreadingHTTPServer(("127.0.0.1", 0), serve.make_handler(srepo, exposed=exposed))
+            th = threading.Thread(target=httpd.serve_forever, daemon=True)
+            th.start()
+            try:
+                port = httpd.server_address[1]
+                here, js = f"127.0.0.1:{port}", {"Content-Type": "application/json"}
+                note = json.dumps({"op": "add", "page": "/content/notes/s.html", "author": "t", "body": "x"}).encode()
+                got = {"rebound": _http(port, "GET", "/", {"Host": f"evil.example:{port}"}),
+                       "local": _http(port, "GET", "/", {"Host": f"localhost:{port}"}),
+                       "text/plain": _http(port, "POST", "/__annotations", {"Content-Type": "text/plain"}, note),
+                       "foreign": _http(port, "POST", "/__annotations", {**js, "Origin": "http://evil.example"}, note),
+                       "own": _http(port, "POST", "/__annotations", {**js, "Origin": f"http://{here}"}, note)}
+            finally:
+                httpd.shutdown()
+                httpd.server_close()
+                th.join(timeout=2)
+            want = {"rebound": 200 if exposed else 403, "local": 200, "text/plain": 415, "foreign": 403, "own": 200}
+            if got != want:
+                failures.append(f"the server must refuse what reaches it from elsewhere (exposed={exposed}): {got} vs {want}")
+            planted += 1
+        shutil.rmtree(stmp, ignore_errors=True)
+
+        # --- the annotation layer changes no text in <main> and names what it adds hb-ann-*: the kit's
+        #     own layer holds, and a planted one that wraps a passage in <mark class="note"> does not
+        got = annotation_layer_problems(KIT_SRC / "shell")
+        if got:
+            failures.extend(got)
+        wrap = Path(tempfile.mkdtemp(prefix="ckit-selftest-ann-"))
+        (wrap / "annotate.js").write_text('var mk = el("mark", "note"); node.splitText(3); main.classList.add("hot");',
+                                          encoding="utf-8")
+        got = annotation_layer_problems(wrap)
+        for needle in ("splitText(", 'el("mark"', "'note'", "'hot'"):
+            if not any(needle in x for x in got):
+                failures.append(f"a planted annotation layer must be reported for {needle}: {got}")
+        shutil.rmtree(wrap, ignore_errors=True)
         planted += 2
 
         # --- a port held by a process with no pidfile is stopped, so `ckit up` can bind it
