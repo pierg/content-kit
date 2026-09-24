@@ -1,0 +1,49 @@
+<svg width="800" height="330" viewBox="0 0 800 330" role="img" xmlns="http://www.w3.org/2000/svg">
+  <style>text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:#1d1b17}.t2{fill:#57524a}.t3{fill:#8b857a}</style>
+<rect width="800" height="330" rx="14" fill="#faf9f6"/>
+<defs>
+    <marker id="hw-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" style="fill: #57524a"/>
+    </marker>
+  </defs>
+  <rect x="20" y="60" width="160" height="70" rx="10" style="fill: #ffffff; stroke: #2a78d6; stroke-width: 2"/>
+  <text x="100" y="86" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: #2a78d6">an agent</text>
+  <text x="100" y="104" text-anchor="middle" class="t2" style="font-size: 10.5px">any session, any clone</text>
+  <text x="100" y="120" text-anchor="middle" class="t3" style="font-size: 9.5px">writes in the genre's voice</text>
+  <path d="M180 95 L228 95" style="stroke: #57524a; stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="205" y="87" text-anchor="middle" class="t3" style="font-size: 9.5px">writes</text>
+  <rect x="230" y="60" width="170" height="70" rx="10" style="fill: #ffffff; stroke: #57524a; stroke-width: 1.5"/>
+  <text x="315" y="86" text-anchor="middle" style="font-size: 13px; font-weight: 700">the page</text>
+  <text x="315" y="104" text-anchor="middle" class="t2" style="font-size: 10.5px">content/&lt;genre&gt;/&lt;slug&gt;</text>
+  <text x="315" y="120" text-anchor="middle" class="t3" style="font-size: 9.5px">hand-authored HTML, served as written</text>
+  <path d="M400 95 L448 95" style="stroke: #57524a; stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="425" y="87" text-anchor="middle" class="t3" style="font-size: 9.5px">checks</text>
+  <rect x="450" y="60" width="150" height="70" rx="10" style="fill: #ffffff; stroke: #4a3aa7; stroke-width: 2"/>
+  <text x="525" y="86" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: #4a3aa7">the engine · ckit</text>
+  <text x="525" y="104" text-anchor="middle" class="t2" style="font-size: 10.5px">the gate, then the server</text>
+  <text x="525" y="120" text-anchor="middle" class="t3" style="font-size: 9.5px">pin · shell · indices · lint · books</text>
+  <path d="M600 95 L648 95" style="stroke: #57524a; stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="625" y="87" text-anchor="middle" class="t3" style="font-size: 9.5px">serves</text>
+  <rect x="650" y="60" width="130" height="70" rx="10" style="fill: #ffffff; stroke: #eb6834; stroke-width: 2"/>
+  <text x="715" y="86" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: #eb6834">a reader</text>
+  <text x="715" y="104" text-anchor="middle" class="t2" style="font-size: 10.5px">in the browser</text>
+  <text x="715" y="120" text-anchor="middle" class="t3" style="font-size: 9.5px">in one shared shell</text>
+  <rect x="230" y="170" width="170" height="70" rx="10" style="fill: none; stroke: #8b857a; stroke-width: 1.5; stroke-dasharray: 5 3"/>
+  <text x="315" y="194" text-anchor="middle" style="font-size: 11px; font-weight: 700">the rules, vendored in kit/</text>
+  <text x="315" y="210" text-anchor="middle" class="t2" style="font-size: 10px">genres · shell · craft · skills</text>
+  <text x="315" y="226" text-anchor="middle" class="t3" style="font-size: 9.5px">in the repo, pinned, read-only</text>
+  <path d="M140 130 L140 205 L228 205" style="fill: none; stroke: #57524a; stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="148" y="172" class="t3" style="font-size: 9.5px">reads first</text>
+  <path d="M315 170 L315 132" style="stroke: #57524a; stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="322" y="153" class="t3" style="font-size: 9px">structure · voice · vocabulary</text>
+  <rect x="450" y="230" width="200" height="70" rx="10" style="fill: #ffffff; stroke: #57524a; stroke-width: 1.5"/>
+  <text x="550" y="254" text-anchor="middle" style="font-size: 12px; font-weight: 700">the sidecar</text>
+  <text x="550" y="270" text-anchor="middle" class="t2" style="font-size: 10.5px">page.annotations.json</text>
+  <text x="550" y="286" text-anchor="middle" class="t3" style="font-size: 9.5px">committed beside the page</text>
+  <path d="M715 130 L715 265 L652 265" style="fill: none; stroke: #57524a; stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="708" y="200" text-anchor="end" class="t3" style="font-size: 9.5px">annotates,</text>
+  <text x="708" y="213" text-anchor="end" class="t3" style="font-size: 9.5px">any time</text>
+  <path d="M450 265 L60 265 L60 132" style="fill: none; stroke: #57524a; stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="255" y="258" text-anchor="middle" class="t3" style="font-size: 9.5px">is picked up later — /address</text>
+  <text x="20" y="318" class="t3" style="font-size: 9.5px">nothing live joins the halves: the page, the rules and the note are files in the repo; the engine is installed once</text>
+</svg>

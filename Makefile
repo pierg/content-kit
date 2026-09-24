@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help check selftest e2e wheel site-check site serve
+.PHONY: help check selftest e2e wheel site-check figures site serve
 
 help:
 	@echo "Targets:"
@@ -8,6 +8,7 @@ help:
 	@echo "  e2e         init · gate · scaffold · plugins · serve · annotate · export · drift · pin"
 	@echo "  wheel       uv tool install this checkout, then init + gate a repo with the installed engine"
 	@echo "  site-check  the content gate on this repo's own documentation (content/)"
+	@echo "  figures     the README's figures still match the pages that own them"
 	@echo "  site        export the documentation as a static site to _site/"
 	@echo "  serve       serve the documentation on the port in kit.json (foreground)"
 
@@ -23,11 +24,14 @@ wheel:
 site-check:
 	@./bin/ckit check
 
+figures:
+	@python3 tools/readme_figures.py --check
+
 site:
 	@./bin/ckit export --out _site
 
 serve:
 	@./bin/ckit serve
 
-check: selftest e2e wheel site-check
+check: selftest e2e wheel site-check figures
 	@echo "content-kit check ok"
