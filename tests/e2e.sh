@@ -41,9 +41,44 @@ for f in kit.json Makefile .gitignore kit/PIN kit/shell/lib.css kit/shell/search
          kit/skills/address/SKILL.md kit/skills/curate/SKILL.md kit/verify.sh kit/tools/kit_hash.py; do
   [ -e "$REPO/$f" ] || fail "init did not create $f"
 done
-[ -L "$REPO/.claude/skills/present" ] || fail "present skill not symlinked"
-[ -L "$REPO/.claude/skills/address" ] || fail "address skill not symlinked"
-[ -L "$REPO/.claude/skills/curate" ] || fail "curate skill not symlinked"
+[ -L "$REPO/.claude/skills" ] && [ "$(readlink "$REPO/.claude/skills")" = "../.agents/skills" ] \
+  || fail ".claude/skills must be one relative symlink to ../.agents/skills"
+for s in present address curate; do
+  [ -L "$REPO/.agents/skills/$s" ] || fail "$s skill not symlinked from .agents/skills"
+  [ "$(readlink "$REPO/.agents/skills/$s")" = "../../kit/skills/$s" ] || fail "$s skill link is not relative to kit/skills"
+done
+[ -f "$REPO/AGENTS.md" ] && [ ! -L "$REPO/AGENTS.md" ] || fail "AGENTS.md must be a regular file"
+[ "$(cat "$REPO/CLAUDE.md")" = "@AGENTS.md" ] || fail "CLAUDE.md must be exactly @AGENTS.md"
+[ ! -e "$REPO/.cursor/skills" ] || fail ".cursor/skills must not exist"
+# A check without a failing case is not a check. Each plant is restored before the next.
+agents_snap() { rm -rf "$TMP/agents-snap"; mkdir -p "$TMP/agents-snap"; cp -a "$REPO/AGENTS.md" "$REPO/CLAUDE.md" "$REPO/.agents" "$REPO/.claude" "$TMP/agents-snap/"; }
+agents_restore() {
+  rm -rf "$REPO/AGENTS.md" "$REPO/CLAUDE.md" "$REPO/.agents" "$REPO/.claude" "$REPO/.cursor"
+  cp -a "$TMP/agents-snap/AGENTS.md" "$TMP/agents-snap/CLAUDE.md" "$REPO/"
+  cp -a "$TMP/agents-snap/.agents" "$TMP/agents-snap/.claude" "$REPO/"
+}
+expect_agents() {
+  OUT="$(cd "$REPO" && ckit check 2>&1 || true)"
+  echo "$OUT" | grep -q "$1" || { echo "$OUT" >&2; fail "expected the gate to say: $1"; }
+}
+agents_snap
+rm "$REPO/AGENTS.md"; expect_agents "AGENTS.md is missing"; agents_restore
+: > "$REPO/AGENTS.md"; expect_agents "AGENTS.md is empty"; agents_restore
+rm "$REPO/AGENTS.md"; ln -s CLAUDE.md "$REPO/AGENTS.md"; expect_agents "AGENTS.md is a symlink"; agents_restore
+python3 -c 'from pathlib import Path; Path("'"$REPO"'/AGENTS.md").write_text("x" * (24 * 1024 + 1))'
+expect_agents "the limit is 24576"; agents_restore
+printf 'prose\n' > "$REPO/CLAUDE.md"; expect_agents "CLAUDE.md must be exactly @AGENTS.md"; agents_restore
+rm "$REPO/.claude/skills"; mkdir -p "$REPO/.claude/skills"; expect_agents ".claude/skills must be a relative symlink"; agents_restore
+mkdir -p "$REPO/.cursor/skills"; expect_agents ".cursor/skills must not exist"; agents_restore
+rm "$REPO/.agents/skills/present"; expect_agents ".agents/skills/present must be a relative symlink"; agents_restore
+ln -sfn /tmp "$REPO/.agents/skills/present"; expect_agents ".agents/skills/present must be a relative symlink"; agents_restore
+ln -sfn ../../kit/skills/address "$REPO/.agents/skills/present"; expect_agents ".agents/skills/present resolves outside"; agents_restore
+rm "$REPO/.agents/skills/present"; mkdir -p "$REPO/.agents/skills/present"; printf 'x\n' > "$REPO/.agents/skills/present/SKILL.md"
+expect_agents ".agents/skills/present reuses a kit skill name"; agents_restore
+mkdir -p "$REPO/.agents/skills/mine"; expect_agents ".agents/skills/mine must be a directory containing SKILL.md"; agents_restore
+mkdir -p "$REPO/kit/extra/skills/present"; cp "$REPO/kit/skills/present/SKILL.md" "$REPO/kit/extra/skills/present/SKILL.md"
+expect_agents "present: SKILL.md resolves to more than one file"
+rm -rf "$REPO/kit/extra"; agents_restore
 grep -q "\"ckit\": \"$(ckit version)\"" "$REPO/kit.json" || fail "kit.json did not get the engine pin"
 grep -q '^source content-kit ' "$REPO/kit/PIN" || fail "PIN has no content-kit source line"
 [ "$(awk '/^source content-kit/ {print NF}' "$REPO/kit/PIN")" = 4 ] || fail "the PIN source line must keep four fields (CI reads the fourth)"

@@ -8,6 +8,8 @@
      fails, it is not silently rewritten (`ckit lint` or `ckit nav` regenerates; commit the result)
   5. lint — form (links, prose, tags included), genre, annotations
   6. every book verifies (node), when node is available
+  7. the agent entry files: AGENTS.md is the only copy of the rules, CLAUDE.md is the one-line
+     import, and each skill has one body with the other paths as links
 
 1–3 are preconditions and stop the gate; 3's home and 4–6 all run and report, and the gate
 fails at the end on any of them — one run names every problem. Fail-loud, seconds-fast, no
@@ -21,7 +23,7 @@ import shutil
 import subprocess
 import sys
 
-from . import __version__, book_nav, config, lint
+from . import __version__, agents, book_nav, config, lint
 from .paths import PACKAGE_DIR, Repo, home_page, home_shell_page, load_repo
 
 
@@ -96,6 +98,12 @@ def run(repo: Repo) -> int:
             print(f"book verify failed: {repo.rel(book)}", file=sys.stderr)
             if "books" not in failed:
                 failed.append("books")
+
+    entry = agents.problems(repo)
+    if entry:
+        print("agent entry files:", file=sys.stderr)
+        print("\n".join("  " + s for s in entry), file=sys.stderr)
+        failed.append("agents")
     if failed:
         print(f"content check failed: {' · '.join(failed)}", file=sys.stderr)
         return 1

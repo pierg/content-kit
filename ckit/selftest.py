@@ -87,6 +87,11 @@ def _scratch() -> tuple[Path, Repo]:
         "ckit": __version__,
     }, indent=2) + "\n")
     (root / "content").mkdir()
+    (root / "AGENTS.md").write_text("# AGENTS.md\n\nRead `kit/genres/GENRES.md` before writing a page.\n", encoding="utf-8")
+    (root / "CLAUDE.md").write_bytes(b"@AGENTS.md\n")
+    (root / ".agents" / "skills").mkdir(parents=True)
+    (root / ".claude").mkdir()
+    (root / ".claude" / "skills").symlink_to("../.agents/skills")
     return tmp, load_repo(root)
 
 

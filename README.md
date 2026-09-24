@@ -78,7 +78,10 @@ Python 3.10 or newer, and no dependencies; node, to check books. Without `uv`, c
     craft/          how to lay out a comparison · diagram · table · timeline · code · figure
     skills/         /present (write a page) · /address (answer annotations) · /curate (organise)
     verify.sh       make kit-verify · make kit-sync
-  .claude/skills/   links to kit/skills/ (and a layer's), where Claude Code looks for skills
+  AGENTS.md         the only copy of the operating rules (Codex, Cursor, and, through CLAUDE.md, Claude Code)
+  CLAUDE.md         the one line `@AGENTS.md`
+  .agents/skills/   one link per kit skill, into kit/skills/ (or kit/<layer>/skills/); a repo-owned skill is a real directory here
+  .claude/skills    one relative symlink to ../.agents/skills
   content/          notes/ concepts/ entries/ books/ hubs/ projects/ papers/ related/
                     catalog.json · search-index.json · backlinks.json · threads.json — generated, never edited
                     <page>.annotations.json — a page's annotations, written by the browser or ckit annotations

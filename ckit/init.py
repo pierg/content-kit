@@ -117,18 +117,53 @@ def _config(repo: Path, name: str, port: int | None, say) -> Path:
 
 
 def _link_skills(repo: Path, say) -> None:
-    """Skills are symlinked so a re-sync updates them and drift is visible. A pre-existing real
-    directory is the repo's own skill: leave it and say so."""
-    skills = repo / ".claude" / "skills"
-    skills.mkdir(parents=True, exist_ok=True)
-    for s in SKILLS:
-        dest = skills / s
-        if dest.exists() and not dest.is_symlink():
-            say(f"  keep    .claude/skills/{s}  (repo's own — kit's copy NOT linked)")
+    """One body per kit skill, linked from `.agents/skills/<name>`. `.claude/skills` is a single
+    relative symlink to that directory. A real directory already occupying a kit skill's name is
+    replaced: a repo-owned skill may not shadow a kit skill. A real directory under `.claude/skills`
+    whose name is not a kit skill is left — it belongs to the repo and moves to `.agents/skills/`."""
+    from .agents import skill_bodies
+
+    bodies = skill_bodies(repo)
+    agents = repo / ".agents" / "skills"
+    agents.mkdir(parents=True, exist_ok=True)
+    for name, dirs in bodies.items():
+        if len(dirs) != 1:
+            say(f"  note    {name} has {len(dirs)} bodies — not linked")
             continue
-        if dest.is_symlink():
+        dest = agents / name
+        rel = os.path.relpath(dirs[0], agents)
+        if dest.is_symlink() and os.readlink(dest) == rel:
+            continue
+        if dest.is_dir() and not dest.is_symlink():
+            say(f"  replace .agents/skills/{name}  (it shadowed the kit skill)")
+            shutil.rmtree(dest)
+        elif dest.is_symlink() or dest.is_file():
             dest.unlink()
-        dest.symlink_to(Path("..") / ".." / "kit" / "skills" / s)
+        dest.symlink_to(rel)
+        say(f"  link    .agents/skills/{name}")
+
+    claude = repo / ".claude" / "skills"
+    if claude.is_symlink():
+        if os.readlink(claude) != "../.agents/skills":
+            claude.unlink()
+            claude.symlink_to("../.agents/skills")
+            say("  link    .claude/skills")
+        return
+    if claude.is_dir():
+        for child in list(claude.iterdir()):
+            if child.is_symlink() or child.is_file():
+                child.unlink()
+        leftover = list(claude.iterdir())
+        if leftover:
+            for child in leftover:
+                say(f"  keep    .claude/skills/{child.name}  (repo's own — move it to .agents/skills/{child.name})")
+            return
+        claude.rmdir()
+    elif claude.exists():
+        claude.unlink()
+    claude.parent.mkdir(parents=True, exist_ok=True)
+    claude.symlink_to("../.agents/skills")
+    say("  link    .claude/skills")
 
 
 def pin(repo: Path, name: str, where: str, ref: str) -> None:
@@ -160,6 +195,11 @@ def run(repo: Path, *, name: str | None = None, port: int | None = None, quiet: 
         _scaffold(repo, MARKER, tpl / "kit.json", say)
     _scaffold(repo, "Makefile", tpl / "Makefile", say)
     _scaffold(repo, ".gitignore", tpl / "gitignore", say)
+    _scaffold(repo, "AGENTS.md", tpl / "AGENTS.md", say)
+    claude = repo / "CLAUDE.md"
+    if not claude.exists() and not claude.is_symlink():
+        claude.write_text("@AGENTS.md\n", encoding="utf-8")
+        say("  create  CLAUDE.md")
     for d in CONTENT_DIRS:
         (repo / "content" / d).mkdir(parents=True, exist_ok=True)
     _config(repo, name or repo.name, port, say)

@@ -5,6 +5,7 @@ Every release names what it breaks and how to move across. A repo pins the engin
 ## Unreleased
 
 - **folio is no longer a layer.** The one library that used it keeps those rules in its own repository. The README, the docs and the kit's text name lab-kit as the layer that exists, and say a library may keep rules of its own. Nothing to move across.
+- **One instruction file, one skill body.** `AGENTS.md` is a regular file and the only copy of the operating rules. `CLAUDE.md` is exactly `@AGENTS.md` and a newline. Each kit skill is linked from `.agents/skills/<name>` to its body under `kit/skills/` or `kit/<layer>/skills/`; `.claude/skills` is one relative symlink to `../.agents/skills`. A repo-owned skill is a real directory there and may not reuse a kit skill's name. `ckit check` reports the layout and changes nothing; `ckit init` creates it and repairs the links. A repo that kept a real directory at `.claude/skills/<name>` to shadow a kit skill moves that skill to a new name under `.agents/skills/`, or drops it: re-running `ckit init` replaces the shadow with the kit link.
 
 ## 0.5.0 — 2026-09-24
 
