@@ -307,8 +307,8 @@
     var form = el("div", "hb-ann-form hb-ann-ui");
     form.innerHTML =
       (quote ? '<div class="hb-ann-quote">' + esc(quote.length > CLIP ? quote.slice(0, CLIP) + "…" : quote) + "</div>"
-             : '<div class="hb-ann-meta">Page-level note</div>') +
-      '<textarea aria-label="Your note" placeholder="What should change, and why?"></textarea>' +
+             : '<div class="hb-ann-meta">On the whole page</div>') +
+      '<textarea aria-label="Your comment" placeholder="What should change, and why?"></textarea>' +
       '<div class="hb-ann-err" role="alert" hidden></div>' +
       '<div class="hb-ann-actions"><button type="button" class="hb-ann-btn primary" data-act="save">Save</button>' +
       '<button type="button" class="hb-ann-btn" data-act="cancel">Cancel</button></div>';
@@ -333,7 +333,7 @@
         .then(function (j) {
           slot.innerHTML = "";
           if (j.thread) state.focus = j.thread.id;
-          say("Note saved.");
+          say("Annotation saved.");
           return load();
         })
         .catch(function (ex) { err.textContent = ex.message; err.hidden = false; b.disabled = false; });
@@ -426,14 +426,14 @@
 
     var html = [
       '<div class="hb-ann-head"><h2 tabindex="-1">Annotations</h2>',
-      '<span><button type="button" class="hb-ann-btn primary" data-act="note">＋ Page note</button> ',
+      '<span><button type="button" class="hb-ann-btn primary" data-act="note">＋ Comment on the page</button> ',
       '<button type="button" class="hb-ann-btn" data-act="close" aria-label="Close annotations">Close</button></span>',
       '<div class="hb-ann-meta">' + open + " waiting · " + noted + " noted · " + state.threads.length +
         " total · select prose to comment on it</div></div>",
       '<div data-composer></div>'
     ];
     if (!state.threads.length) {
-      html.push('<div class="hb-ann-empty">No annotations yet. Select some prose, or add a page note.</div>');
+      html.push('<div class="hb-ann-empty">No annotations yet. Select some text to comment on it, or comment on the whole page.</div>');
     }
     state.threads.slice().reverse().forEach(function (t) {
       var stale = state.stale[t.id];
