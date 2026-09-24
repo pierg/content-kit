@@ -375,7 +375,14 @@
       li.innerHTML = '<a href="' + escapeAttr(hbUrl("/shell/review.html")) + '" data-hb-review' + (here ? ' class="here" aria-current="page"' : "") +
         ' title="' + t.open + " waiting · " + t.noted + ' noted">' + icon("review") + "<span>Review</span>" +
         (t.open ? '<span class="hb-ext">' + t.open + "</span>" : "") + "</a>";
-      nav.appendChild(li);
+      // beside Chronicle, where navHtml puts it: after the last of the shell's own items
+      var core = [hbUrl("/"), hbUrl("/shell/search.html"), hbUrl("/shell/chronicle.html")];
+      var after = null;
+      Array.prototype.forEach.call(nav.children, function (item) {
+        var a = item.querySelector("a");
+        if (a && core.indexOf(a.getAttribute("href")) !== -1) after = item;
+      });
+      if (after && after.nextSibling) nav.insertBefore(li, after.nextSibling); else nav.appendChild(li);
     });
   }
 
