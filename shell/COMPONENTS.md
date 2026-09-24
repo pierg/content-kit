@@ -15,8 +15,8 @@ chapter's HTML (`<style>`). Book chapter order is discovered into `nav.json`
 
 Chrome (`lib.js`, built from `/content/catalog.json` and always inserted **outside** `<main>` — the text a reader annotates is exactly the text the page carries):
 - **Library rail** (left) — the site's name, a search button (⌘K / Ctrl-K / `/` anywhere opens the palette), Home · Browse · Chronicle and the repo's kit.json `links`, then the library as a tree: **by topic** when pages declare `<meta name="topic">` (each topic → its hub as *Overview*, then its pages by genre), **by genre** otherwise (one group per genre that owns a directory, in the genre table's order), then the record's files. Groups fold; what a reader opens stays open. A theme toggle (auto · light · dark) and a reading-face toggle (serif · sans) sit at its foot.
-- **Top bar** — breadcrumbs (site / topic / genre), or a book's chapters as pills on a chapter page; "Updated … · N min read" and a Contents menu when the page rail is hidden.
-- **Page rail** (right, wide screens) — *On this page* (the `<h2>`/`<h3>` outline, following the scroll), *Page* (its kind, its topic, when it changed, its reading time, its tags as links into Browse), *Linked from* (from `/content/backlinks.json`, automatic — no markup needed).
+- **Top bar** — breadcrumbs (site / topic / genre), or a book's chapters as pills on a chapter page; "Updated … · N min read"; a Contents menu holding the page rail's sections when the rail is hidden.
+- **Page rail** (right, wide screens) — *On this page* (the `<h2>`/`<h3>` outline, following the scroll); *Page*: its kind and topic, its status, when it was created and updated (from the catalog), its reading time, its tags as links into Browse; *Linked from* (from `/content/backlinks.json`); *Links to* (the page's own internal links, each once, named from the catalog). No markup is needed for any of it.
 - **Peeks** — hovering an internal link shows its kind, title and opening line; a `defn-link` keeps its definition popover.
 - **Footer** — prev / next chapter in a book.
 - **Moving between pages** — cross-document view transitions where the browser has them, speculation-rules prefetch on hover (Chromium); elsewhere, plain navigation.
@@ -36,7 +36,7 @@ Prose — the direct children of `<main>` that are `h1`–`h6`, `p`, `ul`, `ol`,
 
 Two vendored variable faces (SIL OFL, `vendor/fonts/`): **Source Serif 4** for reading (`--font-body`, `--font-serif`) and **Inter** for headings and chrome (`--font-sans`); code is `--font-mono`. The reader can switch the body to sans. SVG text keeps the system face, so a hand-laid figure never reflows.
 
-A page that is not current opens its lede with `<b>Status: X</b>` (HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT), rendered as a pill (a class on the author's own `<b>`; the text is untouched). A current page states nothing: LIVE is the default.
+A page that is not current opens its lede with `<b>Status: X</b>` (HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT), rendered as a pill (a class on the author's own `<b>`; the text is untouched). A current page states nothing: LIVE is the default, and the page rail shows it.
 
 ## Color registers
 
@@ -128,14 +128,7 @@ context beyond the blockquote itself.
 
 ## Backlinks
 
-Every page shows who links to it in the page rail (*Linked from*), from `/content/backlinks.json` — a lint-generated reverse index of every internal `href` in the library. No markup is needed. A page that wants the list in its own body places one; it then replaces the rail's list (no page shows it twice), and it shows on narrow screens, where the rail is hidden:
-
-```html
-<h2 id="backlinks">Cited by</h2>
-<ul data-backlinks><li class="muted">Auto-populated.</li></ul>
-```
-
-Each item gets a `<span class="hb-kind hb-kind-<kind>">` badge and a link back to the citing page.
+Every page shows who links to it in the page rail (*Linked from*), from `/content/backlinks.json` — a lint-generated reverse index of every internal `href` in the library — and where it links (*Links to*), read from the page itself. No markup is needed; where the rail is hidden, both are under the top bar's Contents menu. A page written before 0.5.0 may carry the list in its body (`<ul data-backlinks>`): it is still filled, in place of the rail's, and the lint names it as no longer needed.
 
 ## Search and browse
 

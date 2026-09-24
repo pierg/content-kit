@@ -53,6 +53,7 @@ BURIED = re.compile(r"<(script|style|noscript|template)\b[^>]*>.*?</\1>", re.S |
 ANCHOR = re.compile(r"<a\b([^>]*)>", re.I)
 HREF = re.compile(r'href="([^"#?]+)', re.I)
 NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
+BACKLINKS_LIST = re.compile(r"<ul\b[^>]*\bdata-backlinks\b", re.I)
 DEFN_NAME = re.compile(r'class="[^"]*\bdefn-name\b', re.I)
 
 # Classes that claim to be shell vocabulary — must be known.
@@ -338,11 +339,14 @@ def lint_file(repo: Repo, path: Path, genres: dict[str, Genre],
 
 def _outdated(repo: Repo, files: list[Path]) -> list[str]:
     """What 0.5.0 made unnecessary, named once per run and never failed: a stated LIVE (the
-    default)."""
-    live = []
+    default), and an in-body backlinks list (the page rail shows who links to a page)."""
+    live, lists = [], []
     for f in files:
-        if drop_live(f.read_text(encoding="utf-8", errors="replace"))[1]:
+        text = f.read_text(encoding="utf-8", errors="replace")
+        if drop_live(text)[1]:
             live.append(repo.rel(f))
+        if BACKLINKS_LIST.search(_served(text)):
+            lists.append(repo.rel(f))
 
     def some(rels: list[str]) -> str:
         return ", ".join(rels[:3]) + (f" and {len(rels) - 3} more" if len(rels) > 3 else "")
@@ -351,6 +355,9 @@ def _outdated(repo: Repo, files: list[Path]) -> list[str]:
     if live:
         out.append(f"{len(live)} page(s) state Status: LIVE, which is the default — `ckit unwrap --status` "
                    f"drops it and keeps their dates ({some(live)})")
+    if lists:
+        out.append(f"{len(lists)} page(s) carry a <ul data-backlinks> list the page rail now shows on its own "
+                   f"(Linked from) — remove the list and its heading ({some(lists)})")
     return out
 
 

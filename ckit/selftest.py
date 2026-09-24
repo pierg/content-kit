@@ -325,6 +325,16 @@ def _organise_cases(failures: list[str]) -> int:
         lv.unlink()
         dr.unlink()
 
+        # an in-body backlinks list: still filled on the page, named by the lint as no longer needed
+        # (the page rail shows who links to a page), never failed
+        bl = _write(repo, "notes/bl.html", _page("Bl", '<h3>Cited by</h3><ul data-backlinks></ul>'))
+        (probs, _n), said = quiet(lint.run, repo, nav=True)
+        if "data-backlinks" not in said or "notes/bl.html" not in said or any("notes/bl.html" in p for p in probs):
+            failures.append(f"an in-body backlinks list must be named by the lint, as a note: {said!r}")
+        bl.unlink()
+        _lint(repo)
+        planted += 1
+
         # topics: add (listed with no hub yet), rename (pages, kit.json and the hub move together,
         # the hub's old address redirected), merge (old slugs kept as tags), assign
         _write(repo, "hubs/garden.html", _page("Garden", "<p>Map.</p>", head='<meta name="topic" content="garden">'))

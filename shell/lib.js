@@ -750,9 +750,11 @@
       on = '<span>on <a href="' + escapeAttr(hbUrl(href)) + '">' + escapeHtml(label) + "</a></span>";
     }
     bits.push('<div class="hb-fact">' + badge + on + "</div>");
-    var when = p && (p.updated || p.created);
-    bits.push('<div class="hb-fact">' + icon("clock") + "<span>" + (when ? "Updated " + escapeHtml(fmtDate(when)) + " · " : "") +
-      minutes + " min read</span></div>");
+    var st = statusOf(document.querySelector("main")).word;
+    bits.push('<dl class="hb-when"><dt>Status</dt><dd><span class="hb-status" data-status="' + escapeAttr(st) + '">' + escapeHtml(st) + "</span></dd>" +
+      (p && p.created ? "<dt>Created</dt><dd>" + escapeHtml(fmtDate(p.created)) + "</dd>" : "") +
+      (p && p.updated ? "<dt>Updated</dt><dd>" + escapeHtml(fmtDate(p.updated)) + "</dd>" : "") + "</dl>");
+    bits.push('<div class="hb-fact">' + icon("clock") + "<span>" + minutes + " min read</span></div>");
     var tags = ((document.querySelector('meta[name="tags"]') || {}).content || "").split(",")
       .map(function (s) { return s.trim(); }).filter(Boolean);
     if (tags.length) {
@@ -763,11 +765,41 @@
     return '<div class="hb-facts">' + bits.join("") + "</div>";
   }
 
-  function linksHtml(hits) {
-    return '<ul class="hb-links">' + hits.map(function (b) {
+  function linksHtml(label, hits) {
+    return '<div class="hb-rail-label">' + label + " · " + hits.length + '</div><ul class="hb-links">' + hits.map(function (b) {
       return '<li><a href="' + escapeAttr(hbUrl(b.href)) + '"><span class="hb-kind hb-kind-' + escapeAttr(b.kind) + '">' +
         escapeHtml(b.kind) + "</span>" + escapeHtml(b.title) + "</a></li>";
     }).join("") + "</ul>";
+  }
+
+  /* Links to: the pages this page links to, each once, in reading order — named and badged from
+     the catalog; a page the catalog does not list (a chapter, a page inside a folder) from the
+     search index, fetched only then; until it answers, by the link's own text */
+  function paintOut(lib, where, idx) {
+    var seen = Object.create(null), recs = Object.create(null), outs = [], miss = 0;
+    (idx || []).forEach(function (r) { recs[r.href] = r; });
+    document.querySelectorAll("main a[href]").forEach(function (a) {
+      var t = canon(a.href);
+      if (!t || t.indexOf("/content/") !== 0 || !/(\/|\.html)$/.test(t) || t === where.href || seen[t] ||
+          a.closest("[data-backlinks], .hb-ann-ui")) return;
+      seen[t] = 1;
+      var p = lib.byHref[t] || recs[t], g = lib.byKey[t.split("/")[2]];
+      if (!p) miss++;
+      outs.push({ href: t, kind: p ? p.kind : g ? g.kind : "page",
+                  title: p ? p.title : (a.textContent || "").replace(/\s+/g, " ").trim().slice(0, 90) || t });
+    });
+    document.querySelectorAll("[data-hb-out]").forEach(function (o) {
+      o.innerHTML = outs.length ? linksHtml("Links to", outs) : "";
+      o.hidden = !outs.length;
+    });
+    if (miss && !idx) searchIndex().then(function (i) { paintOut(mounted.lib, mounted.where, i); });
+  }
+
+  /* what the page rail holds; the top bar's Contents menu holds the same when the rail is hidden */
+  function railHtml(lib, where, hs, minutes) {
+    return (hs.length > 1 ? '<div class="hb-rail-sec"><div class="hb-rail-label">On this page</div>' + tocHtml(hs) + "</div>" : "") +
+      '<div class="hb-rail-sec"><div class="hb-rail-label">Page</div><div data-hb-facts>' + factsHtml(lib, where, minutes) + "</div></div>" +
+      '<div class="hb-rail-sec" data-hb-linked hidden></div><div class="hb-rail-sec" data-hb-out hidden></div>';
   }
 
   function scrollSpy(toc, hs) {
@@ -889,22 +921,17 @@
       crumbsHtml(lib, where) +
       '<div class="hb-top-meta">' +
       (!app && !bookRoot() ? '<span class="hb-only-wide hb-norail">' + metaText(where, minutes) + "</span>" : "") +
-      (!app && hs.length > 1 ? '<span class="hb-contents"><button type="button" class="hb-iconbtn" data-hb-contents aria-expanded="false">' + icon("list") +
-        '<span class="hb-only-wide">Contents</span></button><div class="hb-contents-panel" hidden>' + tocHtml(hs) + "</div></span>" : "") +
+      (!app ? '<span class="hb-contents"><button type="button" class="hb-iconbtn" data-hb-contents aria-expanded="false" aria-label="Contents">' + icon("list") +
+        '<span class="hb-only-wide">Contents</span></button><div class="hb-contents-panel" hidden>' + railHtml(lib, where, hs, minutes) + "</div></span>" : "") +
       '<button type="button" class="hb-iconbtn hb-only-narrow" data-hb-palette aria-label="Search">' + icon("search") + "</button>" +
       "</div>";
     body.insertBefore(top, first);
     top.addEventListener("click", function (e) {
       if (e.target.closest("[data-hb-drawer]")) setDrawer(!body.classList.contains("hb-side-open"));
-      var cb = e.target.closest("[data-hb-contents]");
-      if (cb) {
-        var panel = top.querySelector(".hb-contents-panel");
-        panel.hidden = !panel.hidden;
-        cb.setAttribute("aria-expanded", panel.hidden ? "false" : "true");
-      } else if (e.target.closest(".hb-contents-panel a")) {
-        top.querySelector(".hb-contents-panel").hidden = true;
-      }
+      if (e.target.closest("[data-hb-contents]")) setContents(top.querySelector(".hb-contents-panel").hidden);
+      else if (e.target.closest(".hb-contents-panel a")) setContents(false);
     });
+    document.addEventListener("click", function (e) { if (!e.target.closest(".hb-contents")) setContents(false); });
 
     /* the page rail, and what it holds when the screen is too narrow for it */
     var rail = null;
@@ -913,27 +940,23 @@
       rail = document.createElement("aside");
       rail.className = "hb-rail";
       rail.setAttribute("aria-label", "About this page");
-      rail.innerHTML = (hs.length > 1 ? '<div class="hb-rail-sec"><div class="hb-rail-label">On this page</div>' + tocHtml(hs) + "</div>" : "") +
-        '<div class="hb-rail-sec"><div class="hb-rail-label">Page</div><div data-hb-facts>' + factsHtml(lib, where, minutes) + "</div></div>" +
-        '<div class="hb-rail-sec" data-hb-linked hidden></div>';
+      rail.innerHTML = railHtml(lib, where, hs, minutes);
       body.appendChild(rail);
       scrollSpy(rail, hs);
-      if (!main.querySelector("ul[data-backlinks]")) {
+      if (!main.querySelector("ul[data-backlinks]")) {  /* a page that lists them in its body keeps its list */
         backlinksIndex().then(function (data) {
           var hits = (data && Object.prototype.hasOwnProperty.call(data, where.href) && data[where.href]) || [];
           if (!hits.length || !Array.isArray(hits)) return;
-          var sec = rail.querySelector("[data-hb-linked]");
-          sec.innerHTML = '<div class="hb-rail-label">Linked from · ' + hits.length + "</div>" + linksHtml(hits);
-          sec.hidden = false;
-          var after = document.createElement("div");
-          after.className = "hb-after";
-          after.innerHTML = '<div class="hb-rail-label">Linked from · ' + hits.length + "</div>" + linksHtml(hits);
-          main.insertAdjacentElement("afterend", after);
+          document.querySelectorAll("[data-hb-linked]").forEach(function (sec) {
+            sec.innerHTML = linksHtml("Linked from", hits);
+            sec.hidden = false;
+          });
         });
       }
     }
 
     mounted = { aside: aside, lib: lib, where: where, top: top, rail: rail, main: main, book: null, foot: null, minutes: minutes };
+    if (!app) paintOut(lib, where);
     if (opts.book) applyBook(opts.book);
   }
 
@@ -955,8 +978,8 @@
     }
     var meta = mounted.top.querySelector(".hb-norail");
     if (meta) meta.innerHTML = metaText(where, mounted.minutes);
-    var facts = mounted.rail && mounted.rail.querySelector("[data-hb-facts]");
-    if (facts) facts.innerHTML = factsHtml(lib, where, mounted.minutes);
+    document.querySelectorAll("[data-hb-facts]").forEach(function (f) { f.innerHTML = factsHtml(lib, where, mounted.minutes); });
+    paintOut(lib, where);
   }
 
   /* a book's chapters: in the top bar in place of the crumbs, and prev / next below the page —
@@ -970,6 +993,13 @@
     if (strip) strip.outerHTML = bookHtml(book);
     if (mounted.foot && mounted.foot.parentNode) mounted.foot.parentNode.removeChild(mounted.foot);
     mounted.foot = injectFoot(book.chapters, mounted.main);
+  }
+
+  function setContents(open) {
+    var panel = document.querySelector(".hb-contents-panel");
+    if (!panel || panel.hidden === !open) return;
+    panel.hidden = !open;
+    document.querySelector("[data-hb-contents]").setAttribute("aria-expanded", open ? "true" : "false");
   }
 
   function setDrawer(open) {
@@ -1260,6 +1290,7 @@
         openPalette();
       } else if (e.key === "Escape") {
         setDrawer(false);
+        setContents(false);
       }
     });
     document.addEventListener("click", function (e) {
@@ -1311,7 +1342,7 @@
   function initPeeks() {
     if (window.matchMedia && window.matchMedia("(hover: none)").matches) return;
     document.addEventListener("pointerover", function (e) {
-      var a = e.target.closest && e.target.closest("main a[href], .hb-rail a[href], .hb-after a[href]");
+      var a = e.target.closest && e.target.closest("main a[href], .hb-rail a[href], .hb-contents-panel a[href]");
       if (!a || a.classList.contains("defn-link") || a.closest(".hb-ann-ui, .hb-toc-list")) return;
       var target = canon(a.href);
       if (!target || target.indexOf("/content/") !== 0 || target === (canon(location.href) || "")) return;

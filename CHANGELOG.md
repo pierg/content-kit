@@ -28,10 +28,12 @@ And a library an agent can organise without guessing and without breaking it: wh
 
 14. **A page states its status only when it is not current.** None stated means LIVE, the default: the gate accepts a page that states nothing, and checks that a stated word is one the shell knows (HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT, or LIVE). The pill above the text shows only a status that is not LIVE, and the skeletons state none. `ckit unwrap --status` drops a stated LIVE from each opening line, capitalising the lede, and keeps the page's dates — a catalog entry's `sha` reads a stated LIVE as absent, and a catalog written by 0.5.0.dev1 keeps its dates across the change. The lint names the pages that still state LIVE, once per run, and never fails them. The project genre's `<meta name="status">` (active · shipped · paused) is a different thing and is unchanged.
 
+15. **The page rail says more, and the in-body backlinks list is no longer needed.** *Page* shows the status beside the dates the catalog carries — created and updated — and the reading time; *Links to* joins *Linked from*: the page's own internal links, each once, named and badged from the catalog. Where the rail is hidden, the top bar's Contents menu holds all of it (the list that followed the page on narrow screens is gone). A `<ul data-backlinks>` in a page's body is still filled, in place of the rail's list; the lint names it, once per run, as no longer needed — remove it with its heading. The skeletons carry none.
+
 ### Added
 
 - **The library rail** — by topic when pages declare one, by genre otherwise, folding and remembered; the theme (auto · light · dark) and reading face (serif · sans) toggles.
-- **The page rail** — outline with scroll-spy, the page's kind, topic, dates, reading time and tags, and *Linked from* (automatic backlinks).
+- **The page rail** — outline with scroll-spy, the page's kind, topic, status, created and updated dates, reading time and tags, *Linked from* (automatic backlinks) and *Links to*; under the top bar's Contents menu where the rail is hidden.
 - **The palette** — ⌘K / Ctrl-K / `/`: pages, topics, tags and the shell's pages; full text when Pagefind answers.
 - **Peeks** on internal links; the status pill on the opening line; a top bar with breadcrumbs or a book's chapters.
 - **Browse** (`/shell/search.html`): multi-word matching, kind / topic / tag filters kept in the URL, newest first.

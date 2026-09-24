@@ -458,25 +458,28 @@ body.hb.hb-ann-on { padding-right: var(--gutter); }
 .hb .hb-toc-list a.hb-l3 { padding-left: 24px; font-size: 12.5px; }
 .hb .hb-toc-list a:hover { color: var(--ink-1); }
 .hb .hb-toc-list a.on { color: var(--ink-1); border-left-color: var(--accent); }
-.hb .hb-facts { display: grid; gap: 7px; }
+.hb .hb-facts { display: grid; gap: 8px; }
 .hb .hb-facts .hb-fact { display: flex; align-items: flex-start; gap: 7px; color: var(--ink-2); }
 .hb .hb-facts .hb-fact > .hb-ico { margin-top: 1px; }
 .hb .hb-facts .hb-fact > span { min-width: 0; }
 .hb .hb-facts .hb-fact a { color: var(--ink-2); }
+.hb .hb-when { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 2px 0; color: var(--ink-2); }
+.hb .hb-when dt { color: var(--ink-3); }
+.hb .hb-when dd { margin: 0; }
+.hb .hb-when .hb-status { vertical-align: 1px; padding: 3px 7px 2px; font-size: 10px; }
 .hb .hb-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
 .hb .hb-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .hb .hb-links a { color: var(--ink-2); text-decoration: none; display: block; line-height: 1.35; }
 .hb .hb-links a:hover { color: var(--ink-1); }
 .hb .hb-links .hb-kind { font-size: 9px; margin-right: 5px; }
 
-/* contents and "linked from" when the page rail is hidden */
+/* the page rail's sections, in the top bar's Contents menu when the rail is hidden */
 .hb .hb-contents { position: relative; }
-.hb .hb-contents-panel { position: absolute; right: 0; top: calc(100% + 6px); width: 300px; max-height: 60vh; overflow: auto;
-                         background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px; box-shadow: var(--shadow);
-                         padding: 12px 14px; z-index: 45; font-size: 13px; }
-.hb .hb-after { max-width: var(--measure); margin: 56px auto 0; font: 13.5px/1.5 var(--font-sans); color: var(--ink-3);
-                border-top: 1px solid var(--grid); padding-top: 18px; }
-@media (min-width: 1240px) { body.hb-has-rail .hb-after { display: none; } }
+.hb .hb-contents-panel { position: absolute; right: 0; top: calc(100% + 6px); width: 320px; box-sizing: border-box; max-height: 70vh;
+                         overflow: auto; background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px;
+                         box-shadow: var(--shadow); padding: 14px 16px 0; z-index: 45; font: 13px/1.45 var(--font-sans);
+                         color: var(--ink-3); white-space: normal; }
+.hb .hb-contents-panel .hb-rail-sec { margin-bottom: 18px; }
 
 /* backlink lists an author placed in the page (ul[data-backlinks]) */
 .hb ul[data-backlinks] { list-style: none; padding-left: 0; font: 15px/1.5 var(--font-sans); }
@@ -578,6 +581,7 @@ body.hb.hb-ann-on { padding-right: var(--gutter); }
                 backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--grid); padding: 0 10px; }
   .hb .hb-top .hb-only-narrow { display: inline-flex; }
   .hb .hb-top-meta .hb-only-wide { display: none; }
+  .hb .hb-contents-panel { position: fixed; top: calc(var(--top-h) + 6px); left: 10px; right: 10px; width: auto; }
 }
 @media (min-width: 1240px) { .hb .hb-top .hb-contents { display: none; } }
 
@@ -592,7 +596,7 @@ body.hb.hb-ann-on { padding-right: var(--gutter); }
 
 @media print {
   body.hb { padding: 0 !important; }
-  .hb .hb-side, .hb .hb-top, .hb .hb-rail, .hb .hb-foot, .hb .hb-after, .hb-ann-toggle { display: none !important; }
+  .hb .hb-side, .hb .hb-top, .hb .hb-rail, .hb .hb-foot, .hb-ann-ui { display: none !important; }
 }
 
 /* ============================================================ widget primitives
