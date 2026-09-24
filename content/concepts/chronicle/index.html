@@ -81,7 +81,7 @@ The chronicle is a timeline generated from the <a class="defn-link" href="/conte
   …
 }</code></pre>
 
-<p>The decision appears in Story and Timeline; the untagged sighting only in Timeline. A heading counts when it is level two to four and reads <code>date — title</code>, the date as <code>YYYY-MM-DD</code> (optionally with a <code>THH:MMZ</code> time). A tag nobody declared fails loud rather than quietly becoming an entry:</p>
+<p>The decision appears in Story and Timeline; the untagged sighting only in Timeline. A heading counts when it is level two to four and reads <code>date — title</code>, the date as <code>YYYY-MM-DD</code> (optionally with a <code>THH:MMZ</code> time). A tag nobody declared stops the lint with an error, rather than quietly becoming an entry:</p>
 
 <pre><code>log/2026.md:11: unknown chronicle tag [sighting] — one of pivot · kill · decision · lesson · instrument · result (or a kind an extractor declares)</code></pre>
 
