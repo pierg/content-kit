@@ -9,7 +9,7 @@ The engine itself is not vendored; the repo records the version it was checked a
 kit.json (`"ckit"`), and `ckit check` fails on a mismatch.
 
 Idempotent: re-running re-vendors and re-pins, and scaffolds only what is missing. It touches
-only its own paths under kit/, so a layer vendored beside them (lab-kit, folio) survives.
+only its own paths under kit/, so a layer vendored beside them (lab-kit, say) survives.
 Layer installers call it first, then add their own files and `source` line.
 
 kit/PIN records `source content-kit <where> <ref>`: the checkout's git remote and commit when

@@ -2,6 +2,10 @@
 
 Every release names what it breaks and how to move across. A repo pins the engine version it was checked against (`"ckit"` in `kit.json`), so an upgrade is always a deliberate act per repo.
 
+## Unreleased
+
+- **folio is no longer a layer.** The one library that used it keeps those rules in its own repository. The README, the docs and the kit's text name lab-kit as the layer that exists, and say a library may keep rules of its own. Nothing to move across.
+
 ## 0.5.0 — 2026-09-24
 
 A shell for reading and finding, a library an agent can reorganise without breaking it, and a review loop that runs both ways from the browser.

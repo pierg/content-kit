@@ -65,7 +65,7 @@ def _read(p: Path) -> str:
 
 def topic_of(html: str) -> str | None:
     """A page's `<meta name="topic">` — a mechanism any content tree may use; a layer decides
-    whether it is required (folio does)."""
+    whether it is required (a personal library may)."""
     return (meta_content(html, "topic") or "").strip() or None
 
 
@@ -317,7 +317,7 @@ def _books(repo: Repo) -> list[Path]:
 
 def topic_labels(repo: Repo) -> dict[str, str]:
     """kit.json `topics` — {slug: label} — when the repo declares any: the shell names topics by
-    them. Whether a topic is required is a layer's convention (folio's); naming one is not."""
+    them. Whether a topic is required is a layer's or a library's own convention; naming one is not."""
     got = repo.cfg.get("topics")
     if isinstance(got, list):  # a list of slugs names each topic by its slug
         return {str(s): str(s) for s in got}

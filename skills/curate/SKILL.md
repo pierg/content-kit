@@ -9,7 +9,7 @@ A library's organisation lives in a few declared places. Read them; never infer 
 
 | What | Where it is declared | What checks it |
 |---|---|---|
-| Which topics exist | kit.json `topics`: `{"slug": "Label"}` | a layer (a folio: every page on one, one hub each) |
+| Which topics exist | kit.json `topics`: `{"slug": "Label"}` | a layer, or the library's own rules (a personal library: every page on one, one hub each) |
 | A page's topic | `<meta name="topic" content="slug">`, one per page | the layer |
 | A page's tags | `<meta name="tags" content="a-tag, another">`, lowercase slugs | `ckit lint` |
 | A page's kind (genre) | its folder, `content/<genre dir>/…` | `ckit lint` |
@@ -54,7 +54,7 @@ Open one: `ckit topics add <slug> --label "Label"`, then `ckit new hub <slug> --
 | Promote or move a page | `ckit mv <page> <new place>` (`content/entries/<slug>/` for a folder page) | rewrite it in its new genre's voice (a note promoted to an entry grows sections) |
 | Retire a page | `ckit rm <page> --to <page that takes over>` | commit first, and settle its open threads (`/address`); `--folder` retires a folder page with everything in it |
 
-`ckit mv` and `ckit rm` rewrite every link to the page (and a moved page's own relative links), carry its annotation sidecar and its created date (its updated date becomes the day it moved), and record the old address in kit.json `moved`, which `ckit serve` and the exported site redirect. `git mv` does none of that. `ckit rm` deletes only what git can bring back: commit first, and settle every open thread on what it retires. What a move cannot carry is anything kept outside the repo by address: a folio's flashcard revision history restarts for the moved page's cards, and `ckit mv` says so.
+`ckit mv` and `ckit rm` rewrite every link to the page (and a moved page's own relative links), carry its annotation sidecar and its created date (its updated date becomes the day it moved), and record the old address in kit.json `moved`, which `ckit serve` and the exported site redirect. `git mv` does none of that. `ckit rm` deletes only what git can bring back: commit first, and settle every open thread on what it retires. What a move cannot carry is anything kept outside the repo by address: a personal library's flashcard revision history restarts for the moved page's cards, and `ckit mv` says so.
 
 ## 4 · Keep hubs current
 
@@ -86,5 +86,5 @@ A page drafted wholly from general knowledge gets one page-level thread (no `--q
 
 ## 7 · Record and land
 
-- Record every reorganisation in the repo's record (the markdown kit.json `record` names — a folio's `journal/log.md`) as a dated, tagged entry: `### YYYY-MM-DD — [decision] …`, old names → new.
+- Record every reorganisation in the repo's record (the markdown kit.json `record` names — a personal library's `journal/log.md`) as a dated, tagged entry: `### YYYY-MM-DD — [decision] …`, old names → new.
 - `ckit lint && make check`, then commit the pages, kit.json, the regenerated indices and the record together: the files you touched, never `git add -A`.

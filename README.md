@@ -5,7 +5,7 @@ content-kit helps AI agents keep a library of documentation pages consistent. Ea
 - **engine** — `ckit`, the command-line tool that creates, checks and serves pages. You install it once per machine.
 - **kit** — the rules an agent follows: the kinds of page (genres), layout guides, agent skills, and the shell. `ckit init` copies it into each repository.
 - **shell** — what every page shares: the stylesheet and script that give it its look, navigation and search, and the page templates.
-- **layer** — a project that adds its own rules on top of the kit, such as [lab-kit](https://github.com/pierg/lab-kit) or [folio](https://github.com/pierg/folio).
+- **layer** — a project that adds its own rules on top of the kit, such as [lab-kit](https://github.com/pierg/lab-kit). A library can also keep rules of its own in its repository.
 
 **Documentation:** <https://pierg.github.io/content-kit/>, itself a content-kit library. Why each decision was made: [`VISION.md`](VISION.md). What changed in each release: [`CHANGELOG.md`](CHANGELOG.md).
 

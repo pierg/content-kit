@@ -9,7 +9,7 @@
 #           hash <sha256>                            of the whole tree, PIN excluded
 #
 # --sync finds each source locally, in this order: $<NAME> (content-kit → $CONTENT_KIT,
-# lab-kit → $LAB_KIT, folio → $FOLIO), the recorded path if it is a directory here, the
+# lab-kit → $LAB_KIT), the recorded path if it is a directory here, the
 # installed engine for content-kit (`ckit where`), then a sibling checkout ../<kit-name>.
 set -euo pipefail
 KIT="$(cd "$(dirname "$0")" && pwd)"

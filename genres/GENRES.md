@@ -72,7 +72,7 @@ Every rule below names what checks it. A rule nothing checks is a suggestion, an
 
 **Reader.** Wants the state of the work, not the ideas behind it.
 
-**Shape.** `<meta name="status" content="active|shipped|paused">` for the catalog; a dated status line; owned artifacts; open threads; milestones with evidence chips. Sub-pages under the project folder (an ops board, a plan) share the genre. A layer may give the project a sharper register — lab-kit turns it into a lab's front door, a folio into the door to a repo that does the work elsewhere.
+**Shape.** `<meta name="status" content="active|shipped|paused">` for the catalog; a dated status line; owned artifacts; open threads; milestones with evidence chips. Sub-pages under the project folder (an ops board, a plan) share the genre. A layer may give the project a sharper register — lab-kit turns it into a lab's front door, a personal library into the door to a repo that does the work elsewhere.
 
 **Forbidden.** An undated status. *Checked: `require_meta_status`.*
 
@@ -114,4 +114,4 @@ The core checks, available to every genre: `status`, `max_words`, `no_h2`, `requ
 
 - `require_sections`: a list of `<h2>` ids the page must carry, in that order. Extra sections are the page's business; a declared one that is absent, or that appears after a later one, is reported by its id. It reads the markup a reader is *served*: a section that only exists inside an HTML comment (or a `<script>` / `<style>` body) does not count, because the page renders without it.
 
-Any other name a genre gives under `checks` must be provided by a module the repo registers under `checks` in `kit.json` — `CHECKS = {name: fn(ctx) -> [problem]}`, handed the page, its served markup and the genre's value for the check. A name that neither the core nor a registered module provides fails the gate: a check that silently never runs is worse than none. A layer brings its checks this way (lab-kit's `bound_ids` seals a story to the rows it tells; folio's `require_topic` puts every page on a topic).
+Any other name a genre gives under `checks` must be provided by a module the repo registers under `checks` in `kit.json` — `CHECKS = {name: fn(ctx) -> [problem]}`, handed the page, its served markup and the genre's value for the check. A name that neither the core nor a registered module provides fails the gate: a check that silently never runs is worse than none. A layer brings its checks this way (lab-kit's `bound_ids` seals a story to the rows it tells; a personal library's `require_topic` puts every page on a topic).
