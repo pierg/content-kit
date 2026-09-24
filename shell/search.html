@@ -258,7 +258,7 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     });
-    /* the repo's own index, then every extra index kit.json `indices` declares (a folio's
+    /* the repo's own index, then every extra index kit.json `indices` declares (a personal library's
        federated catalog of sibling repos, say) — merged; one that fails to load is skipped */
     getJson("/content/catalog.json").catch(function () { return null; }).then(function (catalog) {
       var extra = ((catalog && catalog.indices) || []).map(function (href) {

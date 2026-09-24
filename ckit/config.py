@@ -1,6 +1,6 @@
 """The declarative extension points in kit.json, read and validated in one place.
 
-    "shell_pages": {"revise.html": "kit/folio/shell/revise.html"}       served as /shell/<name>
+    "shell_pages": {"board.html": "ext/board.html"}       served as /shell/<name>
     "theme":       "assets/theme.css"  (or a list)                        served as /shell/theme.css
     "classes":     ["sw-brand", "lane-brand"]                             the form lint accepts them
     "links":       [{"label": "Revise", "href": "/shell/revise.html", "title": "…"}]

@@ -30,7 +30,7 @@ MARKERS = (MARKER, LEGACY_MARKER)  # search order: the first one present in a di
 ROOT_ENV = "CKIT_ROOT"
 LEGACY_ROOT_ENV = "LAB_ROOT"
 
-# Every key content-kit owns, with its default. A layer (lab-kit, folio) owns its own keys
+# Every key content-kit owns, with its default. A layer (lab-kit, say) owns its own keys
 # beside these; the engine passes them through untouched.
 DEFAULTS: dict = {
     "name": "library",

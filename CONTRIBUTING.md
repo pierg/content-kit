@@ -8,7 +8,7 @@ Thank you for looking. content-kit is small on purpose, and it stays that way by
 
 ## The placement rule
 
-**Mechanisms here, conventions in the layers.** If a feature makes sense in a code repo's docs folder, it belongs in content-kit. If it only makes sense in a lab or in a personal library, it belongs in [lab-kit](https://github.com/pierg/lab-kit) or [folio](https://github.com/pierg/folio), reaching the engine through the extension points. The engine never learns a layer's vocabulary.
+**Mechanisms here, conventions in the layers.** If a feature makes sense in a code repo's docs folder, it belongs in content-kit. If it only makes sense in a lab, it belongs in [lab-kit](https://github.com/pierg/lab-kit); if only one library needs it, in that library's own repository. Either way it reaches the engine through the extension points. The engine never learns a layer's vocabulary.
 
 ## The gate
 

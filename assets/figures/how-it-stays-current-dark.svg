@@ -22,7 +22,7 @@
   <text x="316" y="93" text-anchor="middle" class="t2" style="font-size: 11px">rules: shell, genres, skills</text>
   <rect x="580" y="50" width="200" height="60" rx="10" style="fill: #1c1c1a; stroke: #fbbf24; stroke-width: 2"/>
   <text x="680" y="74" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: #fbbf24">a layer</text>
-  <text x="680" y="93" text-anchor="middle" class="t2" style="font-size: 11px">lab-kit, folio: more rules</text>
+  <text x="680" y="93" text-anchor="middle" class="t2" style="font-size: 11px">lab-kit: more rules</text>
   <path d="M124 110 L124 220" style="stroke: #60a5fa; stroke-width: 1.5" marker-end="url(#hs-b)"/>
   <text x="132" y="170" class="t3" style="font-size: 11px">installs</text>
   <path d="M316 110 L316 204" style="stroke: #5eead4; stroke-width: 1.5" marker-end="url(#hs-t)"/>

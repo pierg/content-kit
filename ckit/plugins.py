@@ -1,9 +1,9 @@
 """The extension points a layer reaches the engine through — declared in kit.json, implemented
 as repo-relative (usually vendored) Python files, loaded here and nowhere else.
 
-    "checks":     ["kit/folio/tools/checks_folio.py"]  CHECKS = {name: fn(ctx) -> [problem]}
+    "checks":     ["ext/checks.py"]  CHECKS = {name: fn(ctx) -> [problem]}
                                                   REPO_CHECKS = {name: fn(repo) -> [problem]}
-    "generators": ["kit/folio/tools/cards.py"]    generate(repo) -> {path: data}
+    "generators": ["ext/cards.py"]    generate(repo) -> {path: data}
 
 A page-level check runs where a genre names it (`"checks": {"require_topic": true}`), exactly like a
 core check: the genre's value arrives as `ctx.arg`. A name no core check and no plugin provides is

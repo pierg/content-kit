@@ -522,7 +522,7 @@ def move(repo: Repo, src: Path, dst: Path) -> Repo:
     print(f"  {rewritten} link(s) rewritten ({touched} other page(s)); redirect "
           f"{links.canon(rel[src])} → {mapping[rel[src]]} recorded in kit.json `moved`")
     if cards:
-        print(f"  {cards} flashcard(s) on it: a schedule kept by page address (a folio's revise page) "
+        print(f"  {cards} flashcard(s) on it: a schedule kept by page address (a revise page's) "
               "starts them afresh")
     _regenerate(repo)
     return repo
