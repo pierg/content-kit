@@ -30,6 +30,8 @@ And a library an agent can organise without guessing and without breaking it: wh
 
 15. **The page rail says more, and the in-body backlinks list is no longer needed.** *Page* shows the status beside the dates the catalog carries — created and updated — and the reading time; *Links to* joins *Linked from*: the page's own internal links, each once, named and badged from the catalog. Where the rail is hidden, the top bar's Contents menu holds all of it (the list that followed the page on narrow screens is gone). A `<ul data-backlinks>` in a page's body is still filled, in place of the rail's list; the lint names it, once per run, as no longer needed — remove it with its heading. The skeletons carry none.
 
+16. **The page rail sits against the reading column**, not at the window's right edge: a slot right after the column, its sections sticky in it, which the annotation panel takes when it opens. The annotation layer no longer loads on the shell's own pages (Browse, Review, Chronicle, the generated home page), where a note had no page to belong to.
+
 ### Added
 
 - **The library rail** — by topic when pages declare one, by genre otherwise, folding and remembered; the theme (auto · light · dark) and reading face (serif · sans) toggles.

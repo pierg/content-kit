@@ -328,7 +328,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
     padding-right: calc(var(--rail-w) + var(--gutter)); }
   body.hb.hb-has-rail .hb-top .hb-norail { display: none; }
 }
-.hb .hb-stage { min-width: 0; }
+.hb .hb-stage { min-width: 0; position: relative; }
 .hb .hb-stage > main { max-width: var(--wide); margin: 0 auto; }
 /* app pages (the shell's own: browse, chronicle, record; a layer's dashboard or revise) are
    tools, not reading: full width, the sans face, no measure */
@@ -443,12 +443,14 @@ body.hb.hb-has-rail .hb-top { right: 0; }
 .hb .hb-book a.hb-planned { opacity: 0.45; cursor: default; }
 
 /* ----------------------------------------------------------- the page rail */
-.hb .hb-rail { position: fixed; top: 0; bottom: 0; right: 0; width: var(--rail-w); box-sizing: border-box;
-               overflow-y: auto; padding: 72px 20px 32px 8px; font: 13px/1.45 var(--font-sans); color: var(--ink-3);
-               scrollbar-width: thin; scrollbar-color: var(--baseline) transparent; }
+/* its slot: a column right after the reading column (main is centred, so 50% is its middle), its
+   sections sticky in it — the annotation panel takes the same slot (annotate.css) */
+.hb .hb-rail { position: absolute; top: 0; bottom: 0; left: calc(50% + min(var(--wide), 100%) / 2 + var(--gutter));
+               width: var(--rail-w); font: 13px/1.45 var(--font-sans); color: var(--ink-3); }
+.hb .hb-rail-in { position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; overflow-y: auto; padding: 20px 8px 32px;
+                  scrollbar-width: thin; scrollbar-color: var(--baseline) transparent; }
 @media (max-width: 1239px) { .hb .hb-rail { display: none; } }
 body.hb-ann-on .hb-rail { display: none; }
-body.hb.hb-ann-on { padding-right: var(--gutter); }
 .hb .hb-rail-label { font: 650 10.5px/1.2 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase;
                      color: var(--ink-3); margin: 0 0 8px; }
 .hb .hb-rail-sec { margin: 0 0 26px; }

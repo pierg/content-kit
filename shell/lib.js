@@ -345,12 +345,14 @@
   /* Annotation layer: loaded only when the serving engine answers the ping, so a page on a
      static host never grows the affordance and stays portable. See shell/annotate.js. */
   function initAnnotate() {
-    if (!document.querySelector("main")) return;
+    var main = document.querySelector("main");
+    if (!main) return;
     fetch(hbUrl("/__annotations/ping"), { credentials: "same-origin", cache: "no-store" })
       .then(function (r) {
         if (!r.ok) return;
         window.hbEngine = true;
         addReviewLink();
+        if (isApp(main)) return;  /* the shell's own pages are tools, not pages a note can sit on */
         var s = document.createElement("script");
         s.src = hbUrl("/shell/annotate.js");
         s.defer = true;
@@ -940,8 +942,8 @@
       rail = document.createElement("aside");
       rail.className = "hb-rail";
       rail.setAttribute("aria-label", "About this page");
-      rail.innerHTML = railHtml(lib, where, hs, minutes);
-      body.appendChild(rail);
+      rail.innerHTML = '<div class="hb-rail-in">' + railHtml(lib, where, hs, minutes) + "</div>";
+      stage.appendChild(rail);  /* its slot sits against the reading column; the annotation panel takes it */
       scrollSpy(rail, hs);
       if (!main.querySelector("ul[data-backlinks]")) {  /* a page that lists them in its body keeps its list */
         backlinksIndex().then(function (data) {
