@@ -389,6 +389,9 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb .hb-side-nav a.here { background: var(--surface-1); color: var(--ink-1); font-weight: 600;
                           box-shadow: 0 0 0 1px var(--grid); }
 .hb .hb-side-nav .hb-ext { margin-left: auto; color: var(--ink-3); font-size: 11px; }
+.hb .hb-side-nav .hb-badge { margin-left: auto; min-width: 8px; padding: 3px 6px; border-radius: 999px; text-align: center;
+                             font: 650 10.5px/1 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--amber);
+                             background: color-mix(in srgb, var(--amber) 15%, transparent); }
 .hb .hb-side-label { font: 650 10.5px/1.2 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase;
                      color: var(--ink-3); margin: 18px 8px 6px; }
 .hb .hb-tree, .hb .hb-tree ul { list-style: none; padding: 0; margin: 0; }

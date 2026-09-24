@@ -372,11 +372,8 @@
       if (!t || !t.total) return;
       var nav = document.querySelector(".hb-side-nav");
       if (!nav || nav.querySelector("[data-hb-review]")) return;
-      var here = sitePath() === "/shell/review.html";
       var li = document.createElement("li");
-      li.innerHTML = '<a href="' + escapeAttr(hbUrl("/shell/review.html")) + '" data-hb-review' + (here ? ' class="here" aria-current="page"' : "") +
-        ' title="' + t.open + " waiting · " + t.noted + ' noted">' + icon("review") + "<span>Review</span>" +
-        (t.open ? '<span class="hb-ext">' + t.open + "</span>" : "") + "</a>";
+      li.innerHTML = navItem(reviewItem(t), sitePath());
       // beside Chronicle, where navHtml puts it: after the last of the shell's own items
       var core = [hbUrl("/"), hbUrl("/shell/search.html"), hbUrl("/shell/chronicle.html")];
       var after = null;
@@ -612,19 +609,25 @@
                  { label: "Browse", href: "/shell/search.html", icon: "browse" }];
     if ((lib.cat.record || []).length) items.push({ label: "Chronicle", href: "/shell/chronicle.html", icon: "clock" });
     var th = lib.cat.threads;
-    if (window.hbEngine && th && th.total) {  // the ping answered before the chrome was built
-      items.push({ label: "Review", href: "/shell/review.html", icon: "review", review: true,
-                   title: th.open + " waiting · " + th.noted + " noted" });
-    }
+    if (window.hbEngine && th && th.total) items.push(reviewItem(th));  // the ping answered before the chrome was built
     (lib.cat.links || []).forEach(function (l) { items.push({ label: l.label, href: l.href, title: l.title, icon: "link" }); });
-    return '<ul class="hb-side-nav">' + items.map(function (it) {
-      var ext = /^[a-z]+:\/\//i.test(it.href);
-      var cur = !ext && (here === it.href || (it.href === "/" && here === "/index.html"));
-      return '<li><a href="' + escapeAttr(ext ? it.href : hbUrl(it.href)) + '"' + (cur ? ' class="here" aria-current="page"' : "") +
-        (it.review ? " data-hb-review" : "") +
-        (it.title ? ' title="' + escapeAttr(it.title) + '"' : "") + ">" + icon(ext ? "link" : it.icon) +
-        "<span>" + escapeHtml(it.label) + "</span>" + (ext ? '<span class="hb-ext">↗</span>' : "") + "</a></li>";
-    }).join("") + "</ul>";
+    return '<ul class="hb-side-nav">' + items.map(function (it) { return "<li>" + navItem(it, here) + "</li>"; }).join("") + "</ul>";
+  }
+
+  /* Review, with the questions waiting as a count badge */
+  function reviewItem(t) {
+    return { label: "Review", href: "/shell/review.html", icon: "review", review: true, badge: t.open,
+             title: t.open + " waiting · " + t.noted + " noted" };
+  }
+
+  function navItem(it, here) {
+    var ext = /^[a-z]+:\/\//i.test(it.href);
+    var cur = !ext && (here === it.href || (it.href === "/" && here === "/index.html"));
+    return '<a href="' + escapeAttr(ext ? it.href : hbUrl(it.href)) + '"' + (cur ? ' class="here" aria-current="page"' : "") +
+      (it.review ? " data-hb-review" : "") + (it.title ? ' title="' + escapeAttr(it.title) + '"' : "") +
+      (it.badge ? ' aria-label="' + escapeAttr(it.label + ", " + it.title) + '"' : "") + ">" + icon(ext ? "link" : it.icon) +
+      "<span>" + escapeHtml(it.label) + "</span>" + (ext ? '<span class="hb-ext">↗</span>' : "") +
+      (it.badge ? '<span class="hb-badge">' + it.badge + "</span>" : "") + "</a>";
   }
 
   var THEMES = ["auto", "light", "dark"];
