@@ -1,8 +1,8 @@
 [
   {
     "title": "Install a library — Running a library",
-    "sub": "You leave with the engine on your machine, a repository with the kit in it, a gate that passes, and its pages open in your browser.",
-    "defn": "PIN — definition of record A library's pin is two records of what it was checked against: the engine version in kit.json (the \"ckit\" key), which ckit check compares with the engine running it, and a hash of the vendored kit/ in kit/PIN, which make kit-verify recomputes. Either mismatch fails; neither changes except on purpose.",
+    "sub": "You leave with the engine installed, a repository set up, every check passing, and its pages in your browser.",
+    "defn": "PIN — definition of record A library's pin is two records of what it was checked against: the engine version in kit.json (the \"ckit\" key), which ckit check compares with the engine running it, and a hash of the copied kit/ in kit/PIN, which make kit-verify recomputes. Either mismatch fails, and neither changes except on purpose.",
     "headings": [
       "§1 · The engine",
       "§2 · ckit init",
@@ -64,10 +64,10 @@
   },
   {
     "title": "The review loop — Running a library",
-    "sub": "You leave able to leave notes on a rendered page, find them from any agent session later, close each one with a reply the reader can check, and read what an agent flagged as written beyond its source without opening a terminal.",
+    "sub": "You leave knowing how to annotate a page, have an agent answer it later, and review what an agent added beyond its source, all from the browser.",
     "defn": "",
     "headings": [
-      "§1 · Annotate in the browser",
+      "§1 · Annotating in the browser",
       "§2 · What an agent flags",
       "§3 · The sidecar",
       "§4 · ckit annotations",
@@ -136,8 +136,8 @@
   },
   {
     "title": "Annotation",
-    "sub": "Definition of record. A reader's note on a rendered page, kept in a file beside it, so that review needs no session to be open on either side.",
-    "defn": "ANNOTATION — definition of record An annotation is a thread attached to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup. It is one of two kinds: a question, which a reader opens and which waits until whoever acts on th",
+    "sub": "Definition of record. A reader's comment on a page, kept in a file beside it, so the reader and the agent who answers never need to be there at the same time.",
+    "defn": "ANNOTATION — definition of record An annotation is a thread on a page: a comment on a quoted passage, or on the whole page, with its replies. It is stored in a sidecar, a committed file beside the page, and anchored by the quoted text and a little of the text around it, not by the page's markup. It is one of two kinds. A question is opened by a reader and waits until whoever acts on the page addre",
     "headings": [
       "Why it matters",
       "Worked example",
@@ -291,10 +291,10 @@
   },
   {
     "title": "content-kit",
-    "sub": "A page contract for agent-written knowledge: where a page goes, how it reads, what checks it, and how a person reviews it in the browser. Start here.",
+    "sub": "The rules, the checks and the review loop that keep a library of agent-written pages consistent. Start here.",
     "defn": "",
     "headings": [
-      "Current take",
+      "What it is",
       "Map",
       "Open questions",
       "Learn it",

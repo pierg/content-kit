@@ -12,20 +12,20 @@
 <main>
 
 <h1>Install a library</h1>
-<p class="sub">You leave with the engine on your machine, a repository with the kit in it, a gate that passes, and its pages open in your browser.</p>
+<p class="sub">You leave with the engine installed, a repository set up, every check passing, and its pages in your browser.</p>
 
 <h2 id="s1">§1 · The engine</h2>
 
-<p>content-kit comes in two halves. One is an <b>engine</b>, a command called <code>ckit</code>, which you install once per machine. The other is a <b>kit</b> of rules (a shell of styles and scripts, the genres, the layout playbooks, two agent skills) which the engine copies into each repository you use it in. Start with the engine.</p>
+<p>content-kit comes in two halves. The <b>engine</b> is a command, <code>ckit</code>, that you install once per machine. The <b>kit</b> is a set of rules: the shell (a stylesheet and a script), the genres, the layout guides and three agent skills. The engine copies the kit into each repository you use it in. Start with the engine.</p>
 
-<pre><code>uv tool install git+https://github.com/pierg/content-kit@v0.4.0</code></pre>
+<pre><code>uv tool install git+https://github.com/pierg/content-kit@v0.5.0</code></pre>
 
 <pre><code>$ ckit version
-0.4.0</code></pre>
+0.5.0</code></pre>
 
-<p>The engine is plain Python, 3.10 or newer, with no dependencies. It also needs node, for one job: the gate verifies books with it, and asks for it in any library that has a <code>content/books/</code> directory, which every library <code>ckit init</code> scaffolds does. If you do not use <code>uv</code>, clone the repository and run <code>bash install-engine.sh</code> in it: that links the checkout's <code>bin/ckit</code> into <code>~/.local/bin</code>, and from then on <code>git pull</code> in the checkout is how you upgrade.</p>
+<p>The engine is plain Python, 3.10 or newer, with no dependencies. It needs node for one job: checking a library's books, when it has any. Without <code>uv</code>, clone the repository and run <code>bash install-engine.sh</code> in it. That links the checkout's <code>bin/ckit</code> into <code>~/.local/bin</code>, and from then on <code>git pull</code> in the checkout upgrades the engine.</p>
 
-<p>Why install the engine at all, instead of copying it into every repository like the rules? Because it is code, and code you copy ten times you fix ten times. The rules are different: an agent opened in a repository must be able to read them there, with nothing to resolve elsewhere, so they are copied in. The next section shows how the two stay honest with each other.</p>
+<p>Why install the engine, instead of copying it into each repository as the rules are? Because it is code, and code copied ten times has to be fixed ten times. The rules are different. An agent working in a repository must be able to read them there, without looking anywhere else, so they are copied in. The figure shows how the copies stay in step.</p>
 
 <figure data-figure="how-it-stays-current" aria-label="How a repository gets content-kit and stays current: upstream, content-kit holds the engine and the kit; the engine installs once on each machine; the kit is copied into each repository, pinned; a layer adds its own rules; the engine on the machine checks each repository against its pins">
 <svg viewBox="0 0 800 300" role="img" xmlns="http://www.w3.org/2000/svg">
@@ -72,69 +72,69 @@
 
 <details class="check">
 <summary>Check-yourself: which half lives in the repository, and why?</summary>
-<div class="ans">The kit (shell, genres, playbooks, skills) is copied into the repository, because an agent working there must read the rules without looking anywhere else. The engine is installed once per machine, because it is code with one place to update.</div>
+<div class="ans">The kit (the shell, the genres, the layout guides, the skills) is copied into the repository, because an agent working there must read the rules without looking anywhere else. The engine is installed once per machine, because it is code with one place to update.</div>
 </details>
 
 <h2 id="s2">§2 · <code>ckit init</code></h2>
 
-<p>Point <code>ckit init</code> at a directory (new or existing) and give the library a name:</p>
+<p>Point <code>ckit init</code> at a directory, new or existing, and give the library a name:</p>
 
 <pre><code>$ ckit init birding --name "Birding"
-vendoring content-kit 0.4.0 -> …/birding/kit
+vendoring content-kit 0.5.0 -> …/birding/kit
 scaffolding
   create  kit.json
   create  Makefile
   create  .gitignore
   set     kit.json name=Birding
-  pin     kit.json ckit=0.4.0
-pinned  content-kit@v0.4.0
-indices generated: content/catalog.json, content/search-index.json, content/backlinks.json</code></pre>
+  pin     kit.json ckit=0.5.0
+pinned  content-kit@v0.5.0
+indices generated: content/catalog.json, content/search-index.json, content/backlinks.json, content/threads.json</code></pre>
 
-<p>Read it line by line. It <b>vendored</b> the kit into <code>kit/</code>: the shell, the genres, the craft playbooks, the <code>/present</code> and <code>/address</code> skills, a hashing tool and <code>verify.sh</code>. It <b>scaffolded</b> what the directory lacked: <code>kit.json</code>, a <code>Makefile</code>, a <code>.gitignore</code>, and the directories under <code>content/</code> that the core genres live in. It <b>pinned</b> the engine version into <code>kit.json</code> and wrote <code>kit/PIN</code>. It linked the two skills into <code>.claude/skills/</code>, so an agent session opened in the repository finds them. And it generated the three indices an empty library has.</p>
+<p>Read it line by line. It <b>copied</b> the kit into <code>kit/</code>: the shell, the genres, the layout guides, the <code>/present</code>, <code>/address</code> and <code>/curate</code> skills, a hashing tool and <code>verify.sh</code>. It <b>created</b> what the directory lacked: <code>kit.json</code>, a <code>Makefile</code>, a <code>.gitignore</code>, and a folder under <code>content/</code> for each core genre. It <b>pinned</b> the engine version in <code>kit.json</code> and wrote <code>kit/PIN</code>. It linked the skills into <code>.claude/skills/</code>, where an agent opened in the repository finds them. And it generated the four indices an empty library has.</p>
 
-<p>Running it again is safe. It re-vendors <code>kit/</code>, re-pins, and creates only what is missing: your <code>Makefile</code>, your <code>kit.json</code> settings and your pages are kept. It touches only its own paths under <code>kit/</code>, so anything else vendored there survives.</p>
+<p>Running it again is safe. It copies <code>kit/</code> again, moves the pin, and creates only what is missing: your <code>Makefile</code>, your <code>kit.json</code> settings and your pages are kept. It touches only its own files under <code>kit/</code>, so a layer's files there survive.</p>
 
 <blockquote class="defn" id="pin">
 <span class="defn-name">PIN — definition of record</span><br>
-A library's pin is two records of what it was checked against: the engine version in <code>kit.json</code> (the <code>"ckit"</code> key), which <code>ckit check</code> compares with the engine running it, and a hash of the vendored <code>kit/</code> in <code>kit/PIN</code>, which <code>make kit-verify</code> recomputes. Either mismatch fails; neither changes except on purpose.
+A library's pin is two records of what it was checked against: the engine version in <code>kit.json</code> (the <code>"ckit"</code> key), which <code>ckit check</code> compares with the engine running it, and a hash of the copied <code>kit/</code> in <code>kit/PIN</code>, which <code>make kit-verify</code> recomputes. Either mismatch fails, and neither changes except on purpose.
 </blockquote>
 
 <pre><code>$ cat kit/PIN
-source content-kit https://github.com/pierg/content-kit v0.4.0
-hash 722ee4c53ef1b42a8104b2d87f747ce4e06eaa8ffb1c2d3ec51a9b169ddb3684</code></pre>
+source content-kit https://github.com/pierg/content-kit v0.5.0
+hash 667375990f99ed4139e29f659b979c09b3c69d67dd2728c78e5b193a96586593</code></pre>
 
-<p>The <code>source</code> line says where the kit came from and at which release (a commit, when the engine runs from a checkout). The pin is why installing a new engine never silently changes a library: until someone re-runs <code>ckit init</code> in it, the gate refuses to run under a different version.</p>
+<p>The <code>source</code> line says where the kit came from, and at which release (or which commit, when the engine runs from a checkout). The pin is why a new engine never changes a library silently: until someone runs <code>ckit init</code> in it again, the gate refuses to run under a different version.</p>
 
 <details class="check">
 <summary>Check-yourself: you upgrade the engine to a new release and run the gate in an old library. What happens, and what is the deliberate fix?</summary>
-<div class="ans">The gate fails with an engine mismatch: <code>kit.json</code> still declares the old version. Re-running <code>ckit init .</code> with the new engine re-vendors the kit and moves the pin; you then run the gate and commit what changed.</div>
+<div class="ans">The gate fails with an engine mismatch, because <code>kit.json</code> still names the old version. Run <code>ckit init .</code> with the new engine: it copies the kit again and moves the pin. Then run the gate and commit what changed.</div>
 </details>
 
 <h2 id="s3">§3 · The repository layout</h2>
 
 <pre><code>birding/
-  kit.json          name · question · content dir · port · engine pin · home · extensions
+  kit.json          name · question · content folder · port · engine version · home · extensions
   Makefile          make check · docs · down · status · site · kit-verify · kit-sync
-  kit/              vendored by ckit init, pinned in kit/PIN, never edited in place
-    shell/          lib.css · lib.js · search · record viewer · chronicle · annotate · skeletons/
-    genres/         GENRES.md (the voice) · genres.json (what is checked)
-    craft/          how to build a comparison · diagram · table · timeline · code · figure
-    skills/         /present (write a page) · /address (act on annotations)
+  kit/              copied by ckit init, pinned in kit/PIN, never edited here
+    shell/          lib.css · lib.js · search · review · record viewer · chronicle · annotations · page templates
+    genres/         GENRES.md (how each genre reads) · genres.json (what is checked)
+    craft/          how to lay out a comparison · diagram · table · timeline · code · figure
+    skills/         /present (write a page) · /address (answer annotations) · /curate (organise)
   content/          notes/ concepts/ entries/ books/ hubs/ projects/ papers/ related/
-                    catalog.json · search-index.json · backlinks.json</code></pre>
+                    catalog.json · search-index.json · backlinks.json · threads.json</code></pre>
 
-<p><code>kit.json</code> is the one file you configure. Beyond <code>name</code>, <code>content</code>, <code>host</code>, <code>port</code> and the <code>ckit</code> pin, two keys are worth setting now: <code>question</code>, one sentence the landing page shows under the name, and <code>home</code>, a page to serve at <code>/</code> instead of the generated landing page (this library's own <code>home</code> is its hub). The keys that extend the kit come last in this book.</p>
+<p><code>kit.json</code> is the one file you configure. Besides <code>name</code>, <code>content</code>, <code>host</code>, <code>port</code> and the <code>ckit</code> version, two keys are worth setting now. <code>question</code> is one sentence the home page shows under the name. <code>home</code> names a page to serve at <code>/</code> in place of the generated home page; this library's <code>home</code> is its hub. The keys that extend the kit come last in this book.</p>
 
-<p>Two kinds of file under <code>content/</code> are never written by hand. The indices (<code>catalog.json</code>, <code>search-index.json</code>, <code>backlinks.json</code>, and a <code>nav.json</code> per book) are generated from the pages. Annotation sidecars, <code>*.annotations.json</code>, are written by the browser or by <code>ckit annotations</code>. Everything else there is a page you author.</p>
+<p>Two kinds of file under <code>content/</code> are never written by hand. The indices (<code>catalog.json</code>, <code>search-index.json</code>, <code>backlinks.json</code>, <code>threads.json</code>, and a <code>nav.json</code> per book) are generated from the pages. A page's notes, <code>&lt;page&gt;.annotations.json</code>, are written by the browser or by <code>ckit annotations</code>. Everything else there is a page you write.</p>
 
 <details class="check">
 <summary>Check-yourself: a teammate fixes a typo in the shell's stylesheet directly in <code>kit/shell/lib.css</code>. Why is that a problem?</summary>
-<div class="ans">Their library now renders differently from every other library on the same kit, and nothing but the hash would notice. <code>make kit-verify</code> fails on it. The fix belongs upstream, in content-kit, and arrives in each library through a deliberate re-vendor.</div>
+<div class="ans">Their library now looks different from every other library on the same kit, and only the hash notices. <code>make kit-verify</code> fails on it. The fix belongs upstream, in content-kit, and reaches each library when it copies the kit again, on purpose.</div>
 </details>
 
 <h2 id="s4">§4 · <code>make check</code>, <code>make docs</code>, <code>make site</code></h2>
 
-<p>The scaffolded <code>Makefile</code> wraps the engine in the targets you will use daily:</p>
+<p>The <code>Makefile</code> that <code>ckit init</code> created wraps the engine in the targets you use every day:</p>
 
 <table>
 <tr><th>Target</th><th>Runs</th><th>For</th></tr>
@@ -143,20 +143,20 @@ hash 722ee4c53ef1b42a8104b2d87f747ce4e06eaa8ffb1c2d3ec51a9b169ddb3684</code></pr
 <tr><td class="mono">make down</td><td><code>ckit down</code></td><td>stop that server</td></tr>
 <tr><td class="mono">make site</td><td><code>ckit export --out dist --base $(BASE)</code></td><td>the pages as a static site in <code>dist/</code></td></tr>
 <tr><td class="mono">make kit-verify</td><td><code>bash kit/verify.sh</code></td><td>does <code>kit/</code> still match its pin?</td></tr>
-<tr><td class="mono">make kit-sync</td><td><code>bash kit/verify.sh --sync</code></td><td>re-vendor <code>kit/</code> from its pinned sources, on purpose</td></tr>
+<tr><td class="mono">make kit-sync</td><td><code>bash kit/verify.sh --sync</code></td><td>copy <code>kit/</code> again from its pinned sources, on purpose</td></tr>
 </table>
 
 <pre><code>$ make check
-kit ok (content-kit@v0.4.0 )
+kit ok (content-kit@v0.5.0 )
 content lint clean — 0 file(s)
 content check ok
 
 $ make docs
 serving http://127.0.0.1:5180/  (pid …; `ckit down` to stop)</code></pre>
 
-<p>Open the address it prints. With no pages yet you see the landing page: the library's name, its question, a search link, and one empty group per genre, each saying which <code>ckit new</code> command would fill it. Bottom right is the <b>✎ Annotate</b> button; it appears only because the engine is serving the page. <code>make docs PORT=8080</code> overrides the port for one run.</p>
+<p>Open the address it prints. With no pages yet, the home page shows the library's name, its question, a search box, and the <code>ckit new</code> command that writes the first page. Open any page and the <b>✎ Annotate</b> button sits bottom right; it appears only because the engine is serving the page. <code>make docs PORT=8080</code> uses another port for one run.</p>
 
-<p><code>make site</code> writes the same pages as plain files any static host can serve. If the site will live under a path, as a GitHub project site does, say so: <code>make site BASE=/birding/</code>. Pages link the shell and each other with root-absolute URLs (<code>/shell/lib.css</code>, <code>/content/…</code>), and the export prefixes them so they resolve under that path.</p>
+<p><code>make site</code> writes the same pages as plain files that any static host can serve. If the site will live under a path, as a GitHub project site does, say so: <code>make site BASE=/birding/</code>. Pages link the shell and each other with addresses that start at the site root (<code>/shell/lib.css</code>, <code>/content/…</code>), and the export puts the path in front of each.</p>
 
 <details class="check">
 <summary>Check-yourself: your library will be published at <code>https://example.org/birding/</code>. What do you run, and what would break without the base?</summary>

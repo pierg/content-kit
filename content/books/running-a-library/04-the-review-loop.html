@@ -16,42 +16,50 @@ td.mono, td code { overflow-wrap: anywhere; }
 <main>
 
 <h1>The review loop</h1>
-<p class="sub">You leave able to leave notes on a rendered page, find them from any agent session later, close each one with a reply the reader can check, and read what an agent flagged as written beyond its source without opening a terminal.</p>
+<p class="sub">You leave knowing how to annotate a page, have an agent answer it later, and review what an agent added beyond its source, all from the browser.</p>
 
-<h2 id="s1">§1 · Annotate in the browser</h2>
+<h2 id="s1">§1 · Annotating in the browser</h2>
 
-<p>Serve the library with <code>make docs</code> and open any page. Bottom right is <b>✎ Annotate</b>. Turn it on and a panel opens listing the page's notes. Then there are two ways to leave one:</p>
+<p>Serve the library with <code>make docs</code> and open any page. A passage that already has an annotation is underlined with dots: amber for a question waiting for an answer, blue for a passage an agent flagged. Click one and the annotation panel opens on it.</p>
+
+<p>The <b>✎ Annotate</b> button, bottom right, opens the panel too. On a wide screen the panel sits beside the text; on a narrow one it is a sheet along the bottom. There are two ways to annotate:</p>
 
 <ul>
-<li><b>On a passage.</b> Select some prose; a <b>＋ Comment on selection</b> button appears. Write the note and save it.</li>
-<li><b>On the page as a whole.</b> Press <b>＋ Page note</b> in the panel, for something about the page's shape, its genre or its status rather than one sentence.</li>
+<li><b>On a passage.</b> Select some text. A <b>＋ Comment on selection</b> button appears; write your comment and save it.</li>
+<li><b>On the whole page.</b> Press <b>＋ Comment on the page</b> in the panel, for something about the page's shape, its genre or its status.</li>
 </ul>
 
-<p>The first time, the browser asks for your name and remembers it, because every thread needs an author. The panel shows each thread with its state, its quote and its replies, and marks a thread whose quote can no longer be found as a stale anchor. Under a waiting thread it offers <b>Reply</b>, <b>Keep</b> (close it as accepted) and <b>Decline</b> (with the reason the gate requires); under a closed one, <b>Reopen</b>; under one you wrote, <b>Withdraw</b>. A link of the form <code>page#ann=&lt;id&gt;</code>, which the home page and the review page use, opens the panel on that thread.</p>
+<p>The first time, the browser asks for your name and remembers it: every annotation needs an author. The panel lists each thread (an annotation and its replies) with its state and the passage it quotes. A thread whose passage is no longer on the page is marked as a stale anchor.</p>
 
-<p>The button is there only because the engine is serving the page. On load, the shell asks the server a question (<code>/__annotations/ping</code>); the engine answers, and only then does the shell load the annotation layer. A static host answers "not found", so a published copy of the library never grows the button, and no reader of it can annotate by accident.</p>
+<p>Under a waiting thread the panel offers <b>Reply</b>, <b>Keep</b> (close it as accepted) and <b>Decline</b> (with the reason the gate requires). Under a closed one it offers <b>Reopen</b>, and under one you wrote, <b>Withdraw</b>. A link ending in <code>#ann=&lt;id&gt;</code> opens the panel on that thread; the home page and the review page link this way.</p>
 
-<p>Nothing authenticates a note: whoever can reach the server can write one into your repository. So the engine serves on this machine only. <code>ckit serve --host</code> with any address but a loopback one is refused unless you add <code>--expose</code>, and even on this machine the server answers only a request that names it as <code>127.0.0.1</code> or <code>localhost</code>, and takes a note only from a page it served itself.</p>
+<p>The button appears only when the engine serves the page. When a page loads, the shell asks the server whether it takes annotations (<code>/__annotations/ping</code>). The engine says yes; a static host answers "not found". So a published copy of the library never shows the button, and no reader of it can annotate by accident.</p>
+
+<p>Nothing checks who writes an annotation: anyone who can reach the server can write one into your repository. So the engine serves on this machine only. <code>ckit serve --host</code> with an address that is not this machine is refused unless you add <code>--expose</code>. Even on this machine, the server answers only requests addressed to <code>127.0.0.1</code> or <code>localhost</code>, and takes an annotation only from a page it served.</p>
 
 <details class="check">
-<summary>Check-yourself: why can't a reader of the exported, published site leave a note?</summary>
-<div class="ans">There is no engine behind it to write the note down. The ping gets a "not found", so the shell never loads the annotation layer and the button never appears.</div>
+<summary>Check-yourself: why can't a reader of the published site annotate it?</summary>
+<div class="ans">No engine stands behind it to save the annotation. The shell's question gets "not found", so it never loads the annotation panel, and the button never appears.</div>
 </details>
 
 <h2 id="s2">§2 · What an agent flags</h2>
 
-<p>Not every thread starts with a reader. When an agent writes a page from a source and adds something the source did not say, a worked example, a framing, a claim from memory, the <code>/present</code> skill has it leave a <b>flag</b> on the passage: a thread of the second kind, labelled with what was added, resting in the state <code>noted</code>. A flag asks nothing. It marks the passage on the page and counts on the review page, so you can see at a glance what is the source's and what is the agent's, and it waits for no one.</p>
+<p>Not every thread starts with a reader. An agent that writes a page from a source sometimes adds something the source did not say: a worked example, a framing, a claim from memory. The <code>/present</code> skill has it leave a <b>flag</b> on that passage. A flag is the second kind of thread. Its label says what was added, and it rests in the state <code>noted</code>.</p>
 
-<p>Under a flag the panel offers <b>Keep</b>, which closes it as accepted, and <b>Ask for a change</b>, which takes your instruction and opens the thread: from then on it is a waiting thread like any other, and the next agent to run <code>/address</code> acts on your reply. A question is different: an agent opens one only where your answer changes the page, a claim it could not verify, a choice bigger than one page, and it opens waiting. The home page counts the questions under <i>Waiting for you</i> and names the flags on a separate line, because the two ask different things of you.</p>
+<p>A flag asks nothing. It marks the passage on the page and counts on the review page, so you can see at a glance what came from the source and what the agent added. No one waits on it.</p>
+
+<p>Under a flag the panel offers <b>Keep</b>, which closes it as accepted, and <b>Ask for a change</b>, which takes your instruction and opens the thread. From then on it is a waiting thread like any other, and the next agent to run <code>/address</code> acts on your reply.</p>
+
+<p>A question is different. An agent opens one only where your answer changes the page: a claim it could not verify, or a choice bigger than one page. It opens waiting. The home page counts the questions under <i>Waiting for you</i> and names the flags on a separate line, because the two ask different things of you.</p>
 
 <details class="check">
 <summary>Check-yourself: an agent left twelve flags and one question on a chapter. What is waiting for you?</summary>
-<div class="ans">The one question. The twelve flags rest as noted; read them when you read the chapter and keep them, or ask for a change, one at a time or all at once from the review page.</div>
+<div class="ans">The one question. The twelve flags rest as noted. Read them when you read the chapter, then keep them or ask for a change, one at a time or all at once from the review page.</div>
 </details>
 
 <h2 id="s3">§3 · The sidecar</h2>
 
-<p>A saved note becomes a file beside the page, committed with it. A flat page's sidecar is named after the page; a folder page's is named after its <code>index.html</code>:</p>
+<p>A saved annotation goes into a file beside the page, called its sidecar, and is committed with the page. A flat page's sidecar is named after the page; a folder page's is named after its <code>index.html</code>:</p>
 
 <table>
 <tr><th>Page</th><th>Its sidecar</th></tr>
@@ -59,18 +67,18 @@ td.mono, td code { overflow-wrap: anywhere; }
 <tr><td class="mono">content/concepts/flyway/index.html</td><td class="mono">content/concepts/flyway/index.annotations.json</td></tr>
 </table>
 
-<p>Inside is a list of threads. Each has an id, an author, a date, a kind and a label, a state, a body, its replies, and a <code>target</code>: the quoted passage, as the W3C Web Annotation <code>TextQuoteSelector</code> (the exact text, and up to 32 characters either side of it so a repeated phrase can be told apart), or <code>null</code> for a page note. The quote is stored as text, not as a position in the markup, so the page can keep changing around it.</p>
+<p>Inside is a list of threads. Each has an id, an author, a date, a kind and a label, a state, a body and its replies. It also has a <code>target</code>: the quoted passage, or <code>null</code> for an annotation on the whole page. The target follows the W3C Web Annotation <code>TextQuoteSelector</code>: the exact text, and up to 32 characters on either side to tell a repeated phrase apart. The quote is stored as text, not as a position in the markup, so the page can change around it.</p>
 
-<p>That file is the whole channel. No server has to stay up and no agent has to be listening: the note survives in the repository until someone acts on it, and when they do, the thread and its reply stay in the file for good.</p>
+<p>That file is the whole channel. No server has to stay up, and no agent has to be listening. The annotation waits in the repository until someone acts on it; after that, the thread and its reply stay in the file for good.</p>
 
 <details class="check">
-<summary>Check-yourself: where is the sidecar for <code>/content/concepts/flyway/</code>, and what goes in its <code>target</code> for a note about the whole page?</summary>
+<summary>Check-yourself: where is the sidecar for <code>/content/concepts/flyway/</code>, and what goes in its <code>target</code> for an annotation about the whole page?</summary>
 <div class="ans"><code>content/concepts/flyway/index.annotations.json</code>; the target is <code>null</code>.</div>
 </details>
 
 <h2 id="s4">§4 · <code>ckit annotations</code></h2>
 
-<p>The same threads, from the command line, in any session, on any clone:</p>
+<p>The same threads, from the command line, in any session and on any clone:</p>
 
 <pre><code>$ ckit annotations list
 open      /content/notes/swifts-follow-weather.html  t-20260922-7b8ecb  [sam]
@@ -90,7 +98,7 @@ open      /content/notes/swifts-follow-weather.html  t-20260922-7b8ecb  [sam]
 <tr><td class="mono">check</td><td>validate every sidecar and its anchors; name any stale flag</td></tr>
 </table>
 
-<p>A page is named the way the browser names it (<code>/content/notes/swifts-follow-weather.html</code>, <code>/content/concepts/flyway/</code>) or by its path in the repository.</p>
+<p>Name a page the way the browser does (<code>/content/notes/swifts-follow-weather.html</code>, <code>/content/concepts/flyway/</code>) or by its path in the repository.</p>
 
 <details class="check">
 <summary>Check-yourself: how do you see every thread anyone has already closed as addressed?</summary>
@@ -103,10 +111,10 @@ open      /content/notes/swifts-follow-weather.html  t-20260922-7b8ecb  [sam]
 
 <ol>
 <li><b>List</b> what is open: <code>ckit annotations list</code>.</li>
-<li><b>Read the page, not just the quote.</b> Find the passage in context and read the genre's voice, because the fix has to stay in register: a note on a concept's definition is not answered by adding a paragraph under it.</li>
-<li><b>Decide, then do exactly one of two things.</b> <i>Address</i> it: edit the page, then reply saying what changed, precisely enough to check without a diff, with <code>--state addressed</code>. Or <i>decline</i> it: reply with the reason, with <code>--state declined</code>. Nothing in between, and never "addressed" for a partial fix.</li>
-<li><b>Run the gate</b>: <code>ckit lint</code>, then <code>make check</code>.</li>
-<li><b>Commit the page and its sidecar together</b>, one commit per page, so the reviewer reviews page-sized changes.</li>
+<li><b>Read the page, not just the quote.</b> Find the passage in context and read the genre's voice. The fix must keep that voice: an annotation on a concept's definition is not answered by adding a paragraph under it.</li>
+<li><b>Decide, then do one of two things.</b> <i>Address</i> it: edit the page, then reply with what changed, precisely enough to check without a diff, and <code>--state addressed</code>. Or <i>decline</i> it: reply with the reason and <code>--state declined</code>. Nothing in between, and never <i>addressed</i> for a partial fix.</li>
+<li><b>Run the checks</b>: <code>ckit lint</code>, then <code>make check</code>.</li>
+<li><b>Commit the page and its sidecar together</b>, one commit per page, so a reviewer reads one page's change at a time.</li>
 </ol>
 
 <pre><code>$ ckit annotations reply /content/notes/swifts-follow-weather.html t-20260922-7b8ecb \
@@ -114,18 +122,20 @@ open      /content/notes/swifts-follow-weather.html  t-20260922-7b8ecb  [sam]
     --body "Named the front: the first day the overnight low stays above 10 °C."
 t-20260922-7b8ecb → addressed</code></pre>
 
-<p>A few rules keep the file trustworthy. Never delete a thread and never edit a sidecar by hand; state moves only through the browser or <code>ckit annotations</code>. Reply as yourself, <code>agent:&lt;name&gt;</code>, so the record shows who acted. Withdrawing is its author's move. Flags are not the agent's to close: a noted flag rests until you keep it or ask for a change, and a thread you reopened that way carries your reply as the instruction. And when a thread asks for a number, the answer gives the number with its source, or says nothing supports one yet and leaves the thread open.</p>
+<p>A few rules keep the file trustworthy. Never delete a thread, and never edit a sidecar by hand: a state moves only through the browser or <code>ckit annotations</code>. Reply as yourself, <code>agent:&lt;name&gt;</code>, so the record shows who acted. Only a thread's author withdraws it.</p>
+
+<p>Flags are not the agent's to close. A noted flag rests until you keep it or ask for a change, and a thread you reopened that way carries your reply as the instruction. When a thread asks for a number, the answer gives the number with its source, or says that nothing supports one yet and leaves the thread open.</p>
 
 <details class="check">
 <summary>Check-yourself: a reader asks for a concept's definition to include this year's swift count. What do you do?</summary>
-<div class="ans">Decline, with the reason: a concept's definition must stay true when the count changes. The reply can offer what the genre allows, the count below the definition with its source.</div>
+<div class="ans">Decline, with the reason: a concept's definition must stay true when the count changes. The reply can offer what the genre allows: the count below the definition, with its source.</div>
 </details>
 
 <h2 id="s6">§6 · What the gate holds you to</h2>
 
-<p>The previous chapter showed this failure from the gate's side. From the author's side it is one habit: <b>address before you edit</b>. If the page you are about to rewrite has open threads, answer them in the same change. Rewrite a passage an open thread quotes, and leave the thread open, and the gate goes red with a stale anchor until the thread is answered.</p>
+<p>The previous chapter showed this failure from the gate's side. From the author's side it is one habit: <b>address before you edit</b>. If the page you are about to rewrite has open threads, answer them in the same change. Rewrite a passage that an open thread quotes, leave the thread open, and the gate fails with a stale anchor until the thread is answered.</p>
 
-<p>The gate also refuses a declined thread with no reason in its replies, a sidecar whose page has gone (an orphan), and a sidecar that names the wrong page. Closed threads keep their quotes as history, unchecked. A noted flag whose passage was rewritten is named by the lint as stale and never fails it: there is nothing left to disclose, so the agent withdraws it and flags the new passage if that too goes beyond the source.</p>
+<p>The gate also refuses a declined thread with no reason in its replies, a sidecar whose page has gone, and a sidecar that names the wrong page. A closed thread keeps its quote as history, unchecked. A noted flag whose passage was rewritten is named by the lint as stale, and never fails it: there is nothing left to disclose, so the agent withdraws it, and flags the new passage if that too goes beyond the source.</p>
 
 <details class="check">
 <summary>Check-yourself: you are rewriting a page with two open threads, one on a paragraph you are rewriting and one on a paragraph you are keeping. What has to happen in this commit?</summary>
@@ -134,11 +144,15 @@ t-20260922-7b8ecb → addressed</code></pre>
 
 <h2 id="s7">§7 · Review, the page</h2>
 
-<p>One page shows every thread in the library: <code>/shell/review.html</code>, <b>Review</b> in the rail whenever the engine serves the library and any thread exists. It reads <code>content/threads.json</code>, an index the engine generates beside the others (and regenerates after every write, so the gate never goes stale on a note you just left), and groups the threads by page or by label, filtered to what is waiting, what is noted, what was settled. Each thread jumps to its passage on the page. A whole group can be kept at once, twelve worked examples with one press, and the questions stay one at a time, where they belong. The exported site carries neither the index nor the page: review is work on the library, not part of what it publishes.</p>
+<p>One page shows every thread in the library: <code>/shell/review.html</code>. While the engine serves a library that has any thread, <b>Review</b> appears in the library rail, with a badge counting the questions waiting.</p>
+
+<p>It reads <code>content/threads.json</code>, an index the engine generates with the others and updates after every annotation, so one you just left never puts the checks out of date. It groups the threads by page or by label, and filters them: waiting, noted, settled. Each thread links to its passage on the page.</p>
+
+<p>A whole group can be kept at once: twelve worked examples, one press. Questions stay one at a time, where they belong. The exported site carries neither the index nor the page: review is work on the library, not part of what it publishes.</p>
 
 <details class="check">
 <summary>Check-yourself: why does the review page disappear from an exported site?</summary>
-<div class="ans">Because the sidecars it is built from stay home, and so does the index made from them; a static host has no engine to act on a thread, so the page would have nothing to read and nothing to do.</div>
+<div class="ans">The sidecars it is built from are not exported, and neither is the index made from them. A static host has no engine to act on a thread, so the page would have nothing to read and nothing to do.</div>
 </details>
 
 <p class="anchors">Sources / related: <a href="/content/books/running-a-library/03-the-gate.html">03 · The gate</a> · <a class="defn-link" href="/content/concepts/annotation/">annotation</a> · the kit's <code>skills/address/SKILL.md</code> and the engine's <code>ckit/annotations.py</code>.</p>

@@ -17,9 +17,9 @@
 <main>
 
 <h1>Annotation</h1>
-<p class="sub">Definition of record. A reader's note on a rendered page, kept in a file beside it, so that review needs no session to be open on either side.</p>
+<p class="sub">Definition of record. A reader's comment on a page, kept in a file beside it, so the reader and the agent who answers never need to be there at the same time.</p>
 
-<figure class="fig-ann" aria-label="A reader writes a thread into the sidecar; an agent later reads it and replies; the gate checks open threads against the page">
+<figure class="fig-ann" aria-label="A reader writes an annotation into the sidecar; an agent later answers it there; the gate checks the sidecar's waiting annotations against the page">
 <svg viewBox="0 0 680 236" role="img" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <marker id="arrow-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
@@ -27,43 +27,43 @@
     </marker>
   </defs>
   <rect x="16" y="28" width="178" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--orange); stroke-width: 2"/>
-  <text x="105" y="55" text-anchor="middle" style="font-weight: 700">a reader</text>
+  <text x="105" y="55" text-anchor="middle" style="font-weight: 700; fill: var(--orange)">a reader</text>
   <text x="105" y="76" text-anchor="middle" class="t3">in the browser, any time</text>
-  <rect x="251" y="28" width="178" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1.5"/>
+  <rect x="251" y="28" width="178" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--ink-2); stroke-width: 1.5"/>
   <text x="340" y="55" text-anchor="middle" style="font-weight: 700">the sidecar</text>
   <text x="340" y="76" text-anchor="middle" class="mono-t">page.annotations.json</text>
   <rect x="486" y="28" width="178" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--azure); stroke-width: 2"/>
-  <text x="575" y="55" text-anchor="middle" style="font-weight: 700">an agent</text>
-  <text x="575" y="76" text-anchor="middle" class="t3">any session, any clone, later</text>
-  <path d="M194 50 L249 50" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
-  <text x="222" y="42" text-anchor="middle" class="t3">writes</text>
-  <path d="M429 50 L484 50" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
-  <text x="457" y="42" text-anchor="middle" class="t3">reads</text>
-  <path d="M486 80 L431 80" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
-  <text x="457" y="110" text-anchor="middle" class="t3">replies, sets state</text>
-  <path d="M340 94 L340 150" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
-  <text x="352" y="127" class="t3">open threads</text>
+  <text x="575" y="55" text-anchor="middle" style="font-weight: 700; fill: var(--azure)">an agent</text>
+  <text x="575" y="76" text-anchor="middle" class="t3">any session, later</text>
+  <path d="M194 61 L249 61" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
+  <text x="222" y="53" text-anchor="middle" class="t3">writes</text>
+  <path d="M486 61 L431 61" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
+  <text x="458" y="53" text-anchor="middle" class="t3">answers</text>
+  <path d="M340 152 L340 96" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#arrow-a)"/>
+  <text x="352" y="128" class="t3">checks</text>
   <rect x="251" y="152" width="178" height="66" rx="10" style="fill: var(--surface-1); stroke: var(--violet); stroke-width: 2"/>
-  <text x="340" y="179" text-anchor="middle" style="font-weight: 700">the gate</text>
-  <text x="340" y="200" text-anchor="middle" class="t3">is each quote still on the page?</text>
+  <text x="340" y="179" text-anchor="middle" style="font-weight: 700; fill: var(--violet)">the gate</text>
+  <text x="340" y="200" text-anchor="middle" class="t3">is each quote still there?</text>
 </svg>
-<figcaption><b>Three actors who never meet.</b> The reader and the agent share nothing but a committed file; the gate is what stops the page from moving out from under an unanswered note.</figcaption>
+<figcaption><b>Three actors who never meet.</b> Every arrow ends at one committed file. The gate fails when a page drops a passage that a waiting annotation quotes.</figcaption>
 </figure>
 
 <blockquote class="defn" id="annotation">
 <span class="defn-name">ANNOTATION — definition of record</span><br>
-An annotation is a thread attached to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup. It is one of two kinds: a <b>question</b>, which a reader opens and which waits until whoever acts on the page addresses or declines it, or a <b>flag</b>, which an agent leaves on a passage it wrote beyond its source and which rests as noted, asking nothing until the reader keeps it or asks for a change. It moves through five states: open, noted, addressed, declined and withdrawn. Nothing needs to be running for it to survive; the file is the only channel between the two sides.
+An annotation is a thread on a page: a comment on a quoted passage, or on the whole page, with its replies. It is stored in a sidecar, a committed file beside the page, and anchored by the quoted text and a little of the text around it, not by the page's markup. It is one of two kinds. A <b>question</b> is opened by a reader and waits until whoever acts on the page addresses or declines it. A <b>flag</b> is left by an agent on a passage it wrote beyond its source; it rests as noted, asking nothing until the reader keeps it or asks for a change. Its five states are open, noted, addressed, declined and withdrawn. Nothing has to be running for it to survive: the file is the only channel between the two sides.
 </blockquote>
 
 <h3>Why it matters</h3>
 
-<p>Review usually needs both parties present: a live comment tool, a pull request someone is watching, a chat. Pages written by agents are read later, by people whose time does not line up with any agent session. Putting the note in a file beside the page, in the repository, makes the note outlive both the reading and the session that will answer it, and makes the whole exchange part of the history.</p>
+<p>Review usually needs both sides present: a live comment tool, a pull request someone is watching, a chat. Pages written by agents are read later, by people whose time does not line up with any agent's session. An annotation kept in a file beside the page, in the repository, outlives both the reading and the session that answers it, and the whole exchange becomes part of the history.</p>
 
-<p>Anchoring by quote instead of by position is what lets a page keep changing while notes are pending. A CSS path breaks the moment a paragraph is added above; a quoted sentence is still findable as long as the sentence exists. The shape is the W3C Web Annotation <code>TextQuoteSelector</code>: the exact text, plus up to 32 characters before and after it to tell repeated passages apart.</p>
+<p>Anchoring by quote, not by position, lets a page keep changing while its annotations wait. A CSS path breaks as soon as a paragraph is added above it; a quoted sentence can be found for as long as the sentence exists. The shape is the W3C Web Annotation <code>TextQuoteSelector</code>: the exact text, plus up to 32 characters before and after it to tell repeated passages apart.</p>
+
+<p>A served page shows its waiting annotations where they sit: each quoted passage is underlined, and a click on it opens the thread. The underline is drawn over the page's own text, never inserted into it, so the text a reader sees and quotes is the text the page carries.</p>
 
 <h3>Worked example</h3>
 
-<p>A reader of a bird-watching note selects "arrive with the first warm front" and asks which front. The engine writes <code>content/notes/swifts-follow-weather.annotations.json</code>:</p>
+<p>A reader of a bird-watching page selects "arrive with the first warm front" and asks which front. The engine writes <code>content/notes/swifts-follow-weather.annotations.json</code>:</p>
 
 <pre><code>{
   "version": 1,
@@ -86,9 +86,9 @@ An annotation is a thread attached to a rendered page, either to a quoted passag
   ]
 }</code></pre>
 
-<p>Days later an agent runs <code>ckit annotations list</code>, rewrites the sentence to name the front, and replies in the thread with <code>--state addressed</code>. The reply says what changed. The thread stays in the file, with its reply, for good.</p>
+<p>Days later, an agent runs <code>ckit annotations list</code>, rewrites the sentence to name the front, and replies in the thread with <code>--state addressed</code>. The reply says what changed. The thread stays in the file, with its reply, for good.</p>
 
-<p>The loop runs the other way too. Writing the note's companion entry, an agent adds a paragraph the source never said and leaves a flag on it, <code>--kind flag --label "worked example"</code>. The flag rests as <code>noted</code>: the passage is marked on the page and listed on the review page, and nobody is waiting. The reader, weeks later, presses <b>Keep</b> under it, or <b>Ask for a change</b>, and the thread opens with that instruction for the next agent.</p>
+<p>The loop runs the other way too. Writing a longer entry on the same birds, an agent adds a paragraph the source never said, and leaves a flag on it: <code>--kind flag --label "worked example"</code>. The flag rests as <code>noted</code>. The passage is marked on the page and listed on the review page, and no one is waiting. Weeks later the reader presses <b>Keep</b> under it, or <b>Ask for a change</b>, and the thread opens with that instruction for the next agent.</p>
 
 <table>
 <tr><th>State</th><th>Means</th><th>Whose move</th></tr>
@@ -102,18 +102,18 @@ An annotation is a thread attached to a rendered page, either to a quoted passag
 <h3>Common trap</h3>
 
 <div class="note note-warn">
-<b>Editing the page before answering the notes on it.</b> An open thread's quote is load-bearing. Rewrite that sentence first and the <a class="defn-link" href="/content/concepts/gate/">gate</a> goes red:
+<b>Editing the page before answering the annotations on it.</b> An open thread's quote must stay on the page. Rewrite that sentence first and the <a class="defn-link" href="/content/concepts/gate/">gate</a> fails:
 <pre><code>content/notes/swifts-follow-weather.annotations.json: thread t-20260922-7b8ecb has a STALE anchor — 'arrive with the first warm front' is no longer on the page</code></pre>
-A dropped comment is not a resolved one. Address the thread (or decline it, with the reason) in the same change that rewrites its passage. Once a thread is no longer open its anchor is history and is not checked: acting on a note usually changes the text it quoted. A noted flag whose passage is rewritten is named as stale by the lint and never fails it: withdraw the flag, and flag the new passage if it still goes beyond the source.
+A dropped annotation is not an answered one. Address the thread, or decline it with the reason, in the same change that rewrites its passage. Once a thread is closed, its quote is history and is not checked: acting on an annotation usually changes the text it quoted. A noted flag whose passage was rewritten is named as stale by the lint and never fails it: withdraw the flag, and flag the new passage if it still goes beyond the source.
 </div>
 
 <h3>Related concepts</h3>
 
-<p>Annotations are validated by the <a class="defn-link" href="/content/concepts/gate/">gate</a> and live beside pages of every <a class="defn-link" href="/content/concepts/genre/">genre</a>. The argument that quote anchoring needs the served text to equal the source text is in <a href="/content/entries/why-hand-authored-html/">Why hand-authored HTML</a>; the standard and the tool this borrows from are on <a href="/content/related/prior-art.html">Prior art</a>.</p>
+<p>Annotations are checked by the <a class="defn-link" href="/content/concepts/gate/">gate</a> and sit beside pages of every <a class="defn-link" href="/content/concepts/genre/">genre</a>. Why quote anchoring needs the served text to equal the source text is argued in <a href="/content/entries/why-hand-authored-html/">Why hand-authored HTML</a>; the standard and the tool this borrows from are on <a href="/content/related/prior-art.html">Prior art</a>.</p>
 
 <h3>Source of record</h3>
 
-<p>The whole loop, from the ✎ Annotate button to the <code>/address</code> skill and the review page, is the chapter <a href="/content/books/running-a-library/04-the-review-loop.html">The review loop</a>. The engine's statement is the docstring of <code>ckit/annotations.py</code>.</p>
+<p>The whole loop, from the ✎ Annotate button to the <code>/address</code> skill and the review page, is the chapter <a href="/content/books/running-a-library/04-the-review-loop.html">The review loop</a>. The engine's own statement is the docstring of <code>ckit/annotations.py</code>.</p>
 
 </main>
 </body>
