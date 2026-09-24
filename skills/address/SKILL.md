@@ -37,7 +37,7 @@ Two kinds of thread live in a sidecar. A **question** is a reader's ask: it is `
 
 4. **Run the gate.** `ckit lint` (regenerates the indices, `content/threads.json` among them), then `make check`. The gate validates every sidecar and requires that every **open** thread's quoted passage is still on its page — so if you rewrote a passage that another, still-open thread points at, the gate is red until that thread is addressed too. An addressed or declined thread's anchor is historical and not checked. A noted flag whose passage you rewrote is named as stale, not failed: withdraw it (`ckit annotations state <page> <id> withdrawn --author "agent:<name>"`), and flag the new passage if it still goes beyond the source.
 
-5. **Land it.** Commit the page and its sidecar together (records lane). The thread's reply is the record of what was done; the diff is the evidence.
+5. **Land it.** Commit the page and its sidecar together, and nothing else. The thread's reply is the record of what was done; the diff is the evidence.
 
 ## Rules
 

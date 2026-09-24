@@ -80,4 +80,4 @@ make check     # the gate: engine pin · shell · indices current · lint · boo
 make docs      # read it in the browser before you call it done
 ```
 
-Fix everything the gate reports. Then commit — records lane, only the files you touched plus what `ckit lint` regenerated. Never `git add -A`.
+Fix everything the gate reports. Then commit only the files you touched, plus what `ckit lint` regenerated. Never `git add -A`.
