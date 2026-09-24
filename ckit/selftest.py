@@ -137,6 +137,21 @@ def shell_weight_problems(shell: Path) -> list[str]:
     return out
 
 
+def annotation_layer_problems(shell: Path) -> list[str]:
+    """The annotation layer marks a passage with a CSS highlight over the page's own text: it never
+    splits a text node or wraps one in an element, so the text a reader sees and quotes is the text
+    the page carries. And every element or class it adds — to its own chrome, to <main>, to <body> —
+    is named under hb-ann-, the one prefix the lint refuses in a page."""
+    js = (shell / "annotate.js").read_text(encoding="utf-8")
+    out = [f"annotate.js calls {bad} — a mark must be a highlight over the page's text, not a change to it"
+           for bad in ("splitText(", "surroundContents(", ".normalize(", 'el("mark"') if bad in js]
+    named = re.findall(r'\bel\("[a-z0-9]+", "([^"]*)"', js) + re.findall(r'class="([^"]*)"', js) \
+        + re.findall(r'(?:main|document\.body)\.classList\.\w+\("([^"]+)"', js)
+    out += [f"annotate.js adds the class(es) {c!r} with none under hb-ann-" for c in named
+            if not any(x.startswith("hb-ann") for x in c.split())]
+    return out
+
+
 def _organise_cases(failures: list[str]) -> int:
     """0.5: every link resolves, prose is one paragraph per line, tags are a vocabulary, the gate
     reports every stage at once, dates ignore whitespace, and topics, tags and pages reorganise
@@ -1560,6 +1575,21 @@ def main(argv: list[str]) -> int:
         if not any("over its" in x for x in shell_weight_problems(heavy)):
             failures.append("a shell over its size budget must be reported")
         shutil.rmtree(heavy, ignore_errors=True)
+        planted += 2
+
+        # --- the annotation layer changes no text in <main> and names what it adds hb-ann-*: the kit's
+        #     own layer holds, and a planted one that wraps a passage in <mark class="note"> does not
+        got = annotation_layer_problems(KIT_SRC / "shell")
+        if got:
+            failures.extend(got)
+        wrap = Path(tempfile.mkdtemp(prefix="ckit-selftest-ann-"))
+        (wrap / "annotate.js").write_text('var mk = el("mark", "note"); node.splitText(3); main.classList.add("hot");',
+                                          encoding="utf-8")
+        got = annotation_layer_problems(wrap)
+        for needle in ("splitText(", 'el("mark"', "'note'", "'hot'"):
+            if not any(needle in x for x in got):
+                failures.append(f"a planted annotation layer must be reported for {needle}: {got}")
+        shutil.rmtree(wrap, ignore_errors=True)
         planted += 2
 
         # --- a port held by a process with no pidfile is stopped, so `ckit up` can bind it

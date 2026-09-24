@@ -32,6 +32,8 @@ And a library an agent can organise without guessing and without breaking it: wh
 
 16. **The page rail sits against the reading column**, not at the window's right edge: a slot right after the column, its sections sticky in it, which the annotation panel takes when it opens. The annotation layer no longer loads on the shell's own pages (Browse, Review, Chronicle, the generated home page), where a note had no page to belong to.
 
+17. **Annotated passages are marked as soon as the page loads**, panel open or not, wherever the engine serves the page: a dotted amber underline for a question waiting, azure for a noted flag, nothing for a settled thread; a click on one opens the panel on its thread. The marks are CSS highlights over the page's own text — nothing is inserted into `<main>` any more (they were `<mark>` elements, wrapped around split text nodes, only while the panel was open). A browser without the CSS Custom Highlight API shows no marks and keeps everything else. The panel takes the page rail's slot on a wide screen, the column narrowing to the measure so the panel sits against the prose (it was a fixed overlay the page was padded away from); on a narrow screen it is a sheet along the bottom. It takes the focus when opened from its button and gives it back on Escape or Close, and says what changed to a screen reader.
+
 ### Added
 
 - **The library rail** — by topic when pages declare one, by genre otherwise, folding and remembered; the theme (auto · light · dark) and reading face (serif · sans) toggles.

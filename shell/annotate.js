@@ -16,6 +16,14 @@
    asking nothing until the reader keeps it or asks for a change. Both sides act
    from this panel; the CLI is never required. `#ann=<id>` in the URL opens the
    panel on that thread (the home page and the review page link this way).
+
+   The passages a live thread quotes are marked from the moment the page loads,
+   panel open or not — dotted amber for a question waiting, azure for a noted flag
+   — and a click on one opens the panel on its thread. The marks are CSS highlights
+   over ranges of the page's own text: nothing is inserted into <main>, so the text
+   a reader sees, selects and quotes is the text the page carries. The panel takes
+   the page rail's slot beside the reading column on a wide screen, and is a sheet
+   along the bottom on a narrow one.
    ========================================================================== */
 
 (function () {
@@ -31,8 +39,9 @@
     : PAGE.replace(/\.html$/, ".annotations.json");
   var CONTEXT = 32;
   var CLIP = 160;
+  var STATES = ["open", "noted", "addressed", "declined"];
 
-  var state = { on: false, threads: [], stale: {}, focus: null, scrollTo: null, pending: "", expanded: {} };
+  var state = { on: false, threads: [], stale: {}, marks: [], focus: null, scrollTo: null, pending: "", expanded: {} };
 
   var css = document.createElement("link");
   css.rel = "stylesheet";
@@ -42,11 +51,19 @@
   var toggle = el("button", "hb-ann-toggle hb-ann-ui", "✎ Annotate");
   toggle.type = "button";
   toggle.title = "Mark up this page; an agent picks the notes up later";
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.setAttribute("aria-controls", "hb-ann-panel");
   document.body.appendChild(toggle);
 
   var panel = el("aside", "hb-ann-panel hb-ann-ui");
+  panel.id = "hb-ann-panel";
   panel.hidden = true;
   panel.setAttribute("aria-label", "Annotations");
+  var inner = el("div", "hb-ann-in");
+  var live = el("div", "hb-ann-sr");  // what changed, said to a screen reader
+  live.setAttribute("role", "status");
+  panel.appendChild(inner);
+  panel.appendChild(live);
   document.body.appendChild(panel);
 
   var bubble = el("button", "hb-ann-bubble hb-ann-ui", "＋ Comment on selection");
@@ -78,6 +95,7 @@
   }
   function kindOf(t) { return t.kind || "question"; }
   function isLive(t) { return t.state === "open" || t.state === "noted"; }
+  function say(text) { live.textContent = ""; setTimeout(function () { live.textContent = text; }, 60); }
   function post(req) {
     return fetch("/__annotations", {
       method: "POST", credentials: "same-origin",
@@ -135,55 +153,123 @@
       suffix: norm(m.full.slice(se[1], se[1] + CONTEXT * 3)).slice(0, CONTEXT)
     };
   }
-  function markQuote(m, se, id, cls) {
-    var s = se[0], e = se[1];
-    m.spans.forEach(function (sp) {
-      if (sp.start >= e || sp.end <= s) return;
-      var ls = Math.max(s, sp.start) - sp.start;
-      var le = Math.min(e, sp.end) - sp.start;
-      if (le <= ls) return;
-      var mid = sp.node.splitText(ls);
-      mid.splitText(le - ls);
-      var mk = el("mark", "hb-ann " + cls);
-      mk.dataset.id = id;
-      mid.parentNode.insertBefore(mk, mid);
-      mk.appendChild(mid);
-      mk.addEventListener("click", function (ev) { ev.preventDefault(); focusThread(id, true); });
-    });
-  }
-  function clearMarks() {
-    main.querySelectorAll("mark.hb-ann").forEach(function (mk) {
-      var p = mk.parentNode;
-      while (mk.firstChild) p.insertBefore(mk.firstChild, mk);
-      p.removeChild(mk);
-    });
-    main.normalize();
+  function toRange(m, se) {  // [start, end) of the model as a DOM range over the page's own text nodes
+    var r = document.createRange(), i, sp;
+    for (i = 0; i < m.spans.length; i++) { sp = m.spans[i]; if (se[0] < sp.end) { r.setStart(sp.node, se[0] - sp.start); break; } }
+    for (i = 0; i < m.spans.length; i++) { sp = m.spans[i]; if (se[1] <= sp.end) { r.setEnd(sp.node, se[1] - sp.start); break; } }
+    return r;
   }
 
+  /* ------------------------------------------------------------------- marks
+     One CSS highlight per state (hb-ann-open, hb-ann-noted, …) over the quoted ranges,
+     and hb-ann-focus over the thread in hand. With the panel closed only the live
+     threads are marked; open, the settled ones show too. Where the browser has no
+     highlights, the ranges still anchor clicks, jumps and the stale chips. */
+  var HL = !!(window.CSS && CSS.highlights && typeof window.Highlight === "function");
+  function paint() {
+    var m = model();
+    state.stale = {};
+    state.marks = [];
+    state.threads.forEach(function (t) {
+      if (!t.target || t.state === "withdrawn") return;
+      var se = find(m, t.target.exact);
+      if (!se) { state.stale[t.id] = true; return; }
+      state.marks.push({ id: t.id, state: t.state, range: toRange(m, se) });
+    });
+    if (!HL) return;
+    STATES.concat("focus").forEach(function (k) { CSS.highlights.delete("hb-ann-" + k); });
+    var hl = {};
+    shown().forEach(function (x) {
+      (hl[x.state] = hl[x.state] || new Highlight()).add(x.range);
+      if (x.id === state.focus && state.on) CSS.highlights.set("hb-ann-focus", new Highlight(x.range));
+    });
+    Object.keys(hl).forEach(function (k) { CSS.highlights.set("hb-ann-" + k, hl[k]); });
+  }
+  function shown() {
+    return state.marks.filter(function (x) { return state.on || x.state === "open" || x.state === "noted"; });
+  }
+  function markAt(x, y) {  // the thread whose marked passage is under this point, if any
+    var node = null, off = 0, hit = null;
+    if (document.caretPositionFromPoint) {
+      var cp = document.caretPositionFromPoint(x, y);
+      if (cp) { node = cp.offsetNode; off = cp.offset; }
+    } else if (document.caretRangeFromPoint) {
+      var cr = document.caretRangeFromPoint(x, y);
+      if (cr) { node = cr.startContainer; off = cr.startOffset; }
+    }
+    if (!node || !main.contains(node)) return null;
+    shown().forEach(function (mk) {
+      if (hit) return;
+      try { if (!mk.range.isPointInRange(node, off)) return; } catch (e) { return; }
+      Array.prototype.forEach.call(mk.range.getClientRects(), function (q) {
+        if (x >= q.left && x <= q.right && y >= q.top && y <= q.bottom) hit = mk.id;
+      });
+    });
+    return hit;
+  }
+  function onText(e) {  // a click or a move over the page's text, not over a control in it
+    return !e.target.closest("a, button, input, textarea, select, summary, label, [contenteditable], .hb-ann-ui");
+  }
+  main.addEventListener("click", function (e) {
+    if (e.button || e.defaultPrevented || !onText(e)) return;
+    var sel = window.getSelection();
+    if (sel && !sel.isCollapsed) return;
+    var id = markAt(e.clientX, e.clientY);
+    if (id) openOn(id);
+  });
+  var hoverPending = false;
+  main.addEventListener("mousemove", function (e) {
+    if (hoverPending) return;
+    hoverPending = true;
+    requestAnimationFrame(function () {
+      hoverPending = false;
+      main.classList.toggle("hb-ann-over", onText(e) && !!markAt(e.clientX, e.clientY));
+    });
+  });
+
   /* --------------------------------------------------------------- lifecycle */
-  toggle.addEventListener("click", function () { setOn(!state.on); });
-  function setOn(on) {
+  toggle.addEventListener("click", function () { setOn(!state.on, true); });
+  function place() {  // the page rail's slot when the shell built one, else the page's edge
+    var slot = document.querySelector(".hb-stage") || document.body;
+    if (panel.parentNode !== slot) slot.appendChild(panel);
+  }
+  function setOn(on, byKey) {
+    var had = panel.contains(document.activeElement);
     state.on = on;
     document.body.classList.toggle("hb-ann-on", on);
     toggle.classList.toggle("on", on);
+    toggle.setAttribute("aria-expanded", on ? "true" : "false");
+    place();
     panel.hidden = !on;
     bubble.hidden = true;
-    if (on) load(); else clearMarks();
+    if (on) {
+      load(byKey);
+    } else {
+      paint();
+      if (had) toggle.focus();
+    }
   }
-  function load() {
-    fetch(SIDECAR, { credentials: "same-origin", cache: "no-store" })
+  function load(focusPanel) {
+    return fetch(SIDECAR, { credentials: "same-origin", cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : { threads: [] }; })
       .catch(function () { return { threads: [] }; })
-      .then(function (d) { state.threads = d.threads || []; render(); });
+      .then(function (d) {
+        state.threads = d.threads || [];
+        paint();
+        if (!state.on) return;
+        render();
+        if (focusPanel) inner.querySelector(".hb-ann-head h2").focus();
+      });
   }
-  function openOn(id) {  // a deep link: the panel on, this thread in view
+  function openOn(id) {  // a deep link, or a click on a marked passage: the panel on, this thread in view
     if (!id) return;
     state.focus = id;
     state.scrollTo = id;
-    if (state.on) render(); else setOn(true);
+    if (state.on) { paint(); render(); } else setOn(true);
   }
-  openOn(hashThread());
+  if (hashThread()) openOn(hashThread()); else load();
   window.addEventListener("hashchange", function () { openOn(hashThread()); });
+  window.addEventListener("load", paint);  // math or a widget may have rebuilt the text since
 
   /* ------------------------------------------------------------- selection */
   var bubbleTimer = null;
@@ -222,8 +308,8 @@
     form.innerHTML =
       (quote ? '<div class="hb-ann-quote">' + esc(quote.length > CLIP ? quote.slice(0, CLIP) + "…" : quote) + "</div>"
              : '<div class="hb-ann-meta">Page-level note</div>') +
-      '<textarea placeholder="What should change, and why?"></textarea>' +
-      '<div class="hb-ann-err" hidden></div>' +
+      '<textarea aria-label="Your note" placeholder="What should change, and why?"></textarea>' +
+      '<div class="hb-ann-err" role="alert" hidden></div>' +
       '<div class="hb-ann-actions"><button type="button" class="hb-ann-btn primary" data-act="save">Save</button>' +
       '<button type="button" class="hb-ann-btn" data-act="cancel">Cancel</button></div>';
     var slot = panel.querySelector("[data-composer]");
@@ -231,10 +317,11 @@
     slot.appendChild(form);
     var ta = form.querySelector("textarea");
     ta.focus();
+    function cancel() { slot.innerHTML = ""; panel.querySelector("[data-act=note]").focus(); }
     form.addEventListener("click", function (e) {
       var b = e.target.closest("[data-act]");
       if (!b) return;
-      if (b.dataset.act === "cancel") { slot.innerHTML = ""; return; }
+      if (b.dataset.act === "cancel") { cancel(); return; }
       var body = ta.value.trim();
       var err = form.querySelector(".hb-ann-err");
       if (!body) { err.textContent = "Say something first."; err.hidden = false; return; }
@@ -243,10 +330,15 @@
       b.disabled = true;
       post({ op: "add", page: PAGE, author: who, body: body,
              target: quote ? { type: "TextQuoteSelector", exact: quote, prefix: ctx.prefix, suffix: ctx.suffix } : null })
-        .then(function () { slot.innerHTML = ""; load(); })
+        .then(function (j) {
+          slot.innerHTML = "";
+          if (j.thread) state.focus = j.thread.id;
+          say("Note saved.");
+          return load();
+        })
         .catch(function (ex) { err.textContent = ex.message; err.hidden = false; b.disabled = false; });
     });
-    ta.addEventListener("keydown", function (e) { if (e.key === "Escape") slot.innerHTML = ""; });
+    ta.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); cancel(); } });
   }
 
   /* ------------------------------------------ a reply, a change request, a decline
@@ -259,23 +351,25 @@
     change: "What should change, and why? The thread opens and waits for the agent.",
     decline: "Why not? A declined thread needs its reason."
   };
-  function replyForm(item, t, mode) {
+  var SAID = { reply: "Reply saved.", change: "Change asked for; the thread is waiting.", decline: "Declined." };
+  function replyForm(item, t, mode, opener) {
     var old = item.querySelector(".hb-ann-form");
     if (old) old.remove();
     var form = el("div", "hb-ann-form inline hb-ann-ui");
     form.innerHTML =
-      '<textarea placeholder="' + esc(PROMPTS[mode]) + '"></textarea>' +
-      '<div class="hb-ann-err" hidden></div>' +
+      '<textarea aria-label="' + esc(PROMPTS[mode]) + '" placeholder="' + esc(PROMPTS[mode]) + '"></textarea>' +
+      '<div class="hb-ann-err" role="alert" hidden></div>' +
       '<div class="hb-ann-actions"><button type="button" class="hb-ann-btn primary" data-act="save">' +
       (mode === "decline" ? "Decline" : mode === "change" ? "Ask for the change" : "Reply") + "</button>" +
       '<button type="button" class="hb-ann-btn" data-act="cancel">Cancel</button></div>';
     item.querySelector(".hb-ann-actions").insertAdjacentElement("beforebegin", form);
     var ta = form.querySelector("textarea");
     ta.focus();
+    function cancel() { form.remove(); if (opener) opener.focus(); }
     form.addEventListener("click", function (e) {
       var b = e.target.closest("[data-act]");
       if (!b) return;
-      if (b.dataset.act === "cancel") { form.remove(); return; }
+      if (b.dataset.act === "cancel") { cancel(); return; }
       var body = ta.value.trim();
       var err = form.querySelector(".hb-ann-err");
       if (!body) { err.textContent = mode === "reply" ? "Say something first." : "Say why."; err.hidden = false; return; }
@@ -285,9 +379,10 @@
       var req = { op: "reply", page: PAGE, id: t.id, author: who, body: body };
       if (mode === "decline") req.state = "declined";
       if (mode === "change") req.state = "open";
-      post(req).then(load).catch(function (ex) { err.textContent = ex.message; err.hidden = false; b.disabled = false; });
+      post(req).then(function () { say(SAID[mode]); return load(); })
+        .catch(function (ex) { err.textContent = ex.message; err.hidden = false; b.disabled = false; });
     });
-    ta.addEventListener("keydown", function (e) { if (e.key === "Escape") form.remove(); });
+    ta.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); cancel(); } });
   }
 
   /* ------------------------------------------------------------------ render */
@@ -323,24 +418,16 @@
       esc(t.id) + '">more</button></div>';
   }
   function render() {
-    clearMarks();
-    state.stale = {};
     var open = 0, noted = 0;
     state.threads.forEach(function (t) {
       if (t.state === "open") open++;
       if (t.state === "noted") noted++;
-      if (t.target && t.state !== "withdrawn") {
-        var m = model();
-        var se = find(m, t.target.exact);
-        if (se) markQuote(m, se, t.id, "hb-ann-" + t.state);
-        else state.stale[t.id] = true;
-      }
     });
 
     var html = [
-      '<div class="hb-ann-head"><b>Annotations</b>',
+      '<div class="hb-ann-head"><h2 tabindex="-1">Annotations</h2>',
       '<span><button type="button" class="hb-ann-btn primary" data-act="note">＋ Page note</button> ',
-      '<button type="button" class="hb-ann-btn" data-act="close">Close</button></span>',
+      '<button type="button" class="hb-ann-btn" data-act="close" aria-label="Close annotations">Close</button></span>',
       '<div class="hb-ann-meta">' + open + " waiting · " + noted + " noted · " + state.threads.length +
         " total · select prose to comment on it</div></div>",
       '<div data-composer></div>'
@@ -356,8 +443,8 @@
         '<span class="hb-ann-meta">' + esc(t.author) + " · " + esc(String(t.created || "").slice(0, 10)) + "</span></div>");
       if (t.target) {
         var q = t.target.exact || "";
-        html.push('<div class="hb-ann-quote" data-goto="' + esc(t.id) + '" title="Jump to the passage">' +
-          esc(q.length > 140 ? q.slice(0, 140) + "…" : q) + "</div>");
+        html.push('<button type="button" class="hb-ann-quote" data-goto="' + esc(t.id) + '" title="Jump to the passage">' +
+          esc(q.length > 140 ? q.slice(0, 140) + "…" : q) + "</button>");
       }
       html.push(bodyHtml(t));
       (t.replies || []).forEach(function (r) {
@@ -367,14 +454,14 @@
       });
       html.push('<div class="hb-ann-actions">' + actions(t) + "</div></div>");
     });
-    panel.innerHTML = html.join("");
+    inner.innerHTML = html.join("");
     if (state.scrollTo) { var id = state.scrollTo; state.scrollTo = null; focusThread(id, true); }
     else if (state.focus) focusThread(state.focus, false);
   }
 
   panel.addEventListener("click", function (e) {
     var act = e.target.closest("[data-act]");
-    if (act) {
+    if (act && !act.closest(".hb-ann-form")) {
       if (act.dataset.act === "close") setOn(false);
       if (act.dataset.act === "note") compose(null);
       return;
@@ -387,7 +474,7 @@
     if (fm) {
       var item = fm.closest(".hb-ann-item");
       var t = state.threads.filter(function (x) { return x.id === fm.dataset.id; })[0];
-      if (item && t) { state.focus = t.id; replyForm(item, t, fm.dataset.form); }
+      if (item && t) { state.focus = t.id; replyForm(item, t, fm.dataset.form, fm); }
       return;
     }
     var keep = e.target.closest("[data-keep]");
@@ -396,7 +483,7 @@
       if (!who) return;
       keep.disabled = true;
       post({ op: "reply", page: PAGE, id: keep.dataset.keep, author: who, body: "Kept.", state: "addressed" })
-        .then(load)
+        .then(function () { say("Kept."); return load(); })
         .catch(function (ex) { alert(ex.message); keep.disabled = false; });
       return;
     }
@@ -406,7 +493,7 @@
       if (!name) return;
       st.disabled = true;
       post({ op: "state", page: PAGE, id: st.dataset.id, state: st.dataset.state, author: name })
-        .then(load)
+        .then(function () { say(st.dataset.state === "open" ? "Reopened; the thread is waiting." : "Withdrawn."); return load(); })
         .catch(function (ex) { alert(ex.message); st.disabled = false; });
     }
   });
@@ -414,14 +501,18 @@
   function focusThread(id, scroll) {
     state.focus = id;
     panel.querySelectorAll(".hb-ann-item.focus").forEach(function (x) { x.classList.remove("focus"); });
-    main.querySelectorAll("mark.hb-ann.focus").forEach(function (x) { x.classList.remove("focus"); });
     var item = panel.querySelector('.hb-ann-item[data-id="' + id + '"]');
-    var mk = main.querySelector('mark.hb-ann[data-id="' + id + '"]');
     if (item) item.classList.add("focus");
-    if (mk) mk.classList.add("focus");
-    if (scroll) {
-      if (mk) mk.scrollIntoView({ block: "center", behavior: "smooth" });
-      if (item) item.scrollIntoView({ block: "nearest" });
+    paint();
+    if (!scroll) return;
+    if (item) {  // the thread in view in the panel's own list — never by scrolling the page
+      var ir = inner.getBoundingClientRect(), jr = item.getBoundingClientRect();
+      if (jr.top < ir.top || jr.bottom > ir.bottom) inner.scrollTop += jr.top - ir.top - 12;
+    }
+    var mk = state.marks.filter(function (x) { return x.id === id; })[0];
+    if (mk) {  // the passage near the top: clear of a bottom sheet, and of the top bar on a phone
+      var r = mk.range.getBoundingClientRect();
+      window.scrollTo({ top: window.scrollY + r.top - Math.min(160, window.innerHeight / 4), behavior: "smooth" });
     }
   }
 
