@@ -38,7 +38,7 @@ And a library an agent can organise without guessing and without breaking it: wh
 
 ### Added
 
-- **The library rail** — by topic when pages declare one, by genre otherwise, folding and remembered; the theme (auto · light · dark) and reading face (serif · sans) toggles.
+- **The library rail** — by topic when pages declare one, by genre otherwise, folding and remembered; at its foot the reader's settings: theme (auto · light · dark), reading face (serif · sans), type size (small · normal · large) and measure (narrow · normal · wide).
 - **The page rail** — outline with scroll-spy, the page's kind, topic, status, created and updated dates, reading time and tags, *Linked from* (automatic backlinks) and *Links to*; under the top bar's Contents menu where the rail is hidden.
 - **The palette** — ⌘K / Ctrl-K / `/`: pages, topics, tags and the shell's pages; full text when Pagefind answers.
 - **Peeks** on internal links; the status pill on the opening line; a top bar with breadcrumbs or a book's chapters.

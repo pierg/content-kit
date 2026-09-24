@@ -40,6 +40,10 @@
                             U+2212, U+2215, U+FEFF, U+FFFD; }
 
 html:has(> body.hb) { margin: 0; background: #faf9f6; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* the reader's type size scales every rem: the text, the measure and the wide column with it, so a
+   figure or a table keeps its proportion to the prose; the chrome is sized in px and stays put */
+html[data-size="small"]:has(> body.hb) { font-size: 93.75%; }
+html[data-size="large"]:has(> body.hb) { font-size: 112.5%; }
 html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 @media (prefers-color-scheme: dark) { html:not([data-theme="light"]):has(> body.hb) { background: #131312; } }
 
@@ -80,6 +84,8 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
   --gutter: 40px;
 }
 .hb[data-hb-font="sans"], :root[data-font="sans"] .hb { --font-body: var(--font-sans); }
+:root[data-measure="narrow"] .hb { --measure: 32rem; }
+:root[data-measure="wide"] .hb { --measure: 44rem; }
 
 /* dark — by the system's preference, or by the reader's choice (html[data-theme]) */
 :root[data-theme="dark"] .hb {
@@ -417,7 +423,9 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
                          color: var(--ink-3); }
 .hb .hb-side-foot { display: flex; align-items: center; gap: 2px; padding: 8px 10px; border-top: 1px solid var(--grid);
                     background: var(--rail-bg); }
-.hb .hb-side-foot .hb-spacer { flex: 1; }
+.hb .hb-seg { display: inline-flex; margin-left: 4px; border: 1px solid var(--grid); border-radius: 9px; padding: 1px; }
+.hb .hb-seg .hb-iconbtn { width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; }
+.hb .hb-seg .hb-iconbtn[aria-pressed="true"] { background: var(--surface-1); color: var(--ink-1); box-shadow: 0 0 0 1px var(--grid); }
 
 .hb .hb-side-toggle { display: none; }
 .hb .hb-side-backdrop { display: none; position: fixed; inset: 0; z-index: 35; background: rgba(0,0,0,0.3); }

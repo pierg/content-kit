@@ -45,8 +45,9 @@
   window.hbUrl = hbUrl;
 
   /* ------------------------------------------------------------ preferences
-     Theme (auto · light · dark) and reading face (serif · sans), kept in this browser.
-     Applied first, before anything paints that depends on them. */
+     Theme (auto · light · dark), reading face (serif · sans), type size (small · normal · large)
+     and measure (narrow · normal · wide), kept in this browser. Applied first, before anything
+     paints that depends on them. */
   var store = {
     get: function (k) { try { return localStorage.getItem("ckit:" + k); } catch (e) { return null; } },
     set: function (k, v) { try { if (v == null) localStorage.removeItem("ckit:" + k); else localStorage.setItem("ckit:" + k, v); } catch (e) {} }
@@ -56,6 +57,10 @@
     var t = store.get("theme");
     if (t === "light" || t === "dark") root.setAttribute("data-theme", t); else root.removeAttribute("data-theme");
     if (store.get("font") === "sans") root.setAttribute("data-font", "sans"); else root.removeAttribute("data-font");
+    ["size", "measure"].forEach(function (k) {
+      var v = store.get(k);
+      if (v) root.setAttribute("data-" + k, v); else root.removeAttribute("data-" + k);
+    });
   }
   applyPrefs();
 
@@ -642,6 +647,21 @@
       '<span style="font:600 13px/1 ' + (f === "sans" ? "var(--font-serif)" : "var(--font-sans)") + '">Aa</span></button>';
   }
 
+  /* three settings side by side, the current one pressed: the type size, drawn as an A at three
+     sizes, and the measure, as a column of three widths */
+  function segHtml(key, label) {
+    var cur = store.get(key) || "normal";
+    return '<span class="hb-seg" role="group" aria-label="' + label + '">' + ["small", "normal", "large"].map(function (v, i) {
+      var name = key === "measure" ? ["narrow", "normal", "wide"][i] : v;
+      var glyph = key === "measure"
+        ? '<svg class="hb-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M' + (8 - 2 * i) + " 8h" + (8 + 4 * i) + "M" + (8 - 2 * i) + " 12h" +
+          (8 + 4 * i) + "M" + (8 - 2 * i) + " 16h" + (5 + 3 * i) + '"/></svg>'
+        : '<span style="font:600 ' + (11 + 2 * i) + 'px/1 var(--font-sans)">A</span>';
+      return '<button type="button" class="hb-iconbtn" data-hb-pref="' + key + '" data-v="' + name + '" aria-pressed="' + (name === cur) +
+        '" title="' + label + ": " + name + '">' + glyph + "</button>";
+    }).join("") + "</span>";
+  }
+
   function sideHtml(lib, where) {
     var name = lib.site.name || "Library";
     var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
@@ -651,7 +671,7 @@
       '<span class="hb-kbd">' + (mac ? "⌘" : "Ctrl") + " K</span></button>" +
       navHtml(lib) + treeHtml(lib, where) +
       "</div>" +
-      '<div class="hb-side-foot">' + themeButton() + fontButton() + '<span class="hb-spacer"></span></div>';
+      '<div class="hb-side-foot">' + themeButton() + fontButton() + segHtml("size", "Type size") + segHtml("measure", "Measure") + "</div>";
   }
 
   /* only what the reader opens or closes is remembered — a group the tree opens by default
@@ -904,6 +924,12 @@
           store.set("font", store.get("font") === "sans" ? null : "sans");
           applyPrefs();
           fb.outerHTML = fontButton();
+        }
+        var pb = e.target.closest("[data-hb-pref]");
+        if (pb) {
+          store.set(pb.dataset.hbPref, pb.dataset.v === "normal" ? null : pb.dataset.v);
+          applyPrefs();
+          pb.parentNode.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b === pb ? "true" : "false"); });
         }
       });
       /* keep the current page in view in a long tree */
