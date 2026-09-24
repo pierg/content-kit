@@ -22,7 +22,8 @@ Genre (by position in the tree — see genres.json and genres/GENRES.md):
      genre's sections in order — and any check a module under kit.json `checks` provides
 
 Annotations:
-  8. every *.annotations.json validates and every quote it anchors is still on its page
+  8. every *.annotations.json validates and every open thread's quote is still on its page
+     (a noted flag whose passage left is named as a note, not failed)
 
 This is the *content* gate: whether a page renders like the rest of the library and reads
 like its genre. Whether it is allowed to say what it says is a layer's business — a layer
@@ -376,6 +377,8 @@ def run(repo: Repo, paths: list[Path] | None = None, *, nav: bool = True) -> tup
                 probs.append(f"{repo.rel(d)}/book.js: retired — use book.json and `ckit nav`")
     probs.extend(annotations.check_all(repo))
     probs.extend(links.moved_problems(repo))
+    for note in annotations.stale_flags(repo):  # a flag whose passage left: named, never failed
+        print("note: " + note)
     if nav and repo.content.is_dir():
         written = book_nav.regenerate(repo)
         if written:

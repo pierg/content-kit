@@ -125,7 +125,8 @@
     auto: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17" /><path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor" stroke="none"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     list: '<path d="M9 7h11M9 12h11M9 17h11M4.5 7h.01M4.5 12h.01M4.5 17h.01"/>',
-    record: '<path d="M6 3.5h9l3.5 3.5v13.5H6z"/><path d="M14.5 3.5V7.5H18.5"/><path d="M9 12h6M9 15.5h6"/>'
+    record: '<path d="M6 3.5h9l3.5 3.5v13.5H6z"/><path d="M14.5 3.5V7.5H18.5"/><path d="M9 12h6M9 15.5h6"/>',
+    review: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4h-1A2.5 2.5 0 0 1 4 13.5z"/><path d="m8.5 9.5 2.5 2.5 4.5-4.5"/>'
   };
   function icon(name) {
     return '<svg class="hb-ico" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || ICONS.link) + "</svg>";
@@ -348,12 +349,34 @@
     fetch(hbUrl("/__annotations/ping"), { credentials: "same-origin", cache: "no-store" })
       .then(function (r) {
         if (!r.ok) return;
+        window.hbEngine = true;
+        addReviewLink();
         var s = document.createElement("script");
         s.src = hbUrl("/shell/annotate.js");
         s.defer = true;
         document.head.appendChild(s);
       })
       .catch(function () {});
+  }
+
+  /* Review — every annotation thread in the library — is a shell page only the engine can feed
+     (the index it reads stays home with the sidecars), so its rail item arrives with the ping
+     rather than with the catalog, once the library has any thread at all. Whichever finishes
+     first, the ping or the chrome, adds it: navHtml when the chrome comes second, this when it
+     came first. */
+  function addReviewLink() {
+    catalogPromise().then(function (cat) {
+      var t = cat && cat.threads;
+      if (!t || !t.total) return;
+      var nav = document.querySelector(".hb-side-nav");
+      if (!nav || nav.querySelector("[data-hb-review]")) return;
+      var here = sitePath() === "/shell/review.html";
+      var li = document.createElement("li");
+      li.innerHTML = '<a href="' + escapeAttr(hbUrl("/shell/review.html")) + '" data-hb-review' + (here ? ' class="here" aria-current="page"' : "") +
+        ' title="' + t.open + " waiting · " + t.noted + ' noted">' + icon("review") + "<span>Review</span>" +
+        (t.open ? '<span class="hb-ext">' + t.open + "</span>" : "") + "</a>";
+      nav.appendChild(li);
+    });
   }
 
   /* Reference links: ids matching a kit.json `refs` pattern become links, e.g.
@@ -579,11 +602,17 @@
     var items = [{ label: "Home", href: "/", icon: "home" },
                  { label: "Browse", href: "/shell/search.html", icon: "browse" }];
     if ((lib.cat.record || []).length) items.push({ label: "Chronicle", href: "/shell/chronicle.html", icon: "clock" });
+    var th = lib.cat.threads;
+    if (window.hbEngine && th && th.total) {  // the ping answered before the chrome was built
+      items.push({ label: "Review", href: "/shell/review.html", icon: "review", review: true,
+                   title: th.open + " waiting · " + th.noted + " noted" });
+    }
     (lib.cat.links || []).forEach(function (l) { items.push({ label: l.label, href: l.href, title: l.title, icon: "link" }); });
     return '<ul class="hb-side-nav">' + items.map(function (it) {
       var ext = /^[a-z]+:\/\//i.test(it.href);
       var cur = !ext && (here === it.href || (it.href === "/" && here === "/index.html"));
       return '<li><a href="' + escapeAttr(ext ? it.href : hbUrl(it.href)) + '"' + (cur ? ' class="here" aria-current="page"' : "") +
+        (it.review ? " data-hb-review" : "") +
         (it.title ? ' title="' + escapeAttr(it.title) + '"' : "") + ">" + icon(ext ? "link" : it.icon) +
         "<span>" + escapeHtml(it.label) + "</span>" + (ext ? '<span class="hb-ext">↗</span>' : "") + "</a></li>";
     }).join("") + "</ul>";
@@ -1137,6 +1166,7 @@
         }
         var cmds = [{ label: "Home", href: "/" }, { label: "Browse everything", href: "/shell/search.html" }];
         if ((lib.cat.record || []).length) cmds.push({ label: "Chronicle", href: "/shell/chronicle.html" });
+        if (window.hbEngine && lib.cat.threads && lib.cat.threads.total) cmds.push({ label: "Review the annotation threads", href: "/shell/review.html" });
         (lib.cat.links || []).forEach(function (l) { cmds.push({ label: l.label, href: l.href }); });
         var qt = tokens(q);
         groups.push({ label: "Go to", items: cmds.filter(function (c) {

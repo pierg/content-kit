@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review</title>
+<link rel="stylesheet" href="/shell/lib.css">
+<style>
+/* Review: every annotation thread in the library, from the generated content/threads.json.
+     · the questions readers left, waiting for whoever acts on the page;
+     · the passages agents flagged as written beyond their source (noted), for the owner to
+       browse, keep, or ask to change;
+     · what was settled, as history.
+   Grouped by page or by label; each thread jumps to its passage on the page, where the panel
+   offers reply, keep, decline and ask-for-a-change. Served by the engine, a whole group can be
+   kept here at once (the write endpoint answers); on a static host the page is a read-only map.
+   Nothing here is authored. */
+.rv-wrap { max-width: 860px; }
+.rv-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0; }
+.rv-row .rv-label { font: 650 10.5px/1.2 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);
+                    width: 4.5rem; flex: none; }
+.fchip { font: 500 12.5px/1 var(--font-sans); padding: 6px 11px; border-radius: 999px; border: 1px solid var(--grid);
+         background: var(--surface-1); color: var(--ink-2); cursor: pointer; }
+.fchip:hover { border-color: var(--baseline); color: var(--ink-1); }
+.fchip.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface-1)); }
+.fchip .n { color: var(--ink-3); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.rv-meta { font: 13px/1.4 var(--font-sans); color: var(--ink-3); margin: 6px 0 18px; }
+.rv-group { margin: 22px 0 10px; }
+.rv-group h2 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 17px; margin: 0 0 6px;
+               padding-bottom: 6px; border-bottom: 1.5px solid var(--baseline); }
+.rv-group h2 a { color: var(--ink-1); text-decoration: none; }
+.rv-group h2 a:hover { color: var(--link); }
+.rv-group h2 .n { font: 500 12px var(--font-mono); color: var(--ink-3); }
+.rv-group h2 .act { margin-left: auto; }
+.rv-btn { font: 700 11.5px var(--font-mono); padding: 4px 9px; border-radius: 6px; border: 1.5px solid var(--baseline);
+          background: var(--page); color: var(--ink-2); cursor: pointer; }
+.rv-btn:hover, .rv-btn.primary { border-color: var(--violet); color: var(--violet); }
+.rv-btn:disabled { opacity: 0.5; cursor: default; }
+.rv-item { border: 1px solid var(--grid); border-left: 3px solid var(--amber); border-radius: 0 8px 8px 0; background: var(--surface-1);
+           padding: 8px 12px; margin: 0 0 8px; font: 13.5px/1.5 var(--font-sans); }
+.rv-item.noted { border-left-color: var(--azure); border-left-style: dotted; }
+.rv-item.addressed { border-left-color: var(--kept); }
+.rv-item.declined { border-left-color: var(--rejected); }
+.rv-item.withdrawn { border-left-color: var(--baseline); opacity: 0.65; }
+.rv-top { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.rv-top .who { color: var(--ink-3); font-size: 11.5px; margin-left: auto; }
+.chip { display: inline-block; font: 700 10px var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em;
+        padding: 1px 6px; border-radius: 3px; border: 1px solid; margin-right: 2px; vertical-align: 1px; }
+.chip.open { color: var(--amber); border-color: var(--amber); }
+.chip.noted { color: var(--azure); border-color: var(--azure); }
+.chip.addressed { color: var(--kept-text); border-color: var(--kept); }
+.chip.declined { color: var(--rejected); border-color: var(--rejected); }
+.chip.withdrawn, .chip.stale { color: var(--ink-3); border-color: var(--baseline); }
+.chip.flag { color: var(--ink-2); border-color: var(--baseline); background: var(--surface-2); }
+.chip.label { color: var(--violet); border-color: var(--violet); text-transform: none; letter-spacing: 0; }
+.rv-quote { color: var(--ink-2); font-style: italic; font-size: 12.5px; border-left: 2px solid var(--baseline); padding: 1px 8px; margin: 6px 0; }
+.rv-quote a { color: inherit; text-decoration: none; }
+.rv-quote a:hover { color: var(--link); }
+.rv-body { margin: 4px 0; color: var(--ink-1); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rv-body.clip { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rv-last { color: var(--ink-3); font-size: 12px; margin-top: 4px; }
+.rv-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+.rv-actions a { font: 500 12px var(--font-sans); }
+.empty { color: var(--ink-3); padding: 40px 0; text-align: center; font: 14px var(--font-sans); }
+.hint { color: var(--ink-3); padding: 10px 14px; margin: 12px 0; font-size: 13px;
+        border-left: 3px solid var(--baseline); background: var(--surface-1); border-radius: 0 6px 6px 0; }
+</style>
+<script src="/shell/lib.js" defer></script>
+</head>
+<body class="hb" data-hb-app>
+<main>
+
+<h1>Review</h1>
+<p class="sub">Every annotation thread in the library: the questions waiting for an answer, the passages an agent flagged as written beyond its source, and what was settled. Jump to a thread on its page to reply, keep, decline or ask for a change; keep a whole group at once from here.</p>
+
+<div class="rv-wrap">
+  <div class="rv-row"><span class="rv-label">Show</span><span id="states"></span></div>
+  <div class="rv-row"><span class="rv-label">Group by</span><span id="modes"></span></div>
+  <div class="rv-meta" id="meta">Loading…</div>
+  <div id="groups" data-norefs></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var STATES = [["live", "Waiting and noted"], ["open", "Waiting"], ["noted", "Noted"], ["closed", "Settled"], ["all", "All"]];
+  var MODES = [["page", "Page"], ["label", "Label"]];
+  var CLOSED = { addressed: 1, declined: 1, withdrawn: 1 };
+  var url = new URL(location.href);
+  var view = { state: url.searchParams.get("state") || "live", mode: url.searchParams.get("by") || "page" };
+  if (!STATES.some(function (s) { return s[0] === view.state; })) view.state = "live";
+  if (!MODES.some(function (m) { return m[0] === view.mode; })) view.mode = "page";
+  var data = { threads: [], counts: {} }, live = false;
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function u(href) { return window.hbUrl ? window.hbUrl(href) : href; }
+  function author() {
+    var a = localStorage.getItem("ckit.author") || "";
+    if (!a) { a = (window.prompt("Your name for annotations (kept in this browser):", "") || "").trim(); if (a) localStorage.setItem("ckit.author", a); }
+    return a;
+  }
+  function post(req) {
+    return fetch(u("/__annotations"), { method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error(j.error || ("HTTP " + r.status)); return j; }); });
+  }
+  function isLive(t) { return t.state === "open" || t.state === "noted"; }
+  function wanted(t) {
+    if (view.state === "live") return isLive(t);
+    if (view.state === "closed") return !!CLOSED[t.state];
+    if (view.state === "all") return true;
+    return t.state === view.state;
+  }
+  function pushUrl() {
+    var q = new URLSearchParams();
+    if (view.state !== "live") q.set("state", view.state);
+    if (view.mode !== "page") q.set("by", view.mode);
+    history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : ""));
+  }
+
+  function load() {
+    return fetch(u("/content/threads.json"), { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : { threads: [], counts: {} }; })
+      .catch(function () { return { threads: [], counts: {} }; })
+      .then(function (d) { data = d; render(); });
+  }
+  fetch(u("/__annotations/ping"), { credentials: "same-origin", cache: "no-store" })
+    .then(function (r) { live = r.ok; }).catch(function () { live = false; })
+    .then(load);
+
+  function chips(t) {
+    var out = '<span class="chip ' + esc(t.state) + '">' + esc(t.state) + "</span>";
+    if (t.kind === "flag") out += '<span class="chip flag" title="An agent wrote this passage beyond its source">flag</span>';
+    if (t.label) out += '<span class="chip label">' + esc(t.label) + "</span>";
+    if (t.stale) out += '<span class="chip stale" title="The quoted passage is no longer on the page">stale anchor</span>';
+    return out;
+  }
+  function item(t) {
+    var link = u(t.page) + "#ann=" + encodeURIComponent(t.id);
+    var last = (t.replies || []).slice(-1)[0];
+    var h = '<div class="rv-item ' + esc(t.state) + '" data-id="' + esc(t.id) + '" data-page="' + esc(t.page) + '">';
+    h += '<div class="rv-top">' + chips(t) + '<span class="who">' + esc(t.author || "") + " · " + esc(String(t.created || "").slice(0, 10)) + "</span></div>";
+    if (t.quote) h += '<div class="rv-quote"><a href="' + esc(link) + '" title="Open on the page">' + esc(t.quote.length > 160 ? t.quote.slice(0, 160) + "…" : t.quote) + "</a></div>";
+    h += '<div class="rv-body' + (t.state === "noted" ? " clip" : "") + '">' + esc(t.body || "") + "</div>";
+    if (last) h += '<div class="rv-last">↳ ' + esc(last.author || "") + (last.state ? " → " + esc(last.state) : "") + ": " + esc((last.body || "").slice(0, 200)) + "</div>";
+    h += '<div class="rv-actions"><a href="' + esc(link) + '">Open on the page →</a>';
+    if (live && isLive(t)) h += '<button type="button" class="rv-btn" data-keep="' + esc(t.id) + '" data-page="' + esc(t.page) + '">Keep</button>';
+    h += "</div></div>";
+    return h;
+  }
+  function render() {
+    var c = data.counts || {};
+    document.getElementById("states").innerHTML = STATES.map(function (s) {
+      var n = s[0] === "live" ? (c.open || 0) + (c.noted || 0) : s[0] === "closed" ? (c.addressed || 0) + (c.declined || 0) + (c.withdrawn || 0)
+            : s[0] === "all" ? data.threads.length : (c[s[0]] || 0);
+      return '<button type="button" class="fchip' + (view.state === s[0] ? " on" : "") + '" data-state="' + s[0] + '">' + esc(s[1]) + '<span class="n">' + n + "</span></button>";
+    }).join(" ");
+    document.getElementById("modes").innerHTML = MODES.map(function (m) {
+      return '<button type="button" class="fchip' + (view.mode === m[0] ? " on" : "") + '" data-mode="' + m[0] + '">' + esc(m[1]) + "</button>";
+    }).join(" ");
+    var rows = data.threads.filter(wanted);
+    var groups = {}, order = [];
+    rows.forEach(function (t) {
+      var key = view.mode === "page" ? t.page : (t.label || (t.kind === "flag" ? "(flag, no label)" : "(question)"));
+      if (!groups[key]) { groups[key] = { key: key, title: view.mode === "page" ? (t.title || t.page) : key, page: view.mode === "page" ? t.page : null, items: [] }; order.push(key); }
+      groups[key].items.push(t);
+    });
+    order.sort(function (a, b) { return groups[a].title.localeCompare(groups[b].title); });
+    var meta = rows.length + " thread" + (rows.length === 1 ? "" : "s") + " shown · " + (c.open || 0) + " waiting · " + (c.noted || 0) + " noted";
+    if (!live) meta += " · read-only here: keep, reply and decline on the served library";
+    document.getElementById("meta").textContent = meta;
+    var out = order.map(function (k) {
+      var g = groups[k];
+      var liveN = g.items.filter(isLive).length;
+      var head = '<h2>' + (g.page ? '<a href="' + esc(u(g.page)) + '">' + esc(g.title) + "</a>" : esc(g.title)) +
+        '<span class="n">' + g.items.length + "</span>" +
+        (live && liveN ? '<span class="act"><button type="button" class="rv-btn primary" data-keep-group="' + esc(k) + '" title="Close every waiting or noted thread in this group as kept">Keep all ' + liveN + "</button></span>" : "") + "</h2>";
+      return '<div class="rv-group" data-group="' + esc(k) + '">' + head + g.items.map(item).join("") + "</div>";
+    });
+    document.getElementById("groups").innerHTML = out.length ? out.join("") :
+      '<div class="empty">Nothing ' + (view.state === "live" ? "waiting or noted" : "here") + ".</div>";
+    if (!data.threads.length) document.getElementById("groups").innerHTML +=
+      '<div class="hint">Threads are left on a page with ✎ Annotate, or by an agent flagging what it wrote beyond its source.</div>';
+  }
+
+  function keep(threads, btn) {
+    var who = author();
+    if (!who) return;
+    btn.disabled = true;
+    var chain = Promise.resolve();
+    threads.forEach(function (t) {
+      chain = chain.then(function () { return post({ op: "reply", page: t.page, id: t.id, author: who, body: "Kept.", state: "addressed" }); });
+    });
+    chain.then(load).catch(function (ex) { alert(ex.message); btn.disabled = false; });
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-state], [data-mode], [data-keep], [data-keep-group]");
+    if (!b) return;
+    if (b.dataset.state) { view.state = b.dataset.state; pushUrl(); render(); return; }
+    if (b.dataset.mode) { view.mode = b.dataset.mode; pushUrl(); render(); return; }
+    if (b.dataset.keep) {
+      var t = data.threads.filter(function (x) { return x.id === b.dataset.keep && x.page === b.dataset.page; })[0];
+      if (t) keep([t], b);
+      return;
+    }
+    if (b.dataset.keepGroup) {
+      var box = b.closest(".rv-group");
+      var ids = Array.prototype.map.call(box.querySelectorAll(".rv-item"), function (x) { return x.dataset.id + "\u0000" + x.dataset.page; });
+      var picked = data.threads.filter(function (x) { return isLive(x) && ids.indexOf(x.id + "\u0000" + x.page) !== -1; });
+      if (picked.length && window.confirm("Keep " + picked.length + " thread" + (picked.length === 1 ? "" : "s") + " as accepted?")) keep(picked, b);
+    }
+  });
+})();
+</script>
+
+</main>
+</body>
+</html>

@@ -52,7 +52,7 @@
 
 <blockquote class="defn" id="annotation">
 <span class="defn-name">ANNOTATION — definition of record</span><br>
-An annotation is a thread a reader attaches to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup, and it moves through four states: open, addressed, declined and withdrawn. Nothing needs to be running for it to survive; the file is the only channel between the reader and whoever acts on it.
+An annotation is a thread attached to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup. It is one of two kinds: a <b>question</b>, which a reader opens and which waits until whoever acts on the page addresses or declines it, or a <b>flag</b>, which an agent leaves on a passage it wrote beyond its source and which rests as noted, asking nothing until the reader keeps it or asks for a change. It moves through five states: open, noted, addressed, declined and withdrawn. Nothing needs to be running for it to survive; the file is the only channel between the two sides.
 </blockquote>
 
 <h3>Why it matters</h3>
@@ -88,12 +88,15 @@ An annotation is a thread a reader attaches to a rendered page, either to a quot
 
 <p>Days later an agent runs <code>ckit annotations list</code>, rewrites the sentence to name the front, and replies in the thread with <code>--state addressed</code>. The reply says what changed. The thread stays in the file, with its reply, for good.</p>
 
+<p>The loop runs the other way too. Writing the note's companion entry, an agent adds a paragraph the source never said and leaves a flag on it, <code>--kind flag --label "worked example"</code>. The flag rests as <code>noted</code>: the passage is marked on the page and listed on the review page, and nobody is waiting. The reader, weeks later, presses <b>Keep</b> under it, or <b>Ask for a change</b>, and the thread opens with that instruction for the next agent.</p>
+
 <table>
 <tr><th>State</th><th>Means</th><th>Whose move</th></tr>
-<tr><td>open</td><td>waiting for an answer; its quote must still be on the page</td><td>the reader opens it</td></tr>
-<tr><td>addressed</td><td>acted on; the reply says what changed</td><td>whoever acted</td></tr>
+<tr><td>open</td><td>waiting for an answer; its quote must still be on the page</td><td>a reader opens a question, or reopens a flag with a request</td></tr>
+<tr><td>noted</td><td>a flag resting: the passage is disclosed and nothing is asked; a quote that leaves the page is named, not failed</td><td>an agent leaves it</td></tr>
+<tr><td>addressed</td><td>acted on; the reply says what changed — or, for a flag, that it was kept</td><td>whoever acted, or the reader who kept it</td></tr>
 <tr><td>declined</td><td>not acted on, for a stated reason; a declined thread without a reason fails the gate</td><td>whoever declined</td></tr>
-<tr><td>withdrawn</td><td>taken back</td><td>the reader</td></tr>
+<tr><td>withdrawn</td><td>taken back</td><td>its author</td></tr>
 </table>
 
 <h3>Common trap</h3>
@@ -101,7 +104,7 @@ An annotation is a thread a reader attaches to a rendered page, either to a quot
 <div class="note note-warn">
 <b>Editing the page before answering the notes on it.</b> An open thread's quote is load-bearing. Rewrite that sentence first and the <a class="defn-link" href="/content/concepts/gate/">gate</a> goes red:
 <pre><code>content/notes/swifts-follow-weather.annotations.json: thread t-20260922-7b8ecb has a STALE anchor — 'arrive with the first warm front' is no longer on the page</code></pre>
-A dropped comment is not a resolved one. Address the thread (or decline it, with the reason) in the same change that rewrites its passage. Once a thread is no longer open its anchor is history and is not checked: acting on a note usually changes the text it quoted.
+A dropped comment is not a resolved one. Address the thread (or decline it, with the reason) in the same change that rewrites its passage. Once a thread is no longer open its anchor is history and is not checked: acting on a note usually changes the text it quoted. A noted flag whose passage is rewritten is named as stale by the lint and never fails it: withdraw the flag, and flag the new passage if it still goes beyond the source.
 </div>
 
 <h3>Related concepts</h3>
@@ -110,7 +113,7 @@ A dropped comment is not a resolved one. Address the thread (or decline it, with
 
 <h3>Source of record</h3>
 
-<p>The whole loop, from the ✎ Annotate button to the <code>/address</code> skill, is the chapter <a href="/content/books/running-a-library/04-the-review-loop.html">The review loop</a>. The engine's statement is the docstring of <code>ckit/annotations.py</code>.</p>
+<p>The whole loop, from the ✎ Annotate button to the <code>/address</code> skill and the review page, is the chapter <a href="/content/books/running-a-library/04-the-review-loop.html">The review loop</a>. The engine's statement is the docstring of <code>ckit/annotations.py</code>.</p>
 
 <h3>Used in</h3>
 <ul data-backlinks><li class="muted">Auto-populated.</li></ul>

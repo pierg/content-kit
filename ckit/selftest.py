@@ -481,9 +481,14 @@ def _organise_cases(failures: list[str]) -> int:
         points = _write(repo, "notes/points.html", _page("Points", '<p><a href="extra.html">extra</a></p>'))
         _lint(repo)
         t = ann.add(repo, "/content/notes/extra.html", "keep?", author="tester", target={"exact": "Extra words."})
+        fl = ann.add(repo, "/content/notes/extra.html", "Added — mine.", author="agent:t", target={"exact": "Extra"},
+                     kind="flag", label="framing")
         served, exported = serve._landing(repo, threads=True).decode(), serve._landing(repo).decode()
-        if "Waiting for you · 2 open threads" not in served or "keep?" not in served or "Waiting for you" in exported:
-            failures.append("the served home page must open with the open threads; the exported one must not")
+        if "Waiting for you · 2 questions" not in served or "keep?" not in served or "#ann=" not in served \
+                or "flagged by an agent" not in served or "/shell/review.html" not in served \
+                or "Waiting for you" in exported or "flagged by an agent" in exported:
+            failures.append("the served home page must open with the questions waiting, link each to its thread, "
+                            "and name the flags; the exported one must carry none of it")
         planted += 1
 
         def refused(needle: str, *args, **kw) -> None:
@@ -496,8 +501,24 @@ def _organise_cases(failures: list[str]) -> int:
 
         refused("open annotation", repo, extra, salt)
         ann.reply(repo, "/content/notes/extra.html", t["id"], "folded into salt", author="tester", state="addressed")
+        ann.set_state(repo, "/content/notes/extra.html", fl["id"], "withdrawn", author="agent:t")
         refused("not a git work tree", repo, extra, salt)
         planted += 2
+        # prune: only closed threads, only old ones, only from a committed sidecar
+        _write(repo, "notes/pruned.html", _page("Pruned"))
+        old_sidecar = json.dumps({"version": 1, "page": "/content/notes/pruned.html", "threads": [
+            {"id": "t-old-done", "created": "2020-01-01T00:00:00Z", "author": "a", "state": "addressed", "target": None,
+             "body": "x", "replies": [{"created": "2020-01-02T00:00:00Z", "author": "agent", "body": "done", "state": "addressed"}]},
+            {"id": "t-old-open", "created": "2020-01-01T00:00:00Z", "author": "a", "state": "open", "target": None,
+             "body": "still waiting", "replies": []}]})
+        _write(repo, "notes/pruned.annotations.json", old_sidecar)
+        try:
+            ann.prune(repo, older_than=30)
+            failures.append("prune outside a git work tree must be refused")
+        except ann.AnnotationError as exc:
+            if "not a git work tree" not in str(exc):
+                failures.append(f"prune's refusal must say why: {exc}")
+        planted += 1
         if shutil.which("git"):
             import subprocess
             gitenv = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
@@ -509,6 +530,22 @@ def _organise_cases(failures: list[str]) -> int:
 
             subprocess.run(["git", "-C", str(repo.root), "init", "-q"], env=gitenv, capture_output=True, check=True)
             commit()
+            gone, _ = quiet(ann.prune, repo, older_than=30)
+            left = {x["id"]: x["state"] for x in ann.load(repo.content / "notes" / "pruned.annotations.json")["threads"]}
+            if [g["id"] for g in gone] != ["t-old-done"] or left != {"t-old-open": "open"}:
+                failures.append("prune must drop the old closed thread and keep the open one")
+            commit()
+            _write(repo, "notes/pruned.annotations.json", old_sidecar)  # the old thread is back, uncommitted
+            try:
+                quiet(ann.prune, repo, older_than=30)
+                failures.append("prune must refuse a sidecar git cannot bring back")
+            except ann.AnnotationError as exc:
+                if "not committed" not in str(exc):
+                    failures.append(f"prune's refusal must say why: {exc}")
+            if quiet(ann.prune, repo, older_than=100000)[0]:
+                failures.append("prune must keep a closed thread younger than --older-than")
+            commit()
+            planted += 3
             extra.write_text(extra.read_text().replace("Extra words.", "Extra words, edited."))
             refused("not committed", repo, extra, salt)
             _lint(repo)
@@ -834,6 +871,86 @@ def main(argv: list[str]) -> int:
         planted += 1
         ann.sidecar_for(note).unlink()
 
+        # --- kinds: a flag rests as noted and asks nothing; a question opens and waits
+        flagged = _write(repo, "notes/flagged.html",
+                         _page("Flagged", "<p>An example I made up. A framing I chose. A claim from memory.</p>"))
+        f1 = ann.add(repo, "/content/notes/flagged.html", "Added — my example.", author="agent:t",
+                     target={"exact": "An example I made up."}, kind="flag", label="worked example")
+        f2 = ann.add(repo, "/content/notes/flagged.html", "Added — my framing.", author="agent:t",
+                     target={"exact": "A framing I chose."}, kind="flag", label="framing")
+        q1 = ann.add(repo, "/content/notes/flagged.html", "Is this claim right?", author="agent:t",
+                     target={"exact": "A claim from memory."})
+        if f1["state"] != "noted" or f1.get("kind") != "flag" or f1.get("label") != "worked example":
+            failures.append("a flag must be born noted, carrying its kind and label")
+        if q1["state"] != "open" or ann.kind_of(q1) != "question":
+            failures.append("a question must be born open")
+        opens = {x["id"] for x in ann.list_threads(repo, state="open")}
+        live = {x["id"] for x in ann.list_threads(repo, state="live")}
+        if f1["id"] in opens or q1["id"] not in opens or {f1["id"], f2["id"], q1["id"]} - live:
+            failures.append("list: open must leave flags out; live must hold flags and questions alike")
+        if {x["id"] for x in ann.list_threads(repo, state="live", kind="flag")} != {f1["id"], f2["id"]}:
+            failures.append("list --kind flag must select the flags alone")
+        try:
+            ann.set_state(repo, "/content/notes/flagged.html", q1["id"], "noted", author="t")
+            failures.append("a question must never be noted")
+        except ann.AnnotationError:
+            pass
+        planted += 3
+        # a flag whose passage left the page is named, never failed (an open question's is the failure)
+        flagged.write_text(flagged.read_text().replace("An example I made up.", "Rewritten example."))
+        if ann.check_all(repo):
+            failures.append("a stale noted flag must not fail the gate: " + " | ".join(ann.check_all(repo)))
+        if not any(f1["id"] in n for n in ann.stale_flags(repo)):
+            failures.append("a stale noted flag must be named by stale_flags")
+        planted += 1
+        # relabel: a question that becomes a flag rests; a flag that becomes a question waits
+        x = ann.relabel(repo, "/content/notes/flagged.html", q1["id"], author="t", kind="flag", label="claim")
+        if x["state"] != "noted" or x.get("label") != "claim" \
+                or not any("relabelled" in r.get("body", "") for r in x["replies"]):
+            failures.append("relabel question → flag must rest it as noted, with its label and a reply saying so")
+        x = ann.relabel(repo, "/content/notes/flagged.html", q1["id"], author="t", kind="question")
+        if x["state"] != "open":
+            failures.append("relabel flag → question must open it")
+        planted += 1
+        # resolve: a filter is required, declining needs its reason, and only what is selected moves
+        for kw in ({"state": "addressed"}, {"state": "declined", "label": "framing"}):
+            try:
+                ann.resolve(repo, author="t", **kw)
+                failures.append(f"resolve must be refused: {kw}")
+            except ann.AnnotationError:
+                pass
+        done = ann.resolve(repo, state="addressed", author="pier", body="Kept.", label="framing")
+        after = {x["id"]: x["state"] for x in ann.list_threads(repo, state="all")}
+        if [d["id"] for d in done] != [f2["id"]] or after[f2["id"]] != "addressed" \
+                or after[f1["id"]] != "noted" or after[q1["id"]] != "open":
+            failures.append("resolve --label must move exactly the live threads with that label")
+        done = ann.resolve(repo, state="withdrawn", author="pier", by="agent:", page="/content/notes/flagged.html")
+        if {d["id"] for d in done} != {f1["id"], q1["id"]}:
+            failures.append("resolve --by --page must move the live threads that author left on that page")
+        planted += 3
+        # the threads index: generated with the rest, counted into the catalog, stale the moment a
+        # sidecar changes, and current again after the write path regenerates it
+        _lint(repo)
+        idx = json.loads((repo.content / "threads.json").read_text())
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        if idx["counts"]["withdrawn"] < 2 or not any(
+                r["id"] == f2["id"] and r["label"] == "framing" and r["title"] == "Flagged" for r in idx["threads"]):
+            failures.append("threads.json must index every thread with its label and its page's title")
+        if cat.get("threads") != {"open": idx["counts"]["open"], "noted": idx["counts"]["noted"],
+                                  "total": sum(idx["counts"].values())}:
+            failures.append("the catalog must carry the open and noted counts and the total")
+        f3 = ann.add(repo, "/content/notes/flagged.html", "Added — again.", author="agent:t",
+                     target={"exact": "A framing I chose."}, kind="flag", label="framing")
+        if "content/threads.json" not in book_nav.check(repo):
+            failures.append("a thread added without regenerating must leave threads.json stale for the gate")
+        book_nav.regenerate_threads(repo)
+        if book_nav.check(repo):
+            failures.append("regenerate_threads must bring the indices back: " + " | ".join(book_nav.check(repo)))
+        idx = json.loads((repo.content / "threads.json").read_text())
+        if not any(r["id"] == f3["id"] and r.get("stale") is False for r in idx["threads"]):
+            failures.append("a live thread's row must say whether its anchor holds")
+        planted += 3
+
         # --- planted violations, one per check
         cases: list[tuple[str, str, str]] = []
 
@@ -891,6 +1008,13 @@ def main(argv: list[str]) -> int:
         _write(repo, "notes/orphan.annotations.json",
                json.dumps({"version": 1, "page": "/content/notes/orphan.html", "threads": []}))
         cases.append(("orphan.annotations.json", "orphan", ""))
+        _write(repo, "notes/badkind.html", _page("Bad kind"))
+        _write(repo, "notes/badkind.annotations.json",
+               json.dumps({"version": 1, "page": "/content/notes/badkind.html",
+                           "threads": [{"id": "t-1", "body": "x", "author": "a", "target": None, "state": "open", "kind": "wish"},
+                                       {"id": "t-2", "body": "x", "author": "a", "target": None, "state": "noted"}]}))
+        cases.append(("badkind.annotations.json", "kind must be one of", ""))
+        cases.append(("badkind.annotations.json", "only a flag can be noted", ""))
 
         probs = _lint(repo)
         for rel, needle, _ in cases:

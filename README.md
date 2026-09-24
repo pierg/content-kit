@@ -18,7 +18,7 @@ ckit lint && make check                                            # regenerate 
 make docs                                                          # read it at http://127.0.0.1:5180/
 ```
 
-In the browser, **✎ Annotate** (bottom right) lets you select a passage and leave a note. It lands beside the page as `index.annotations.json`. Later, an agent runs `ckit annotations list` and the `/address` skill, acts on each thread and replies in it — nothing live joins the two halves.
+In the browser, **✎ Annotate** (bottom right) lets you select a passage and leave a note. It lands beside the page as `index.annotations.json`. Later, an agent runs `ckit annotations list` and the `/address` skill, acts on each thread and replies in it — nothing live joins the two halves. The loop runs the other way too: an agent flags what it wrote beyond its source, and you keep it or ask for a change from the page's panel, or a whole group at once from **Review** (`/shell/review.html`).
 
 Python ≥ 3.10, no dependencies; node for book verification. No `uv`? `git clone` this repo and run `bash install-engine.sh`, which puts the checkout's `bin/ckit` on PATH.
 
@@ -50,7 +50,7 @@ Python ≥ 3.10, no dependencies; node for book verification. No `uv`? `git clon
 | `ckit unwrap [paths]` | join hard-wrapped prose — one paragraph per line |
 | `ckit serve` · `up` · `down` · `status` | the reader, on the repo's port |
 | `ckit export [--base /repo/]` | the site as static files, for any static host |
-| `ckit annotations …` | the session-free review loop: list · show · add · reply · state · check |
+| `ckit annotations …` | the session-free review loop: list · show · add · reply · state · relabel · resolve · prune · check |
 | `ckit genres` · `where` · `selftest` · `version` | the genre table · the kit source · the engine's own gate |
 
 ## Layers

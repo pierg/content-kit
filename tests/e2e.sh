@@ -177,6 +177,24 @@ ID="$(cd "$REPO" && ckit annotations list --json | python3 -c 'import json,sys; 
   || fail "CLI reply failed"
 ( cd "$REPO" && ckit annotations list | grep -q "no open threads" ) || fail "addressed thread still listed as open"
 ( cd "$REPO" && make check >/dev/null ) || fail "gate red after addressing"
+echo "--- the loop the other way: an agent's flag, the owner keeping it from the browser ---"
+curl -fsS -X POST -H 'Content-Type: application/json' "$B/__annotations" \
+  -d '{"op":"add","page":"/content/notes/hello.html","author":"agent:e2e","body":"Added — my example.","kind":"flag","label":"worked example","target":{"type":"TextQuoteSelector","exact":"Atomic-thought unit"}}' \
+  | grep -q '"state": "noted"' || fail "a flag added via HTTP must rest as noted"
+( cd "$REPO" && ckit annotations list | grep -q "no open threads" ) || fail "a noted flag must not be listed as open"
+( cd "$REPO" && ckit annotations list --state noted | grep -q "worked example" ) || fail "list --state noted must show the flag with its label"
+( cd "$REPO" && make check >/dev/null ) || fail "gate red right after an HTTP write — the server must regenerate the indices"
+serves "$B/content/threads.json" '"label": "worked example"' || fail "threads.json is not served with the flag"
+serves "$B/content/catalog.json" '"threads"' || fail "the catalog does not carry the thread counts"
+serves "$B/shell/review.html" "Review" || fail "the review page is not served from the shell"
+serves "$B/" "flagged by an agent" || fail "the served home page does not name the flag"
+FID="$(cd "$REPO" && ckit annotations list --state noted --json | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["id"])')"
+( cd "$REPO" && ckit annotations relabel /content/notes/hello.html "$FID" --label "framing" --author e2e | grep -q "framing" ) || fail "CLI relabel failed"
+curl -fsS -X POST -H 'Content-Type: application/json' "$B/__annotations" \
+  -d '{"op":"resolve","author":"owner","state":"addressed","body":"Kept.","label":"framing"}' \
+  | grep -q "\"$FID\"" || fail "resolve via HTTP did not keep the flag"
+( cd "$REPO" && ckit annotations list --state addressed | grep -q "Kept." ) || fail "the kept flag is not addressed"
+( cd "$REPO" && make check >/dev/null ) || fail "gate red after resolving"
 ( cd "$REPO" && make down >/dev/null )
 echo "annotate ok"
 
@@ -187,6 +205,8 @@ for f in index.html 404.html .nojekyll shell/lib.css shell/lib.js shell/theme.cs
   [ -e "$TMP/site/$f" ] || fail "export lacks $f"
 done
 [ -e "$TMP/site/content/notes/hello.annotations.json" ] && fail "export must leave annotation sidecars at home"
+[ -e "$TMP/site/content/threads.json" ] && fail "export must leave the threads index at home with the sidecars"
+[ -e "$TMP/site/shell/review.html" ] && fail "export must leave the review page at home — it has nothing to read there"
 cmp -s "$REPO/content/notes/hello.html" "$TMP/site/content/notes/hello.html" || fail "export at base / must not rewrite a page"
 python3 -m http.server "$SPORT" -d "$TMP/site" -b 127.0.0.1 >/dev/null 2>&1 & HTTPD=$!
 sleep 0.7

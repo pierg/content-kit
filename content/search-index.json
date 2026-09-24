@@ -64,14 +64,16 @@
   },
   {
     "title": "The review loop — Running a library",
-    "sub": "Status: LIVE — you leave able to leave notes on a rendered page, find them from any agent session later, and close each one with a reply the reader can check.",
+    "sub": "Status: LIVE — you leave able to leave notes on a rendered page, find them from any agent session later, close each one with a reply the reader can check, and read what an agent flagged as written beyond its source without opening a termina",
     "defn": "",
     "headings": [
       "§1 · Annotate in the browser",
-      "§2 · The sidecar",
-      "§3 · ckit annotations",
-      "§4 · /address",
-      "§5 · What the gate holds you to"
+      "§2 · What an agent flags",
+      "§3 · The sidecar",
+      "§4 · ckit annotations",
+      "§5 · /address",
+      "§6 · What the gate holds you to",
+      "§7 · Review, the page"
     ],
     "tags": [
       "review",
@@ -136,7 +138,7 @@
   {
     "title": "Annotation",
     "sub": "Status: LIVE — definition of record. A reader's note on a rendered page, kept in a file beside it, so that review needs no session to be open on either side.",
-    "defn": "ANNOTATION — definition of record An annotation is a thread a reader attaches to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup, and it moves through four states: open, addressed, declined and withdrawn. Nothing needs",
+    "defn": "ANNOTATION — definition of record An annotation is a thread attached to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup. It is one of two kinds: a question, which a reader opens and which waits until whoever acts on th",
     "headings": [
       "Why it matters",
       "Worked example",

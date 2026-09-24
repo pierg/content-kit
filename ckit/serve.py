@@ -17,9 +17,12 @@ One write endpoint exists, for the annotation layer:
 
   GET  /__annotations/ping          → {"ok": true, "engine": "<version>"}  (lib.js probes this;
                                        static hosting answers 404 and the affordance never appears)
-  POST /__annotations               → {"op": "add" | "reply" | "state", ...}  writes the sidecar
+  POST /__annotations               → {"op": "add" | "reply" | "state" | "relabel" | "resolve", ...}
+                                       writes the sidecar, then regenerates content/threads.json and
+                                       the catalog's thread counts, so the gate stays green
 
-Reads of a sidecar are plain static GETs of `<page>.annotations.json`.
+Reads of a sidecar are plain static GETs of `<page>.annotations.json`; the review page
+(/shell/review.html) reads the generated content/threads.json.
 
 An address kit.json `moved` names, where no file answers, is a 301 to where the page lives now
 (`ckit mv`, `ckit rm --to`).
@@ -47,7 +50,7 @@ from pathlib import Path
 from urllib.parse import quote, unquote, urlparse
 
 from . import __version__, annotations
-from . import chronicle, config, links, pagefind
+from . import book_nav, chronicle, config, links, pagefind
 from .book_nav import _books, _href_of, _title, build_catalog, build_search_index, groups
 from .paths import Repo, home_page, home_shell_page, load_repo
 
@@ -150,20 +153,28 @@ def _landing(repo: Repo, base: str = "/", *, threads: bool = False) -> bytes:
         f'<a class="hb-hero-search" href="{b("/shell/search.html")}" data-hb-palette>{SEARCH_ICON}'
         '<span class="hb-find-label">Search everything…</span><span class="hb-kbd">/</span></a>\n</section>')
 
-    waiting = annotations.list_threads(repo, state="open") if threads else []
-    if waiting:
-        titles = {p["href"]: p.get("title", "") for p in pages}
+    rows_all = annotations.build_index(repo)["threads"] if threads else []
+    waiting = [t for t in rows_all if t["state"] == "open"]
+    noted = [t for t in rows_all if t["state"] == "noted"]
+    if waiting or noted:
         rows = []
         for t in waiting[:8]:
             href = str(t.get("page") or "")
-            quoted = t["target"].get("exact") if isinstance(t.get("target"), dict) else ""
-            rows.append(f'<li><a href="{b(href)}"><span class="hb-date">{_esc(_clip(str(t.get("author", "")), 18))}</span>'
-                        f'<span>{_esc(titles.get(href) or href)}</span>'
-                        f'<span class="hb-where">{_esc(_clip(str(t.get("body") or quoted or ""), 72))}</span></a></li>')
+            rows.append(f'<li><a href="{b(href + "#ann=" + quote(str(t.get("id", ""))))}"><span class="hb-date">{_esc(_clip(str(t.get("author", "")), 18))}</span>'
+                        f'<span>{_esc(t.get("title") or href)}</span>'
+                        f'<span class="hb-where">{_esc(_clip(str(t.get("body") or t.get("quote") or ""), 72))}</span></a></li>')
         more = len(waiting) - len(rows)
-        parts.append(f'<h2>Waiting for you · {len(waiting)} open thread{"" if len(waiting) == 1 else "s"}</h2>\n'
-                     '<ul class="hb-list">\n' + "\n".join(rows) + "\n</ul>"
-                     + (f'\n<p class="muted">{more} more — <code>ckit annotations list</code></p>' if more else ""))
+        n = len(waiting)
+        head = (f'<h2>Waiting for you · {n} question{"" if n == 1 else "s"}</h2>' if n
+                else "<h2>Nothing waiting for you</h2>")
+        tail = []
+        if more:
+            tail.append(f'<a href="{b("/shell/review.html")}">{more} more &rarr;</a>')
+        if noted:
+            tail.append(f'<a href="{b("/shell/review.html?state=noted")}">{len(noted)} passage{"" if len(noted) == 1 else "s"} '
+                        'flagged by an agent as written beyond its source &rarr;</a>')
+        parts.append(head + ("\n<ul class=\"hb-list\">\n" + "\n".join(rows) + "\n</ul>" if rows else "")
+                     + ("\n<p class=\"muted\">" + " · ".join(tail) + "</p>" if tail else ""))
 
     order = list(labels) + sorted({p["topic"] for p in pages if p.get("topic")} - set(labels))
     cards = []
@@ -348,6 +359,7 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
             except (json.JSONDecodeError, annotations.AnnotationError) as exc:
                 self._json(400, {"ok": False, "error": str(exc)})
                 return
+            book_nav.regenerate_threads(repo)  # the indices that read the sidecars stay current
             self._json(200, result)
 
         def _serve(self, *, body: bool) -> None:

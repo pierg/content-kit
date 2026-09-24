@@ -121,12 +121,15 @@ def run(repo: Repo, out: Path, base: str = "/") -> int:
 
     _write(out / "index.html", _index(repo, base), base)
     _write(out / "404.html", _not_found(repo), base)
-    n_shell = _copy_tree(repo.shell, out / "shell", base, skip=lambda p: "skeletons" in p.parts)
+    # the review page reads the threads index, which stays home with the sidecars it is built from
+    n_shell = _copy_tree(repo.shell, out / "shell", base,
+                         skip=lambda p: "skeletons" in p.parts or p.name == "review.html")
     _write(out / "shell" / "theme.css", config.theme_css(repo), base)
     for name, src in config.shell_pages(repo).items():
         _write(out / "shell" / name, src.read_bytes(), base)
     n_content = _copy_tree(repo.content, out / repo.content_name, base,
-                           skip=lambda p: p.name.endswith(".annotations.json"))
+                           skip=lambda p: p.name.endswith(".annotations.json")
+                           or (p.name == "threads.json" and p.parent == repo.content))
     n_record = 0
     if chronicle.enabled(repo):
         for p in chronicle.record_files(repo) + [repo.root / r["path"] for r in chronicle.record_catalog(repo)]:

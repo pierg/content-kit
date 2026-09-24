@@ -68,3 +68,15 @@ mark.hb-ann.focus { outline: 2px solid var(--violet); outline-offset: 1px; }
 .hb-ann-form textarea:focus, .hb-ann-form input:focus { outline: 2px solid var(--violet); border-color: var(--violet); }
 .hb-ann-err { color: var(--rejected); font-size: 12px; margin: 4px 0; }
 .hb-ann-empty { color: var(--ink-3); padding: 16px 0; }
+
+/* --- kinds and the noted state: a flag is an agent's disclosure, quiet until someone acts on it --- */
+mark.hb-ann-noted { background: color-mix(in srgb, var(--azure) 12%, transparent); border-bottom: 1.5px dotted var(--azure); }
+.hb-ann-item.hb-ann-noted { border-left-color: var(--azure); border-left-style: dotted; }
+.hb-ann-chip.noted { color: var(--azure); border-color: var(--azure); }
+.hb-ann-chip.flag  { color: var(--ink-2); border-color: var(--baseline); background: var(--surface-2); }
+.hb-ann-chip.label { color: var(--violet); border-color: var(--violet); text-transform: none; letter-spacing: 0; }
+.hb-ann-top { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; }
+.hb-ann-top .hb-ann-meta { margin-left: auto; }
+.hb-ann-more { font: inherit; font-size: 12px; color: var(--link); background: none; border: 0; padding: 0; cursor: pointer; }
+.hb-ann-form.inline { margin: 8px 0; }
+.hb-ann-form.inline textarea { min-height: 64px; }

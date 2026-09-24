@@ -22,7 +22,7 @@ dates are as stable as the pages, and `ckit check` fails on a page edited withou
 
 Writes (committed artifacts; regenerate via `ckit nav` — lint does it too):
   content/books/<slug>/nav.json
-  content/catalog.json · content/search-index.json · content/backlinks.json
+  content/catalog.json · content/search-index.json · content/backlinks.json · content/threads.json
   content/chronicle.json (when the repo declares a record) · every kit.json generator's files
 """
 
@@ -36,7 +36,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import chronicle, config, plugins
+from . import annotations, chronicle, config, plugins
 from .genres import EXEMPT_PARTS, catalog_groups, load_genres
 from .paths import Repo
 from .text import DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TITLE_RE, meta_content, strip_tags, title_of
@@ -360,7 +360,17 @@ def build_catalog(repo: Repo) -> dict:
                        ("indices", config.indices(repo))):
         if items:  # only when declared, so a repo that uses none carries none
             out[key] = items
+    counts = thread_counts(repo)
+    if counts["total"]:  # only a repo that has been annotated carries them
+        out["threads"] = counts
     return out
+
+
+def thread_counts(repo: Repo) -> dict[str, int]:
+    """How many threads wait (open), how many are noted (an agent's flags) and how many there are
+    at all: what the rail's Review item shows without reading every sidecar."""
+    counts = annotations.build_index(repo)["counts"]
+    return {"open": counts["open"], "noted": counts["noted"], "total": sum(counts.values())}
 
 
 def _kind_of(repo: Repo, rel: Path, kinds: dict[str, str] | None = None) -> str:
@@ -464,6 +474,7 @@ def expected_files(repo: Repo) -> dict[Path, object]:
     expected[repo.content / "catalog.json"] = build_catalog(repo)
     expected[repo.content / "search-index.json"] = build_search_index(repo)
     expected[repo.content / "backlinks.json"] = build_backlinks(repo)
+    expected[repo.content / "threads.json"] = annotations.build_index(repo)
     if chronicle.enabled(repo):
         expected[repo.content / "chronicle.json"] = chronicle.build(repo)
     core = {p.resolve() for p in expected}
@@ -481,6 +492,22 @@ def regenerate(repo: Repo) -> list[str]:
         old = path.read_text(encoding="utf-8") if path.is_file() else None
         if old != text:
             path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+            written.append(repo.rel(path))
+    return written
+
+
+def regenerate_threads(repo: Repo) -> list[str]:
+    """After a write through the engine (the browser, or `ckit annotations …`): the two indices
+    that read the sidecars, so the gate stays green without a `ckit lint` in between."""
+    written: list[str] = []
+    if not repo.content.is_dir():
+        return written
+    for path, data in ((repo.content / "threads.json", annotations.build_index(repo)),
+                       (repo.content / "catalog.json", build_catalog(repo))):
+        text = _dump(data)
+        old = path.read_text(encoding="utf-8") if path.is_file() else None
+        if old != text:
             path.write_text(text, encoding="utf-8")
             written.append(repo.rel(path))
     return written
