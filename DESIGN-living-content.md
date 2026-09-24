@@ -1,6 +1,6 @@
 # Living content — how a lab's record and pages stay true and readable
 
-**Status: LIVE** — a design adopted 2026-09-16 by proof-harness-lab, extending `VISION.md` (which it does not supersede). Part I (density) is being realized in lab-kit now; Part II (freshness) is the next engine slice. Written against the state of both kits at content-kit `5bdc018` / lab-kit `383ec8f`.
+A design adopted 2026-09-16 by proof-harness-lab, extending `VISION.md` (which it does not supersede). Part I (density) is being realized in lab-kit now; Part II (freshness) is the next engine slice. Written against the state of both kits at content-kit `5bdc018` / lab-kit `383ec8f`.
 
 Two failures were observed on the same day in the same lab, and they are one problem. Three content pages sat a rung behind the record with the gate green: the dashboard is generated and cannot lag, the pages are hand-written and nothing compares them to anything. And the record itself had become unreadable: twenty-one finding rows carried 17,800 words, the newest row's *headline* was seventy words, the state file's "phase" bullet re-explained five findings in one breath, and the intuition behind each experiment existed nowhere as a thing you could read. A human trying to see the shape of the work, and an agent orienting at the start of a session, both had to load everything to learn anything.
 

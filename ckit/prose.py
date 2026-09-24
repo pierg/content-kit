@@ -128,18 +128,27 @@ def problems(rel: str, text: str) -> list[str]:
             f"`ckit unwrap {rel}` joins them"]
 
 
-def unwrap_repo(repo, paths=None) -> tuple[int, list[tuple[str, int]]]:
-    """Join the hard-wrapped prose of a repo's pages (or of `paths`): (joined, [(page, n)]). The
-    catalog is regenerated first, so a page it joins keeps its dates, and again after."""
+def unwrap_repo(repo, paths=None, *, status: bool = False) -> tuple[int, list[tuple[str, int]], list[str]]:
+    """Join the hard-wrapped prose of a repo's pages (or of `paths`) and, with `status`, drop a
+    stated LIVE from each opening line (text.drop_live): (joined, [(page, n)], [page dropped]).
+    The catalog is regenerated first, so a page it rewrites keeps its dates, and again after."""
     from . import book_nav
     from .lint import iter_pages
+    from .text import drop_live
     book_nav.regenerate(repo)
     done: list[tuple[str, int]] = []
+    dropped: list[str] = []
     for page in iter_pages(repo, paths):
-        out, n = unwrap(page.read_text(encoding="utf-8"))
-        if n:
+        text = page.read_text(encoding="utf-8")
+        out, n = unwrap(text)
+        if status:
+            out, live = drop_live(out)
+            if live:
+                dropped.append(repo.rel(page))
+        if out != text:
             page.write_text(out, encoding="utf-8")
+        if n:
             done.append((repo.rel(page), n))
     book_nav.regenerate(repo)
-    return sum(n for _p, n in done), done
+    return sum(n for _p, n in done), done, dropped
 

@@ -1,4 +1,4 @@
-# content-kit — LIVE
+# content-kit
 
 **A page contract for agent-written knowledge.** An agent picks a genre; the genre carries a structure, a voice and a component vocabulary; the page lands where the genre says; a gate checks what can be checked. A human annotates the rendered page in the browser, and any agent later — in any session, on any clone — picks the notes up and addresses them. Zero build, stdlib Python, hand-authored HTML in one shared shell.
 

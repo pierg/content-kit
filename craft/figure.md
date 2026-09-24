@@ -1,4 +1,4 @@
-# Figure — a rendered picture from a source outside the page — LIVE
+# Figure — a rendered picture from a source outside the page
 
 **When.** The picture is produced elsewhere — a plot from a generator, a rendered set-diagram that a paper also uses, a photograph of a whiteboard — and the page embeds it rather than draws it. A diagram the page could draw inline is a diagram (`diagram.md`), not a figure.
 

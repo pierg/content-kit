@@ -107,9 +107,9 @@ c["links"] = [{"label": "Board", "href": "/shell/board.html"}]
 c["genres"] = {"note": {"checks": {"no_todo": True}}}'
 ( cd "$REPO" && ckit lint >/dev/null && make check >/dev/null ) || fail "gate red with every extension point declared"
 [ -f "$REPO/content/x-count.json" ] || fail "the generator's file was not written"
-printf '<!DOCTYPE html><html><head><title>Glacier</title><link rel="stylesheet" href="/shell/lib.css"></head><body class="hb"><main><h1>Glacier</h1><p class="sub"><b>Status: LIVE</b> — x.</p><p><span class="sw-glacier" style="color: var(--glacier)">ice</span></p></main></body></html>\n' > "$REPO/content/notes/glacier.html"
+printf '<!DOCTYPE html><html><head><title>Glacier</title><link rel="stylesheet" href="/shell/lib.css"></head><body class="hb"><main><h1>Glacier</h1><p class="sub">X.</p><p><span class="sw-glacier" style="color: var(--glacier)">ice</span></p></main></body></html>\n' > "$REPO/content/notes/glacier.html"
 ( cd "$REPO" && ckit lint >/dev/null ) || fail "a page in the theme's vocabulary did not lint clean"
-printf '<!DOCTYPE html><html><head><title>Todo</title><link rel="stylesheet" href="/shell/lib.css"></head><body class="hb"><main><h1>Todo</h1><p class="sub"><b>Status: LIVE</b> — x.</p><p>TODO later</p></main></body></html>\n' > "$REPO/content/notes/todo.html"
+printf '<!DOCTYPE html><html><head><title>Todo</title><link rel="stylesheet" href="/shell/lib.css"></head><body class="hb"><main><h1>Todo</h1><p class="sub">X.</p><p>TODO later</p></main></body></html>\n' > "$REPO/content/notes/todo.html"
 OUT="$(cd "$REPO" && ckit lint 2>&1 || true)"
 echo "$OUT" | grep -q "notes/todo.html: leaves a TODO" || fail "the check module did not fire on a planted page"
 rm "$REPO/content/notes/todo.html"
@@ -145,7 +145,7 @@ curl -fsS "$B/shell/vendor/marked/marked.umd.js" >/dev/null || fail "marked not 
 curl -fsS "$B/shell/chronicle.html" >/dev/null || fail "chronicle page not served"
 serves "$B/content/chronicle.json" "direction changed" || fail "chronicle.json not served"
 serves "$B/" "Chronicle" || fail "landing lacks the chronicle link"
-serves "$B/content/notes/hello.html" "Status: LIVE" || fail "scaffolded page lacks its status line"
+serves "$B/content/notes/hello.html" "One-line orientation" || fail "scaffolded page lacks its opening line"
 
 echo "--- a home written to kit.json on disk reaches the handler through load_repo ---"
 json_set "$REPO/kit.json" 'c["home"] = "content/concepts/thing"'
@@ -226,7 +226,7 @@ python3 -m http.server "$SPORT" -d "$TMP/pages" -b 127.0.0.1 >/dev/null 2>&1 & H
 sleep 0.7
 serves "$S/proj/" 'href="/proj/shell/lib.css"' || fail "the based landing did not serve under /proj/"
 curl -fsS "$S/proj/shell/lib.css" >/dev/null || fail "the based shell did not serve under /proj/"
-serves "$S/proj/content/notes/hello.html" "Status: LIVE" || fail "a based page did not serve under /proj/"
+serves "$S/proj/content/notes/hello.html" "One-line orientation" || fail "a based page did not serve under /proj/"
 kill "$HTTPD"; HTTPD=""
 echo "export ok"
 
@@ -242,6 +242,11 @@ python3 -c 'import sys, pathlib; p = pathlib.Path(sys.argv[1]); p.write_text(p.r
 OUT="$(cd "$REPO" && ckit lint 2>&1 || true)"
 echo "$OUT" | grep -q "ckit unwrap" || fail "hard-wrapped prose must be reported with its fix"
 ( cd "$REPO" && ckit unwrap >/dev/null && ckit lint >/dev/null ) || fail "ckit unwrap did not leave the lint clean"
+edit 's#<p class="sub">#<p class="sub"><b>Status: LIVE</b> — #' "$REPO/content/notes/pepper.html"
+( cd "$REPO" && ckit lint 2>&1 | grep -q "state Status: LIVE" ) || fail "the lint must name a page that states LIVE"
+( cd "$REPO" && ckit unwrap --status | grep -q "dropped a stated LIVE from 1 page" ) || fail "ckit unwrap --status did not drop it"
+grep -q "Status: LIVE" "$REPO/content/notes/pepper.html" && fail "ckit unwrap --status left the stated LIVE"
+( cd "$REPO" && ckit lint >/dev/null ) || fail "the gate must be clean after ckit unwrap --status"
 ( cd "$REPO" && ckit topics | grep -q "^kitchen  Kitchen · content/hubs/kitchen.html" ) || fail "ckit topics must list the topic with its hub"
 ( cd "$REPO" && ckit tags | grep -q "salt" ) || fail "ckit tags must list the tags"
 ( cd "$REPO" && ckit mv content/notes/pepper.html content/entries/pepper/ >/dev/null ) || fail "ckit mv failed"

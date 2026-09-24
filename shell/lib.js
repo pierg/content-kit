@@ -785,16 +785,20 @@
     hs.forEach(function (h) { var el = document.getElementById(h.id); if (el) io.observe(el); });
   }
 
-  /* the opening line's <b>Status: X</b> becomes a pill — a class, so the text is untouched */
+  /* the status the opening line states as <b>Status: X</b> — "live" when it states none, the default */
+  function statusOf(main) {
+    var b = main && main.querySelector("p.sub");
+    b = b && b.firstElementChild;
+    var m = b && /^(B|STRONG)$/.test(b.tagName) && /^\s*Status:\s*([A-Za-z]+)/.exec(b.textContent || "");
+    return m ? { el: b, word: m[1].toLowerCase() } : { el: null, word: "live" };
+  }
+
+  /* a page that is not current wears its status as a pill — a class, so the text is untouched */
   function markStatus(main) {
-    var sub = main.querySelector("p.sub");
-    if (!sub) return;
-    var b = sub.firstElementChild;
-    if (!b || !/^(B|STRONG)$/.test(b.tagName)) return;
-    var m = /^\s*Status:\s*([A-Za-z]+)/.exec(b.textContent || "");
-    if (!m) return;
-    b.classList.add("hb-status");
-    b.setAttribute("data-status", m[1].toLowerCase());
+    var s = statusOf(main);
+    if (!s.el || s.word === "live") return;
+    s.el.classList.add("hb-status");
+    s.el.setAttribute("data-status", s.word);
   }
 
   /* ----------------------------------------------------------- the mount */

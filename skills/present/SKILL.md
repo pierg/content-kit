@@ -10,7 +10,7 @@ You are producing a **document**, not a chat reply. Chat gets the TL;DR and the 
 ## Golden rules
 
 1. **The genre fixes the voice.** Where a page lives says what it is, and what it is says how it reads. Pick the genre first — `kit/genres/GENRES.md` has the register, the assumed reader and the forbidden moves for each — and do not invent one. If no core genre fits, the repo may declare one in `kit.json` (`genres`); that is a deliberate, visible decision, not a workaround.
-2. **Status in the first line.** The first `<p class="sub">` says LIVE, HISTORICAL, PARKED, RETIRED, FROZEN or DRAFT. The gate checks it.
+2. **Status only when the page is not current.** A current page says nothing (LIVE is the default). One that is not opens its first `<p class="sub">` with `<b>Status: DRAFT</b> —` (or HISTORICAL, PARKED, RETIRED, FROZEN). The gate checks the word.
 3. **One format per document.** A markdown draft *and* an HTML page of the same document are twins, and twins drift. The one legitimate pair is an imported external paper (`main.md` is their text, `index.html` is your reading; `source.json` declares it).
 4. **A layer's rules bind too.** A repo that vendors a layer on top of this kit carries that layer's authoring rules in `kit/` (a lab's record discipline, a folio's topic rule) and registers its checks in `kit.json`. Read them before writing: where a layer says no number enters a page except by citing a row of its record, that is as binding as anything here. Misses at the same volume as wins.
 5. **One paragraph per line.** Never hard-wrap prose to a column. The gate reports it; `ckit unwrap` joins it.

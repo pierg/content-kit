@@ -17,8 +17,10 @@ Optional thin override: content/books/<slug>/book.json
 
 Every catalog entry carries `created` and `updated` (YYYY-MM-DD) and the `sha` of what it covers
 (a page, or a whole book): a page whose text changes gets today's date, an unchanged one keeps its
-dates (whitespace does not count: a re-flowed page is unchanged), and one the catalog has never seen is dated from git history when there is any — so the
-dates are as stable as the pages, and `ckit check` fails on a page edited without `ckit lint`.
+dates (whitespace does not count: a re-flowed page is unchanged; nor does a stated LIVE, the
+default status), and one the catalog has never seen is dated from git history when there is
+any — so the dates are as stable as the pages, and `ckit check` fails on a page edited without
+`ckit lint`.
 
 Writes (committed artifacts; regenerate via `ckit nav` — lint does it too):
   content/books/<slug>/nav.json
@@ -39,7 +41,7 @@ from pathlib import Path
 from . import annotations, chronicle, config, plugins
 from .genres import EXEMPT_PARTS, catalog_groups, load_genres
 from .paths import Repo
-from .text import DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TITLE_RE, meta_content, strip_tags, title_of
+from .text import DEFN_RE, H1_RE, H2_RE, H3_RE, SUB_RE, TITLE_RE, drop_live, meta_content, strip_tags, title_of
 
 NUMBERED = re.compile(r"^(\d+)-.+\.html$", re.I)
 HREF_RE = re.compile(r'href="(/content/[^"#?]*)(?:[#?][^"]*)?"', re.I)
@@ -93,17 +95,23 @@ def today() -> str:
 _WS_BYTES = re.compile(rb"\s+")
 
 
-def _sha(files: list[Path], *, legacy: bool = False) -> str:
-    """What an entry covers, hashed with its whitespace collapsed: a page re-flowed, re-indented
-    or checked out with CRLF line endings says the same thing, so it keeps its dates (and is not
-    stale). `legacy` is the 0.5.0.dev0 hash (line endings only), read once so a catalog written
-    by it keeps its dates across the upgrade."""
+SHA_SCHEMES = ("0.5.0", "0.5.0.dev1", "0.5.0.dev0")  # the current one first
+
+
+def _sha(files: list[Path], *, scheme: str = SHA_SCHEMES[0]) -> str:
+    """What an entry covers, hashed with its whitespace collapsed and a stated LIVE dropped: a
+    page re-flowed, re-indented, checked out with CRLF line endings or no longer stating the
+    default status says the same thing, so it keeps its dates (and is not stale). The earlier
+    schemes are read so a catalog written by them keeps its dates across the upgrade: 0.5.0.dev1
+    kept a stated LIVE, 0.5.0.dev0 hashed with only the line endings normalised."""
     h = hashlib.sha1()
     for f in files:
         h.update(f.name.encode("utf-8"))
         h.update(b"\0")
         data = f.read_bytes().replace(b"\r\n", b"\n")
-        h.update(data if legacy else _WS_BYTES.sub(b" ", data).strip())
+        if scheme == "0.5.0":
+            data = drop_live(data.decode("utf-8", "surrogateescape"))[0].encode("utf-8", "surrogateescape")
+        h.update(data if scheme == "0.5.0.dev0" else _WS_BYTES.sub(b" ", data).strip())
     return h.hexdigest()[:12]
 
 
@@ -177,9 +185,8 @@ def date_items(repo: Repo, entries: list[tuple[dict, list[Path]]]) -> None:
         files = [f for f in files if f.is_file()]
         sha = _sha(files)
         olds = [c[item["href"]] for c in prevs if item["href"] in c]
-        legacy = _sha(files, legacy=True) if olds else None
-        same = next((o for o in olds if o.get("sha") in (sha, legacy) and o.get("created") and o.get("updated")),
-                    None)
+        shas = {sha, *(_sha(files, scheme=s) for s in SHA_SCHEMES[1:])} if olds else set()
+        same = next((o for o in olds if o.get("sha") in shas and o.get("created") and o.get("updated")), None)
         born = sorted(str(o["created"]) for o in olds if o.get("created"))
         if same:
             created, updated = same["created"], same["updated"]

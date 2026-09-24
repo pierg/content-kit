@@ -1,6 +1,6 @@
 # content-kit — the vision
 
-**Status: LIVE** — the vision this repo realizes. Written 2026-09-10 against the audit in *Where we actually are*; built 2026-09-11 (see *Realization* at the end, and `README.md` for use). Supersedes nothing.
+The vision this repo realizes. Written 2026-09-10 against the audit in *Where we actually are*; built 2026-09-11 (see *Realization* at the end, and `README.md` for use). Supersedes nothing.
 
 Any agent, in any repo, can add content about any topic, and it comes out belonging there — because the genre it picks carries a **structure**, a **voice**, and a **component vocabulary** from one shared source, and cites assets from one shared store. A human reads it in a browser, annotates it in place, and any agent later — fresh context, different session, different machine — picks up those annotations and addresses them. Nothing live connects the two halves.
 

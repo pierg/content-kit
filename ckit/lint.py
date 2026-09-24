@@ -16,7 +16,8 @@ Form (every page):
 
 Genre (by position in the tree — see genres.json and genres/GENRES.md):
   5. every page belongs to a genre; a page outside any genre is an error, not a default
-  6. status — the first <p class="sub"> declares LIVE · HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT
+  6. status — a status the first <p class="sub"> states is one the shell knows: HISTORICAL · PARKED ·
+     RETIRED · FROZEN · DRAFT, or LIVE — the default, which a current page need not state
   7. per-genre proxies for voice: word bounds, no <h2> in a note, a defn in a concept, no
      undeclared forward reference in a chapter, a lifecycle meta on a project, a fixed-shape
      genre's sections in order — and any check a module under kit.json `checks` provides
@@ -38,7 +39,7 @@ from pathlib import Path
 from . import annotations, book_nav, config, links, plugins, prose
 from .genres import Genre, classify, is_exempt, load_genres
 from .paths import DOC_STATUS, Repo
-from .text import DEFN_RE, STATUS_META_RE, SUB_RE, meta_content, strip_tags, word_count
+from .text import DEFN_RE, STATUS_META_RE, drop_live, meta_content, stated_status, word_count
 
 HEX = re.compile(r"(?<![\w-])#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b")
 CLASS_ATTR = re.compile(r'\bclass="([^"]*)"')
@@ -193,15 +194,6 @@ def _served(text: str) -> str:
     return BURIED.sub(" ", COMMENT.sub(" ", text))
 
 
-def _status_word(text: str) -> str | None:
-    m = SUB_RE.search(text)
-    if not m:
-        return None
-    sub = strip_tags(m.group(1))
-    for w in DOC_STATUS:
-        if re.search(rf"\b{w}\b", sub):
-            return w
-    return None
 
 
 def _forward_refs(page: Path, text: str) -> list[str]:
@@ -264,10 +256,12 @@ def _genre(rel: str, page: Path, text: str, g: Genre) -> list[str]:
     probs: list[str] = []
     c = g.checks
     if c.get("status"):
-        if _status_word(text) is None:
+        word = stated_status(text)
+        if word is not None and word.upper() not in DOC_STATUS:
             probs.append(
-                f'{rel}: no status in the opening line — the first <p class="sub"> must say one of '
-                + " · ".join(DOC_STATUS)
+                f"{rel}: status {word!r} in the opening line is not one the shell knows — a page that is "
+                "not current says " + " · ".join(w for w in DOC_STATUS if w != "LIVE")
+                + "; a current one says nothing (LIVE is the default)"
             )
     if c.get("max_words"):
         n = word_count(text)
@@ -342,6 +336,24 @@ def lint_file(repo: Repo, path: Path, genres: dict[str, Genre],
     return probs
 
 
+def _outdated(repo: Repo, files: list[Path]) -> list[str]:
+    """What 0.5.0 made unnecessary, named once per run and never failed: a stated LIVE (the
+    default)."""
+    live = []
+    for f in files:
+        if drop_live(f.read_text(encoding="utf-8", errors="replace"))[1]:
+            live.append(repo.rel(f))
+
+    def some(rels: list[str]) -> str:
+        return ", ".join(rels[:3]) + (f" and {len(rels) - 3} more" if len(rels) > 3 else "")
+
+    out = []
+    if live:
+        out.append(f"{len(live)} page(s) state Status: LIVE, which is the default — `ckit unwrap --status` "
+                   f"drops it and keeps their dates ({some(live)})")
+    return out
+
+
 def iter_pages(repo: Repo, paths: list[Path] | None = None) -> list[Path]:
     if not paths:
         found = sorted(repo.content.rglob("*.html")) if repo.content.is_dir() else []
@@ -378,6 +390,8 @@ def run(repo: Repo, paths: list[Path] | None = None, *, nav: bool = True) -> tup
     probs.extend(annotations.check_all(repo))
     probs.extend(links.moved_problems(repo))
     for note in annotations.stale_flags(repo):  # a flag whose passage left: named, never failed
+        print("note: " + note)
+    for note in _outdated(repo, files):
         print("note: " + note)
     if nav and repo.content.is_dir():
         written = book_nav.regenerate(repo)

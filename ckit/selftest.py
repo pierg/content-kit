@@ -46,7 +46,7 @@ PAGE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>{tit
 """
 
 
-def _page(title: str, body: str = "<p>Body.</p>", *, sub: str = "<b>Status: LIVE</b> — fixture.",
+def _page(title: str, body: str = "<p>Body.</p>", *, sub: str = "A fixture.",
           head: str = "") -> str:
     return PAGE.format(title=title, sub=sub, body=body, head=head)
 
@@ -273,7 +273,7 @@ def _organise_cases(failures: list[str]) -> int:
         cat = json.loads((repo.content / "catalog.json").read_text())
         for item in cat["notes"]:
             if item["slug"] == "b":
-                item["sha"] = _sha([b], legacy=True)
+                item["sha"] = _sha([b], scheme="0.5.0.dev0")
         (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
         os.environ["CKIT_TODAY"] = "2026-05-04"
         _lint(repo)
@@ -285,16 +285,45 @@ def _organise_cases(failures: list[str]) -> int:
         cat = json.loads((repo.content / "catalog.json").read_text())
         for item in cat["notes"]:
             if item["slug"] == "w2":
-                item["sha"] = _sha([w2], legacy=True)
+                item["sha"] = _sha([w2], scheme="0.5.0.dev0")
         (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
         os.environ["CKIT_TODAY"] = "2026-05-05"
-        prose.unwrap_repo(repo, [w2])
+        quiet(prose.unwrap_repo, repo, [w2])
         os.environ["CKIT_TODAY"] = "2026-05-04"
         if catalog_item("w2").get("updated") != "2026-05-04" or "two lines" not in w2.read_text():
             failures.append(f"`ckit unwrap` on a 0.5.0.dev0 catalog must keep a joined page's dates: {catalog_item('w2')}")
         w2.unlink()
         _lint(repo)
         planted += 1
+
+        # a stated LIVE says nothing: the lint names the pages that still state it (a note, never a
+        # failure); `ckit unwrap --status` drops it, the lede capitalised, the dates kept — also
+        # for a catalog written by 0.5.0.dev1, whose sha kept it; a stated DRAFT stays
+        os.environ["CKIT_TODAY"] = "2026-05-06"
+        lv = _write(repo, "notes/lv.html", _page("Lv", "<p>Lv.</p>", sub="<b>Status: LIVE</b> — what lv says."))
+        dr = _write(repo, "notes/dr.html", _page("Dr", "<p>Dr.</p>", sub="<b>Status: DRAFT</b> — half done."))
+        (probs, _n), said = quiet(lint.run, repo, nav=True)
+        if "state Status: LIVE" not in said or "notes/lv.html" not in said or "notes/dr.html" in said.split("state Status: LIVE")[1].split("\n")[0]:
+            failures.append(f"the lint must name the pages that state LIVE, and only those: {said!r}")
+        if any("notes/lv.html" in p for p in probs):
+            failures.append("a stated LIVE must not fail the lint")
+        cat = json.loads((repo.content / "catalog.json").read_text())
+        for item in cat["notes"]:
+            if item["slug"] == "lv":
+                item["sha"] = _sha([lv], scheme="0.5.0.dev1")
+        (repo.content / "catalog.json").write_text(json.dumps(cat, indent=2) + "\n")
+        os.environ["CKIT_TODAY"] = "2026-05-07"
+        (_joined, _pages, dropped), _ = quiet(prose.unwrap_repo, repo, [lv, dr], status=True)
+        if dropped != ["content/notes/lv.html"] or '<p class="sub">What lv says.</p>' not in lv.read_text() \
+                or "<b>Status: DRAFT</b> — half done." not in dr.read_text():
+            failures.append(f"unwrap --status must drop a stated LIVE (capitalising the lede) and leave DRAFT: {dropped}")
+        if catalog_item("lv").get("updated") != "2026-05-06" or catalog_item("lv").get("sha") != _sha([lv]):
+            failures.append(f"dropping a stated LIVE must keep the page's dates, from a 0.5.0.dev1 sha too: {catalog_item('lv')}")
+        if "state Status: LIVE" in quiet(lint.run, repo, nav=True)[1]:
+            failures.append("once dropped, no page states LIVE and the lint says nothing about it")
+        planted += 4
+        lv.unlink()
+        dr.unlink()
 
         # topics: add (listed with no hub yet), rename (pages, kit.json and the hub move together,
         # the hub's old address redirected), merge (old slugs kept as tags), assign
@@ -967,7 +996,11 @@ def main(argv: list[str]) -> int:
         # a token the page declares itself, or one used with a fallback, is fine
         _write(repo, "notes/owntoken.html", _page("Own token",
                '<p style="--mine: var(--teal); color: var(--mine); border-color: var(--nope2, currentColor)">x</p>'))
-        plant("notes/nostatus.html", _page("No status", sub="Just a lede."), "no status")
+        # the status: none stated is LIVE; a stated one must be one the shell knows
+        plant("notes/badstatus.html", _page("Bad status", sub="<b>Status: SHIPPED</b> — a project's word."),
+              "status 'SHIPPED' in the opening line is not one the shell knows")
+        _write(repo, "notes/drafted.html", _page("Drafted", sub="<b>Status: DRAFT</b> — half done."))
+        _write(repo, "notes/stated.html", _page("Stated", sub="<b>Status: LIVE</b> — still allowed."))
         plant("notes/sections.html", _page("Sections", "<h2>One</h2><p>x</p>"), "<h2>")
         plant("notes/long.html", _page("Long", "<p>" + "word " * 450 + "</p>"), "over the 400")
         plant("concepts/nodefn/index.html", _page("No defn"), 'no <blockquote class="defn">')
@@ -1020,6 +1053,10 @@ def main(argv: list[str]) -> int:
         for rel, needle, _ in cases:
             _expect(probs, rel, needle, failures)
             planted += 1
+        if any(("drafted" in p or "stated" in p) for p in probs):
+            failures.append("a known stated status (DRAFT, or LIVE itself) must pass: "
+                            + " | ".join(p for p in probs if "drafted" in p or "stated" in p))
+        planted += 1
         if any("owntoken" in p for p in probs):
             failures.append("a token the page declares, or one with a fallback, must not be reported: "
                             + " | ".join(p for p in probs if "owntoken" in p))

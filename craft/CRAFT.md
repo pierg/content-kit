@@ -1,4 +1,4 @@
-# Craft — how to lay a thing out in this shell — LIVE
+# Craft — how to lay a thing out in this shell
 
 The genre says what a page *is*; craft says how a block inside it is *built*. One playbook per kind of block, each written against the shell's own vocabulary (`shell/COMPONENTS.md`) — there is nothing to import and no new CSS to write. Read the matching playbook before writing the block, and read two when the block is two things (a comparison that contains a diagram).
 

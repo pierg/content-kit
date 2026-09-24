@@ -36,7 +36,7 @@ Prose — the direct children of `<main>` that are `h1`–`h6`, `p`, `ul`, `ol`,
 
 Two vendored variable faces (SIL OFL, `vendor/fonts/`): **Source Serif 4** for reading (`--font-body`, `--font-serif`) and **Inter** for headings and chrome (`--font-sans`); code is `--font-mono`. The reader can switch the body to sans. SVG text keeps the system face, so a hand-laid figure never reflows.
 
-The opening line's `<b>Status: X</b>` is rendered as a pill (a class on the author's own `<b>`; the text is untouched).
+A page that is not current opens its lede with `<b>Status: X</b>` (HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT), rendered as a pill (a class on the author's own `<b>`; the text is untouched). A current page states nothing: LIVE is the default.
 
 ## Color registers
 
@@ -191,7 +191,7 @@ Chapter-only widgets (a bespoke encoding table, a one-off explorer, …) stay in
 
 ## Genres and voice
 
-Where a page lives is its genre, and the genre carries a **voice** — register, assumed reader, forbidden moves — plus the checks the gate runs on it. The table is `kit/genres/GENRES.md`; the machine spec is `kit/genres/genres.json`. `ckit new <genre> <slug>` scaffolds from the right skeleton and prints the voice card. Every page's first `<p class="sub">` declares its status (LIVE · HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT) — the gate checks it.
+Where a page lives is its genre, and the genre carries a **voice** — register, assumed reader, forbidden moves — plus the checks the gate runs on it. The table is `kit/genres/GENRES.md`; the machine spec is `kit/genres/genres.json`. `ckit new <genre> <slug>` scaffolds from the right skeleton and prints the voice card. A page that is not current states its status at the head of its first `<p class="sub">` (HISTORICAL · PARKED · RETIRED · FROZEN · DRAFT); none stated means LIVE — the gate checks that a stated word is one of these.
 
 ## Annotations (review without a session)
 

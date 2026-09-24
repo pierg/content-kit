@@ -1,4 +1,4 @@
-# Diagram — relationships, flows, architecture, state — LIVE
+# Diagram — relationships, flows, architecture, state
 
 **When.** The thing to show is a structure: what connects to what, what feeds what, which states reach which. If the reader would draw it on a whiteboard to explain it, it is a diagram.
 

@@ -1,4 +1,4 @@
-# Contributing — LIVE
+# Contributing
 
 Thank you for looking. content-kit is small on purpose, and it stays that way by holding every change to three rules.
 
@@ -23,7 +23,7 @@ runs the selftest (planted fixtures with known answers), the end-to-end suite (a
 - Small, one idea each. A refactor and a feature are two PRs.
 - Imperative commit subjects that say what changed and why: `lint: an undeclared token fails, because it renders as nothing`.
 - Breaking changes go in `CHANGELOG.md` under the next version, with the migration step.
-- Documentation pages under `content/` are authored with the `/present` skill in their genre's voice, status line first, `ckit check` green.
+- Documentation pages under `content/` are authored with the `/present` skill in their genre's voice, `ckit check` green.
 - No dependencies. The engine is stdlib Python and hand-written HTML, CSS and JS; the only vendored code is KaTeX and marked, under `shell/vendor/`.
 
 ## Reporting

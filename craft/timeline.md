@@ -1,4 +1,4 @@
-# Timeline — what happened when, or what happens in what order — LIVE
+# Timeline — what happened when, or what happens in what order
 
 **When.** The reader must see order or duration. Two kinds: a **record** (dated events — a mission log, a campaign arc, a project's milestones) and a **sequence** (steps that always run in that order — a protocol, a pipeline, the clock of a machine).
 

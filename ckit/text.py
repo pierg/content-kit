@@ -141,3 +141,33 @@ def set_meta(html: str, name: str, value: str | None) -> str:
     if head:
         return html[:head.start()] + new + "\n" + html[head.start():]
     return new + "\n" + html
+
+
+# --- the status: a page that is not current says so at the head of its opening line —
+#     `<b>Status: DRAFT</b> — …` (or HISTORICAL · PARKED · RETIRED · FROZEN). None stated means
+#     LIVE, the default, so a stated LIVE says nothing: `ckit unwrap --status` drops it, and a
+#     catalog entry's sha reads the page as if it were gone, so dropping it keeps the dates.
+
+SUB_OPEN = re.compile(r'<p\b[^>]*class="[^"]*\bsub\b[^"]*"[^>]*>', re.I)
+_STATED = re.compile(r"\s*(?:<(b|strong)>\s*)?Status:\s*([A-Za-z]+)", re.I)
+_LIVE = re.compile(r"\s*<(b|strong)>\s*Status:\s*LIVE\s*</\1>\s*(?:[—–-]|&mdash;|&ndash;)?\s*", re.I)
+
+
+def stated_status(html: str) -> str | None:
+    """The status the opening line states, as written — None when it states none (LIVE)."""
+    m = SUB_OPEN.search(_mask_inert(html))
+    s = _STATED.match(html, m.end()) if m else None
+    return s.group(2) if s else None
+
+
+def drop_live(html: str) -> tuple[str, bool]:
+    """The page without a stated LIVE at the head of its opening line, the lede's first letter
+    capitalised now that it opens the line; and whether there was one to drop."""
+    m = SUB_OPEN.search(_mask_inert(html))
+    s = _LIVE.match(html, m.end()) if m else None
+    if not s:
+        return html, False
+    rest = html[s.end():]
+    if rest[:1].islower():
+        rest = rest[0].upper() + rest[1:]
+    return html[:m.end()] + rest, True
