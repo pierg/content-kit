@@ -20,55 +20,45 @@
 
 <p>It is not a site generator. Pages are HTML written by their author and served exactly as written, with no build in between, and that choice is argued, costs included, in <a href="/content/entries/why-hand-authored-html/">Why hand-authored HTML</a>. It holds itself to one law: <a href="/content/notes/the-design-law.html">a rule nothing checks is a suggestion</a>. This site is itself a content-kit library, gated by the same command it documents.</p>
 
-<figure data-figure="how-it-works" aria-label="How content-kit works in one repository: an agent reads the rules vendored in the repo and writes a page in its genre's voice; the engine's gate checks it and serves it; a reader annotates it in the browser; the note waits in a committed sidecar until any later agent picks it up">
-<svg viewBox="0 0 800 330" role="img" xmlns="http://www.w3.org/2000/svg">
+<figure data-figure="how-it-works" aria-label="How content-kit works: the kit guides an agent, which writes a page; the engine checks the page and serves it to a reader; the reader leaves an annotation in a file beside the page, and a later agent answers it">
+<svg viewBox="0 0 800 300" role="img" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <marker id="hw-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
     </marker>
   </defs>
-  <rect x="20" y="60" width="160" height="70" rx="10" style="fill: var(--surface-1); stroke: var(--azure); stroke-width: 2"/>
-  <text x="100" y="86" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--azure)">an agent</text>
-  <text x="100" y="104" text-anchor="middle" class="t2" style="font-size: 10.5px">any session, any clone</text>
-  <text x="100" y="120" text-anchor="middle" class="t3" style="font-size: 9.5px">writes in the genre's voice</text>
-  <path d="M180 95 L228 95" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
-  <text x="205" y="87" text-anchor="middle" class="t3" style="font-size: 9.5px">writes</text>
-  <rect x="230" y="60" width="170" height="70" rx="10" style="fill: var(--surface-1); stroke: var(--ink-2); stroke-width: 1.5"/>
-  <text x="315" y="86" text-anchor="middle" style="font-size: 13px; font-weight: 700">the page</text>
-  <text x="315" y="104" text-anchor="middle" class="t2" style="font-size: 10.5px">content/&lt;genre&gt;/&lt;slug&gt;</text>
-  <text x="315" y="120" text-anchor="middle" class="t3" style="font-size: 9.5px">hand-authored HTML, served as written</text>
-  <path d="M400 95 L448 95" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
-  <text x="425" y="87" text-anchor="middle" class="t3" style="font-size: 9.5px">checks</text>
-  <rect x="450" y="60" width="150" height="70" rx="10" style="fill: var(--surface-1); stroke: var(--violet); stroke-width: 2"/>
-  <text x="525" y="86" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--violet)">the engine · ckit</text>
-  <text x="525" y="104" text-anchor="middle" class="t2" style="font-size: 10.5px">the gate, then the server</text>
-  <text x="525" y="120" text-anchor="middle" class="t3" style="font-size: 9.5px">pin · shell · indices · lint · books</text>
-  <path d="M600 95 L648 95" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
-  <text x="625" y="87" text-anchor="middle" class="t3" style="font-size: 9.5px">serves</text>
-  <rect x="650" y="60" width="130" height="70" rx="10" style="fill: var(--surface-1); stroke: var(--orange); stroke-width: 2"/>
-  <text x="715" y="86" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--orange)">a reader</text>
-  <text x="715" y="104" text-anchor="middle" class="t2" style="font-size: 10.5px">in the browser</text>
-  <text x="715" y="120" text-anchor="middle" class="t3" style="font-size: 9.5px">in one shared shell</text>
-  <rect x="230" y="170" width="170" height="70" rx="10" style="fill: none; stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 5 3"/>
-  <text x="315" y="194" text-anchor="middle" style="font-size: 11px; font-weight: 700">the rules, vendored in kit/</text>
-  <text x="315" y="210" text-anchor="middle" class="t2" style="font-size: 10px">genres · shell · craft · skills</text>
-  <text x="315" y="226" text-anchor="middle" class="t3" style="font-size: 9.5px">in the repo, pinned, read-only</text>
-  <path d="M140 130 L140 205 L228 205" style="fill: none; stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
-  <text x="148" y="172" class="t3" style="font-size: 9.5px">reads first</text>
-  <path d="M315 170 L315 132" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
-  <text x="322" y="153" class="t3" style="font-size: 9px">structure · voice · vocabulary</text>
-  <rect x="450" y="230" width="200" height="70" rx="10" style="fill: var(--surface-1); stroke: var(--ink-2); stroke-width: 1.5"/>
-  <text x="550" y="254" text-anchor="middle" style="font-size: 12px; font-weight: 700">the sidecar</text>
-  <text x="550" y="270" text-anchor="middle" class="t2" style="font-size: 10.5px">page.annotations.json</text>
-  <text x="550" y="286" text-anchor="middle" class="t3" style="font-size: 9.5px">committed beside the page</text>
-  <path d="M715 130 L715 265 L652 265" style="fill: none; stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
-  <text x="708" y="200" text-anchor="end" class="t3" style="font-size: 9.5px">annotates,</text>
-  <text x="708" y="213" text-anchor="end" class="t3" style="font-size: 9.5px">any time</text>
-  <path d="M450 265 L60 265 L60 132" style="fill: none; stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
-  <text x="255" y="258" text-anchor="middle" class="t3" style="font-size: 9.5px">is picked up later — /address</text>
-  <text x="20" y="318" class="t3" style="font-size: 9.5px">nothing live joins the halves: the page, the rules and the note are files in the repo; the engine is installed once</text>
+  <rect x="20" y="20" width="160" height="56" rx="10" style="fill: var(--surface-1); stroke: var(--ink-2); stroke-width: 1.5"/>
+  <text x="100" y="44" text-anchor="middle" style="font-size: 13px; font-weight: 700">the kit</text>
+  <text x="100" y="63" text-anchor="middle" class="t2" style="font-size: 11px">rules, in the repository</text>
+  <path d="M100 76 L100 128" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="108" y="106" class="t3" style="font-size: 11px">guides</text>
+  <rect x="20" y="130" width="160" height="64" rx="10" style="fill: var(--surface-1); stroke: var(--azure); stroke-width: 2"/>
+  <text x="100" y="157" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--azure)">an agent</text>
+  <text x="100" y="176" text-anchor="middle" class="t2" style="font-size: 11px">any session, any clone</text>
+  <path d="M180 162 L238 162" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="209" y="154" text-anchor="middle" class="t3" style="font-size: 11px">writes</text>
+  <rect x="240" y="130" width="150" height="64" rx="10" style="fill: var(--surface-1); stroke: var(--ink-2); stroke-width: 1.5"/>
+  <text x="315" y="157" text-anchor="middle" style="font-size: 13px; font-weight: 700">a page</text>
+  <text x="315" y="176" text-anchor="middle" class="t2" style="font-size: 11px">HTML, served as written</text>
+  <path d="M450 162 L392 162" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="421" y="154" text-anchor="middle" class="t3" style="font-size: 11px">checks</text>
+  <rect x="450" y="130" width="150" height="64" rx="10" style="fill: var(--surface-1); stroke: var(--violet); stroke-width: 2"/>
+  <text x="525" y="157" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--violet)">the engine</text>
+  <text x="525" y="176" text-anchor="middle" class="t2" style="font-size: 11px">ckit, installed once</text>
+  <path d="M600 162 L658 162" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="629" y="154" text-anchor="middle" class="t3" style="font-size: 11px">serves</text>
+  <rect x="660" y="130" width="120" height="64" rx="10" style="fill: var(--surface-1); stroke: var(--orange); stroke-width: 2"/>
+  <text x="720" y="157" text-anchor="middle" style="font-size: 13px; font-weight: 700; fill: var(--orange)">a reader</text>
+  <text x="720" y="176" text-anchor="middle" class="t2" style="font-size: 11px">in the browser</text>
+  <path d="M720 194 L720 234" style="stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="728" y="219" class="t3" style="font-size: 11px">leaves</text>
+  <rect x="620" y="236" width="160" height="56" rx="10" style="fill: var(--surface-1); stroke: var(--ink-2); stroke-width: 1.5"/>
+  <text x="700" y="260" text-anchor="middle" style="font-size: 13px; font-weight: 700">an annotation</text>
+  <text x="700" y="279" text-anchor="middle" class="t2" style="font-size: 11px">a file beside the page</text>
+  <path d="M100 194 L100 264 L618 264" style="fill: none; stroke: var(--ink-2); stroke-width: 1.5" marker-end="url(#hw-a)"/>
+  <text x="360" y="256" text-anchor="middle" class="t3" style="font-size: 11px">answers</text>
 </svg>
-<figcaption><b>One loop, no live connection.</b> An agent reads the rules vendored in the repo and writes the page in its genre's voice; the engine's gate checks it and serves it; a reader annotates it in the browser; the note waits in a committed file until any later agent picks it up. Every arrow crosses a file, not a session.</figcaption>
+<figcaption><b>One loop, with a file between each step.</b> The rules, the page and the annotation are files in the repository, so nothing has to keep running from one step to the next.</figcaption>
 </figure>
 
 <pre><code>uv tool install git+https://github.com/pierg/content-kit@v0.4.0
