@@ -152,14 +152,14 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb code { font-family: var(--font-mono); font-size: 0.84em; background: var(--surface-2);
            border: 1px solid var(--grid); border-radius: 5px; padding: 0.08em 0.36em; }
 .hb pre { background: var(--surface-2); border: 1px solid var(--grid); border-radius: 10px;
-          padding: 14px 16px; overflow-x: auto; font-size: 13.5px; line-height: 1.55; margin: 1.3em 0; }
+          padding: 14px 16px; overflow-x: auto; font-size: .84375rem; line-height: 1.55; margin: 1.3em 0; }
 .hb pre code { border: 0; background: none; padding: 0; font-size: inherit; }
-.hb table { border-collapse: collapse; width: 100%; margin: 1.3em 0; font: 14.5px/1.5 var(--font-sans);
+.hb table { border-collapse: collapse; width: 100%; margin: 1.3em 0; font: .90625rem/1.5 var(--font-sans);
             font-variant-numeric: tabular-nums; }
-.hb th { text-align: left; color: var(--ink-2); font-weight: 600; font-size: 13px;
+.hb th { text-align: left; color: var(--ink-2); font-weight: 600; font-size: .8125rem;
          border-bottom: 1px solid var(--baseline); padding: 8px 12px 8px 0; }
 .hb td { border-bottom: 1px solid var(--grid); padding: 9px 12px 9px 0; vertical-align: top; }
-.hb .mono { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.9; }
+.hb .mono { font-family: var(--font-mono); font-size: .78125rem; line-height: 1.9; }
 
 /* the opening line: a lede, with the status as a pill (lib.js marks the <b>Status: …</b>) */
 .hb main > h1 + p.sub, .hb main > p.sub:first-of-type { font-size: 1.14rem; line-height: 1.55; color: var(--ink-2);
@@ -178,7 +178,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
              border-radius: 14px; padding: 18px 18px 12px; }
 .hb figure img { max-width: 100%; border-radius: 6px; display: block; margin: 0 auto; }
 .hb figure > svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-.hb figcaption { color: var(--ink-2); font: 13.5px/1.55 var(--font-sans); margin-top: 10px; }
+.hb figcaption { color: var(--ink-2); font: .84375rem/1.55 var(--font-sans); margin-top: 10px; }
 .hb svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink-1); }
 .hb svg .t2 { fill: var(--ink-2); } .hb svg .t3 { fill: var(--ink-3); }
 
@@ -193,11 +193,11 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb .law { font-weight: 700; color: var(--violet); }
 .hb .q { color: var(--ink-2); font-style: italic; border-left: 3px solid var(--baseline);
          padding: 2px 14px; margin-top: 8px; margin-bottom: 16px; }
-.hb .anchors { color: var(--ink-3); font: 13px/1.55 var(--font-sans); border-top: 1px dashed var(--grid);
+.hb .anchors { color: var(--ink-3); font: .8125rem/1.55 var(--font-sans); border-top: 1px dashed var(--grid);
                padding-top: 10px; margin-top: 2em; }
 .hb .idx { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px;
            padding: 14px 18px; margin: 1.4em 0; font-family: var(--font-sans); font-size: 0.9rem; }
-.hb .idx table { font-size: 12.5px; margin: 8px 0; }
+.hb .idx table { font-size: .78125rem; margin: 8px 0; }
 .hb .idx td, .hb .idx th { padding: 3px 10px 3px 0; }
 .hb .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 1.4em 0; }
 @media (max-width: 760px) { .hb .cols { grid-template-columns: 1fr; } }
@@ -245,7 +245,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb-peek .hb-peek-sub { color: var(--ink-2, #57524a); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* ------------------------------------------------------------ verdict chips */
-.hb .v { display: inline-block; font: 650 11.5px/1.5 var(--font-sans); border-radius: 6px;
+.hb .v { display: inline-block; font: 650 .71875rem/1.5 var(--font-sans); border-radius: 6px;
          padding: 0 7px; border-width: 1.5px; border-style: solid; background: var(--surface-1); white-space: nowrap; }
 .hb .v-kept { color: var(--kept-text); border-color: var(--kept); }
 .hb .v-disc { color: var(--ink-1); border-color: var(--discarded); }
@@ -254,7 +254,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb .v-gen  { color: var(--azure); border-color: var(--azure); }  /* non-verdict callout chip */
 
 /* ----------------------------------------------------------- evidence chips */
-.hb .ev { display: inline-block; font: 650 11px/1.55 var(--font-sans); border-radius: 999px;
+.hb .ev { display: inline-block; font: 650 .6875rem/1.55 var(--font-sans); border-radius: 999px;
           padding: 0 9px; border-width: 1.5px; border-style: solid; white-space: nowrap; }
 .hb .ev-m { color: var(--kept-text); border-color: var(--kept); }      /* MEASURED — ran live   */
 .hb .ev-b { color: var(--azure); border-color: var(--azure); }         /* BUILT — landed        */
@@ -262,12 +262,12 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 .hb .ev-o { color: var(--ink-3); border-color: var(--baseline); }      /* NOT CLAIMED           */
 
 /* ----------------------------------------------- number-ownership stamps */
-.hb .own { display: inline-block; font: 700 10.5px var(--font-mono);
+.hb .own { display: inline-block; font: 700 .65625rem var(--font-mono);
            color: var(--ink-3); border: 1px dashed var(--baseline); border-radius: 4px;
            padding: 0 5px; white-space: nowrap; }
 
 /* --------------------------------------------------------- census status */
-.hb .st { display: inline-block; font: 650 11px/1.55 var(--font-sans); border-radius: 999px;
+.hb .st { display: inline-block; font: 650 .6875rem/1.55 var(--font-sans); border-radius: 999px;
           padding: 0 9px; border-width: 1.5px; border-style: solid; white-space: nowrap; }
 .hb .st-done { color: var(--kept-text); border-color: var(--kept); }      /* ADDRESSED → anchor  */
 .hb .st-plan { color: var(--azure); border-color: var(--azure); }         /* PLANNED → chapter   */
@@ -275,10 +275,10 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 
 /* -------------------------------------------------------- interactive bits */
 .hb .dhead { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
-.hb .did { font-family: var(--font-mono); font-size: 12px;
+.hb .did { font-family: var(--font-mono); font-size: .75rem;
            font-weight: 700; color: var(--violet); border: 1.5px solid var(--violet);
            border-radius: 6px; padding: 1px 8px; }
-.hb .tbtn { font: 600 12.5px/1.2 var(--font-sans); padding: 6px 12px; border-radius: 999px;
+.hb .tbtn { font: 600 .78125rem/1.2 var(--font-sans); padding: 6px 12px; border-radius: 999px;
             border: 1.5px solid var(--baseline); background: var(--surface-1); color: var(--ink-2);
             cursor: pointer; }
 .hb .tbtn:hover { border-color: var(--ink-3); color: var(--ink-1); }
@@ -305,7 +305,7 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
   background: var(--surface-1); border: 1px solid var(--grid); border-radius: 12px;
   padding: 12px 18px; margin-top: 12px; margin-bottom: 12px; }
 .hb details.check summary, .hb details.fcard summary {
-  cursor: pointer; font: 600 15px/1.45 var(--font-sans); color: var(--ink-1); list-style: none; }
+  cursor: pointer; font: 600 .9375rem/1.45 var(--font-sans); color: var(--ink-1); list-style: none; }
 .hb details.check summary::-webkit-details-marker, .hb details.fcard summary::-webkit-details-marker { display: none; }
 .hb details.check summary::before { content: "✓ "; color: var(--kept); font-weight: 700; }
 .hb details.fcard summary::before { content: "▸ "; color: var(--azure); font-weight: 700; }
@@ -611,7 +611,7 @@ body.hb-ann-on .hb-rail { display: none; }
 
 /* cycle / step chips (machine clock, k-runway) */
 .hb .cyc { display: flex; gap: 3px; margin: 10px 0 4px; flex-wrap: wrap; align-items: center; }
-.hb .cyc span { font: 700 10px var(--font-mono); border: 1.5px solid var(--grid);
+.hb .cyc span { font: 700 .625rem var(--font-mono); border: 1.5px solid var(--grid);
                 border-radius: 4px; padding: 2px 7px; color: var(--ink-3); }
 .hb .cyc span.cur { border-color: var(--azure); color: var(--azure); }
 .hb .cyc span.run { border-color: var(--amber); color: var(--amber); }
@@ -623,10 +623,10 @@ body.hb-ann-on .hb-rail { display: none; }
 .hb .prow.skip { color: var(--ink-3); }
 
 /* detail drawer under a picker */
-.hb .drawer { border-top: 1px dashed var(--grid); margin-top: 10px; padding-top: 10px; font-size: 14px; }
+.hb .drawer { border-top: 1px dashed var(--grid); margin-top: 10px; padding-top: 10px; font-size: .875rem; }
 .hb .drawer .hyp { border-left: 3px solid var(--azure); padding: 4px 12px; margin: 8px 0;
-                   color: var(--ink-2); font-size: 13.5px; }
-.hb .drawer table { font-size: 12.5px; }
+                   color: var(--ink-2); font-size: .84375rem; }
+.hb .drawer table { font-size: .78125rem; }
 
 /* toggle-on buttons */
 .hb .tbtn.on { border-color: var(--indigo); color: var(--indigo); }
@@ -645,7 +645,7 @@ body.hb-ann-on .hb-rail { display: none; }
 .hb .sw-orange { color: var(--orange); font-weight: 700; }
 
 /* small muted captions under widgets */
-.hb .wcap { font: 13px/1.5 var(--font-sans); color: var(--ink-2); }
-.hb .wcap-sm { font-size: 12px; }
-.hb .wcap-md { font-size: 13px; }
-.hb .wcap-lg { font-size: 13.5px; }
+.hb .wcap { font: .8125rem/1.5 var(--font-sans); color: var(--ink-2); }
+.hb .wcap-sm { font-size: .75rem; }
+.hb .wcap-md { font-size: .8125rem; }
+.hb .wcap-lg { font-size: .84375rem; }
