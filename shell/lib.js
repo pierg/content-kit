@@ -45,9 +45,11 @@
   window.hbUrl = hbUrl;
 
   /* ------------------------------------------------------------ preferences
-     Theme (auto · light · dark), reading face (serif · sans), type size (small · normal · large)
-     and measure (narrow · normal · wide), kept in this browser. Applied first, before anything
-     paints that depends on them. */
+     The theme (auto · light · dark), and whether the library (left) and the page panel (right)
+     are open on a wide screen, kept in this browser. Applied first, before anything paints that
+     depends on them: the two panels' state sits on <html>, so the page's width is reserved
+     before the shell mounts. A page sets its own widths and faces, so the reader's type size,
+     measure and reading face of 0.5 are gone; their stored values are cleared. */
   var store = {
     get: function (k) { try { return localStorage.getItem("ckit:" + k); } catch (e) { return null; } },
     set: function (k, v) { try { if (v == null) localStorage.removeItem("ckit:" + k); else localStorage.setItem("ckit:" + k, v); } catch (e) {} }
@@ -56,12 +58,12 @@
   function applyPrefs() {
     var t = store.get("theme");
     if (t === "light" || t === "dark") root.setAttribute("data-theme", t); else root.removeAttribute("data-theme");
-    if (store.get("font") === "sans") root.setAttribute("data-font", "sans"); else root.removeAttribute("data-font");
-    ["size", "measure"].forEach(function (k) {
+    ["side", "panel"].forEach(function (k) {
       var v = store.get(k);
-      if (v) root.setAttribute("data-" + k, v); else root.removeAttribute("data-" + k);
+      if (v === "open" || v === "closed") root.setAttribute("data-hb-" + k, v); else root.removeAttribute("data-hb-" + k);
     });
   }
+  ["font", "size", "measure"].forEach(function (k) { store.set(k, null); root.removeAttribute("data-" + k); });
   applyPrefs();
 
   function escapeHtml(s) {
@@ -129,6 +131,9 @@
     moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>',
     auto: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17" /><path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor" stroke="none"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    sideL: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15"/>',
+    sideR: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M14.5 4.5v15"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
     list: '<path d="M9 7h11M9 12h11M9 17h11M4.5 7h.01M4.5 12h.01M4.5 17h.01"/>',
     record: '<path d="M6 3.5h9l3.5 3.5v13.5H6z"/><path d="M14.5 3.5V7.5H18.5"/><path d="M9 12h6M9 15.5h6"/>',
     review: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4h-1A2.5 2.5 0 0 1 4 13.5z"/><path d="m8.5 9.5 2.5 2.5 4.5-4.5"/>'
@@ -641,27 +646,6 @@
     var ic = t === "dark" ? "moon" : t === "light" ? "sun" : "auto";
     return '<button type="button" class="hb-iconbtn" data-hb-theme title="Theme: ' + t + ' (click to change)">' + icon(ic) + "</button>";
   }
-  function fontButton() {
-    var f = store.get("font") === "sans" ? "sans" : "serif";
-    return '<button type="button" class="hb-iconbtn" data-hb-font title="Reading face: ' + f + ' (click to change)">' +
-      '<span style="font:600 13px/1 ' + (f === "sans" ? "var(--font-serif)" : "var(--font-sans)") + '">Aa</span></button>';
-  }
-
-  /* three settings side by side, the current one pressed: the type size, drawn as an A at three
-     sizes, and the measure, as a column of three widths */
-  function segHtml(key, label) {
-    var cur = store.get(key) || "normal";
-    return '<span class="hb-seg" role="group" aria-label="' + label + '">' + ["small", "normal", "large"].map(function (v, i) {
-      var name = key === "measure" ? ["narrow", "normal", "wide"][i] : v;
-      var glyph = key === "measure"
-        ? '<svg class="hb-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M' + (8 - 2 * i) + " 8h" + (8 + 4 * i) + "M" + (8 - 2 * i) + " 12h" +
-          (8 + 4 * i) + "M" + (8 - 2 * i) + " 16h" + (5 + 3 * i) + '"/></svg>'
-        : '<span style="font:600 ' + (11 + 2 * i) + 'px/1 var(--font-sans)">A</span>';
-      return '<button type="button" class="hb-iconbtn" data-hb-pref="' + key + '" data-v="' + name + '" aria-pressed="' + (name === cur) +
-        '" title="' + label + ": " + name + '">' + glyph + "</button>";
-    }).join("") + "</span>";
-  }
-
   function sideHtml(lib, where) {
     var name = lib.site.name || "Library";
     var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
@@ -671,7 +655,7 @@
       '<span class="hb-kbd">' + (mac ? "⌘" : "Ctrl") + " K</span></button>" +
       navHtml(lib) + treeHtml(lib, where) +
       "</div>" +
-      '<div class="hb-side-foot">' + themeButton() + fontButton() + segHtml("size", "Type size") + segHtml("measure", "Measure") + "</div>";
+      '<div class="hb-side-foot">' + themeButton() + '<span class="hb-side-keys">[ ] hide the panels</span></div>';
   }
 
   /* only what the reader opens or closes is remembered — a group the tree opens by default
@@ -919,18 +903,6 @@
           applyPrefs();
           tb.outerHTML = themeButton();
         }
-        var fb = e.target.closest("[data-hb-font]");
-        if (fb) {
-          store.set("font", store.get("font") === "sans" ? null : "sans");
-          applyPrefs();
-          fb.outerHTML = fontButton();
-        }
-        var pb = e.target.closest("[data-hb-pref]");
-        if (pb) {
-          store.set(pb.dataset.hbPref, pb.dataset.v === "normal" ? null : pb.dataset.v);
-          applyPrefs();
-          pb.parentNode.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b === pb ? "true" : "false"); });
-        }
       });
       /* keep the current page in view in a long tree */
       var here = aside.querySelector(".hb-tree a.here");
@@ -942,37 +914,54 @@
       body.classList.add("hb-no-side");
     }
 
-    /* the top bar */
+    /* the top bar: the library's toggle, where the page is, and the page panel's toggle */
     var hs = app ? [] : headings(main);
     var minutes = readingMinutes(main);
     var top = document.createElement("div");
     top.className = "hb-top";
     top.innerHTML =
-      (aside ? '<button type="button" class="hb-iconbtn hb-only-narrow" data-hb-drawer aria-label="Library" aria-controls="hb-side" aria-expanded="false">' + icon("menu") + "</button>" : "") +
+      (aside ? '<button type="button" class="hb-iconbtn" data-hb-toggle="side" aria-label="Library" aria-controls="hb-side" aria-expanded="false" title="Library  [">' +
+        '<span class="hb-only-narrow">' + icon("menu") + '</span><span class="hb-only-wide">' + icon("sideL") + "</span></button>" : "") +
       crumbsHtml(lib, where) +
       '<div class="hb-top-meta">' +
       (!app && !bookRoot() ? '<span class="hb-only-wide hb-norail">' + metaText(where, minutes) + "</span>" : "") +
-      (!app ? '<span class="hb-contents"><button type="button" class="hb-iconbtn" data-hb-contents aria-expanded="false" aria-label="Contents">' + icon("list") +
-        '<span class="hb-only-wide">Contents</span></button><div class="hb-contents-panel" hidden>' + railHtml(lib, where, hs, minutes) + "</div></span>" : "") +
       '<button type="button" class="hb-iconbtn hb-only-narrow" data-hb-palette aria-label="Search">' + icon("search") + "</button>" +
+      (!app ? '<button type="button" class="hb-iconbtn" data-hb-toggle="panel" aria-label="About this page" aria-controls="hb-panel" aria-expanded="false" title="About this page  ]">' +
+        icon("sideR") + "</button>" : "") +
       "</div>";
     body.insertBefore(top, first);
     top.addEventListener("click", function (e) {
-      if (e.target.closest("[data-hb-drawer]")) setDrawer(!body.classList.contains("hb-side-open"));
-      if (e.target.closest("[data-hb-contents]")) setContents(top.querySelector(".hb-contents-panel").hidden);
-      else if (e.target.closest(".hb-contents-panel a")) setContents(false);
+      var b = e.target.closest("[data-hb-toggle]");
+      if (b) toggle(b.dataset.hbToggle);
     });
-    document.addEventListener("click", function (e) { if (!e.target.closest(".hb-contents")) setContents(false); });
 
-    /* the page rail, and what it holds when the screen is too narrow for it */
+    /* the page panel: what the page is and what links to it, and — when the engine serves
+       annotations — the threads on it, as a second tab. Its own element, outside <main> and
+       outside the canvas, so the page's layout never has to leave room for it. */
     var rail = null;
     if (!app) {
-      body.classList.add("hb-has-rail");
+      body.classList.add("hb-has-panel");
       rail = document.createElement("aside");
-      rail.className = "hb-rail";
+      rail.className = "hb-panel";
+      rail.id = "hb-panel";
       rail.setAttribute("aria-label", "About this page");
-      rail.innerHTML = '<div class="hb-rail-in">' + railHtml(lib, where, hs, minutes) + "</div>";
-      stage.appendChild(rail);  /* its slot sits against the reading column; the annotation panel takes it */
+      rail.innerHTML =
+        '<div class="hb-panel-head"><div class="hb-panel-tabs" role="tablist" aria-label="Page panel">' +
+        '<button type="button" role="tab" data-hb-tab="page" aria-selected="true">Page</button></div>' +
+        '<button type="button" class="hb-iconbtn" data-hb-toggle="panel" aria-label="Close the page panel" title="Close  ]">' + icon("close") + "</button></div>" +
+        '<div class="hb-panel-pane" role="tabpanel" data-hb-pane="page">' + railHtml(lib, where, hs, minutes) + "</div>";
+      var panelBackdrop = document.createElement("div");
+      panelBackdrop.className = "hb-panel-backdrop";
+      panelBackdrop.addEventListener("click", function () { setPanel(false); });
+      body.insertBefore(rail, first);
+      body.insertBefore(panelBackdrop, first);
+      rail.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-hb-toggle]");
+        if (b) { toggle(b.dataset.hbToggle); return; }
+        var tb = e.target.closest("[data-hb-tab]");
+        if (tb) showTab(tb.dataset.hbTab);
+        else if (e.target.closest(".hb-panel-pane[data-hb-pane=page] a") && narrow()) setPanel(false);
+      });
       scrollSpy(rail, hs);
       if (!main.querySelector("ul[data-backlinks]")) {  /* a page that lists them in its body keeps its list */
         backlinksIndex().then(function (data) {
@@ -986,9 +975,15 @@
       }
     }
 
-    mounted = { aside: aside, lib: lib, where: where, top: top, rail: rail, main: main, book: null, foot: null, minutes: minutes };
+    mounted = { aside: aside, lib: lib, where: where, top: top, rail: rail, main: main, book: null, foot: null, minutes: minutes, tab: "page" };
     if (!app) paintOut(lib, where);
     if (opts.book) applyBook(opts.book);
+    syncPanels();
+    window.addEventListener("resize", function () {
+      if (!narrow()) { setDrawer(false); body.classList.remove("hb-panel-drawer"); }
+      syncPanels();
+    });
+    document.dispatchEvent(new CustomEvent("hb:panel-ready"));
   }
 
   /* a fresher catalog than the cached one the page painted with: the library rail, the crumbs,
@@ -1026,18 +1021,102 @@
     mounted.foot = injectFoot(book.chapters, mounted.main);
   }
 
-  function setContents(open) {
-    var panel = document.querySelector(".hb-contents-panel");
-    if (!panel || panel.hidden === !open) return;
-    panel.hidden = !open;
-    document.querySelector("[data-hb-contents]").setAttribute("aria-expanded", open ? "true" : "false");
+  /* the two panels. On a wide screen each is open or closed, remembered in this browser
+     (html[data-hb-side], html[data-hb-panel]); the page panel's default is open from 1240px,
+     closed below. On a narrow screen both are drawers over the page, never remembered. */
+  function narrow() { return !!(window.matchMedia && window.matchMedia("(max-width: 899px)").matches); }
+  function panelShown() {
+    var b = document.body;
+    if (!b.classList.contains("hb-has-panel")) return false;
+    if (narrow()) return b.classList.contains("hb-panel-drawer");
+    var v = root.getAttribute("data-hb-panel");
+    return v ? v === "open" : !!window.matchMedia("(min-width: 1240px)").matches;
   }
-
+  function sideShown() {
+    var b = document.body;
+    if (b.classList.contains("hb-no-side")) return false;
+    return narrow() ? b.classList.contains("hb-side-open") : root.getAttribute("data-hb-side") !== "closed";
+  }
+  function syncPanels() {
+    var p = panelShown(), s = sideShown();
+    document.body.classList.toggle("hb-panel-shown", p);
+    document.querySelectorAll('[data-hb-toggle="panel"]').forEach(function (b) { b.setAttribute("aria-expanded", p ? "true" : "false"); });
+    document.querySelectorAll('[data-hb-toggle="side"]').forEach(function (b) { b.setAttribute("aria-expanded", s ? "true" : "false"); });
+    var rail = document.getElementById("hb-panel");
+    if (rail) rail.inert = !p;
+    var aside = document.getElementById("hb-side");
+    if (aside) aside.inert = !s;
+    if (mounted) {
+      var detail = { open: p, tab: mounted.tab };
+      if (!mounted.last || mounted.last.open !== detail.open || mounted.last.tab !== detail.tab) {
+        mounted.last = detail;
+        document.dispatchEvent(new CustomEvent("hb:panel", { detail: detail }));
+      }
+    }
+  }
   function setDrawer(open) {
     document.body.classList.toggle("hb-side-open", open);
-    var b = document.querySelector("[data-hb-drawer]");
-    if (b) b.setAttribute("aria-expanded", open ? "true" : "false");
+    syncPanels();
   }
+  function setSide(open) {
+    if (narrow()) return setDrawer(open);
+    store.set("side", open ? null : "closed");
+    applyPrefs();
+    syncPanels();
+  }
+  function setPanel(open) {
+    if (!document.body.classList.contains("hb-has-panel")) return;
+    if (narrow()) document.body.classList.toggle("hb-panel-drawer", open);
+    else {
+      var byDefault = !!window.matchMedia("(min-width: 1240px)").matches;
+      store.set("panel", open === byDefault ? null : open ? "open" : "closed");
+      applyPrefs();
+    }
+    syncPanels();
+  }
+  function toggle(which) {
+    if (which === "side") setSide(!sideShown());
+    else setPanel(!panelShown());
+  }
+  function showTab(name) {
+    var rail = document.getElementById("hb-panel");
+    if (!rail || !rail.querySelector('[data-hb-pane="' + name + '"]')) return;
+    rail.querySelectorAll("[data-hb-tab]").forEach(function (b) { b.setAttribute("aria-selected", b.dataset.hbTab === name ? "true" : "false"); });
+    rail.querySelectorAll("[data-hb-pane]").forEach(function (p) { p.hidden = p.dataset.hbPane !== name; });
+    if (mounted) mounted.tab = name;
+    syncPanels();
+  }
+  /* for the annotation layer (annotate.js), and for a layer that adds a tab of its own */
+  window.hbPanel = {
+    ready: function () { return !!document.getElementById("hb-panel"); },
+    pane: function (name, label) {
+      var rail = document.getElementById("hb-panel");
+      if (!rail) return null;
+      var pane = rail.querySelector('[data-hb-pane="' + name + '"]');
+      if (pane) return pane;
+      var tab = document.createElement("button");
+      tab.type = "button";
+      tab.setAttribute("role", "tab");
+      tab.dataset.hbTab = name;
+      tab.setAttribute("aria-selected", "false");
+      tab.textContent = label || name;
+      rail.querySelector(".hb-panel-tabs").appendChild(tab);
+      pane = document.createElement("div");
+      pane.className = "hb-panel-pane";
+      pane.setAttribute("role", "tabpanel");
+      pane.dataset.hbPane = name;
+      pane.hidden = true;
+      rail.appendChild(pane);
+      return pane;
+    },
+    label: function (name, text) {
+      var t = document.querySelector('#hb-panel [data-hb-tab="' + name + '"]');
+      if (t) t.textContent = text;
+    },
+    show: function (name) { showTab(name); setPanel(true); },
+    close: function () { setPanel(false); },
+    state: function () { return { open: panelShown(), tab: mounted ? mounted.tab : "page" }; }
+  };
 
   function injectFoot(chapters, main) {
     var cur = hereFile();
@@ -1319,9 +1398,13 @@
       } else if (e.key === "/" && !e.metaKey && !e.ctrlKey && !typing(e)) {
         e.preventDefault();
         openPalette();
-      } else if (e.key === "Escape") {
+      } else if ((e.key === "[" || e.key === "]") && !e.metaKey && !e.ctrlKey && !e.altKey && !typing(e)) {
+        if (!mounted) return;
+        e.preventDefault();
+        toggle(e.key === "[" ? "side" : "panel");
+      } else if (e.key === "Escape" && narrow()) {
         setDrawer(false);
-        setContents(false);
+        if (document.body.classList.contains("hb-panel-drawer")) setPanel(false);
       }
     });
     document.addEventListener("click", function (e) {
@@ -1373,7 +1456,7 @@
   function initPeeks() {
     if (window.matchMedia && window.matchMedia("(hover: none)").matches) return;
     document.addEventListener("pointerover", function (e) {
-      var a = e.target.closest && e.target.closest("main a[href], .hb-rail a[href], .hb-contents-panel a[href]");
+      var a = e.target.closest && e.target.closest("main a[href], .hb-panel a[href]");
       if (!a || a.classList.contains("defn-link") || a.closest(".hb-ann-ui, .hb-toc-list")) return;
       var target = canon(a.href);
       if (!target || target.indexOf("/content/") !== 0 || target === (canon(location.href) || "")) return;

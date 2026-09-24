@@ -21,9 +21,10 @@
    panel open or not — dotted amber for a question waiting, azure for a noted flag
    — and a click on one opens the panel on its thread. The marks are CSS highlights
    over ranges of the page's own text: nothing is inserted into <main>, so the text
-   a reader sees, selects and quotes is the text the page carries. The panel takes
-   the page rail's slot beside the reading column on a wide screen, and is a sheet
-   along the bottom on a narrow one.
+   a reader sees, selects and quotes is the text the page carries. The panel is the
+   Annotations tab of the shell's page panel (lib.js, window.hbPanel): opening the
+   tab turns annotating on, leaving it turns it off. Where the shell built no page
+   panel, the panel is a sheet along the bottom of the window.
    ========================================================================== */
 
 (function () {
@@ -229,18 +230,48 @@
 
   /* --------------------------------------------------------------- lifecycle */
   toggle.addEventListener("click", function () { setOn(!state.on, true); });
-  function place() {  // the page rail's slot when the shell built one, else the page's edge
-    var slot = document.querySelector(".hb-stage") || document.body;
-    if (panel.parentNode !== slot) slot.appendChild(panel);
+  var docked = null;   // the page panel's Annotations pane, once the shell has built it
+  var before = null;   // whether the page panel was open before annotating began
+  function dock() {
+    if (docked || !window.hbPanel || !window.hbPanel.ready()) return !!docked;
+    docked = window.hbPanel.pane("annotations", "Annotations");
+    if (!docked) return false;
+    docked.classList.add("hb-ann-pane");
+    docked.appendChild(panel);
+    panel.hidden = false;
+    document.body.classList.add("hb-ann-docked");
+    label();
+    return true;
   }
-  function setOn(on, byKey) {
+  function label() {
+    if (!docked) return;
+    var n = state.threads.filter(function (t) { return t.state === "open" || t.state === "noted"; }).length;
+    window.hbPanel.label("annotations", "Annotations" + (n ? " · " + n : ""));
+  }
+  dock();
+  document.addEventListener("hb:panel-ready", dock);
+  /* the page panel's tab is the switch: on while its Annotations tab is open, off otherwise */
+  document.addEventListener("hb:panel", function (e) {
+    if (!dock()) return;
+    var want = !!(e.detail && e.detail.open && e.detail.tab === "annotations");
+    if (want !== state.on) setOn(want, false, true);
+  });
+  function setOn(on, byKey, fromPanel) {
     var had = panel.contains(document.activeElement);
     state.on = on;
     document.body.classList.toggle("hb-ann-on", on);
     toggle.classList.toggle("on", on);
     toggle.setAttribute("aria-expanded", on ? "true" : "false");
-    place();
-    panel.hidden = !on;
+    if (dock()) {
+      if (!fromPanel) {
+        if (on) { before = window.hbPanel.state().open; window.hbPanel.show("annotations"); }
+        else if (before) window.hbPanel.show("page");
+        else window.hbPanel.close();
+      }
+    } else {
+      if (panel.parentNode !== document.body) document.body.appendChild(panel);
+      panel.hidden = !on;
+    }
     bubble.hidden = true;
     if (on) {
       load(byKey);
@@ -255,6 +286,7 @@
       .catch(function () { return { threads: [] }; })
       .then(function (d) {
         state.threads = d.threads || [];
+        label();
         paint();
         if (!state.on) return;
         render();

@@ -9,25 +9,23 @@
   cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
 .hb-ann-toggle:hover { border-color: var(--violet); color: var(--violet); }
 body.hb-ann-on .hb-ann-toggle { display: none; }  /* the panel's own Close takes over */
+body:is(.hb-panel-drawer, .hb-side-open) .hb-ann-toggle { display: none; }  /* a drawer is over the page */
 
-/* The panel. On a narrow screen, a sheet along the bottom that the page scrolls clear of; on
-   a wide one, the page rail's slot beside the reading column (lib.css) — the column narrows
-   to the measure, so the panel sits against the prose it is about. */
+/* The panel: the Annotations tab of the shell's page panel when there is one (docked, below);
+   otherwise a sheet along the bottom of the window that the page scrolls clear of. */
 .hb-ann-panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; max-height: 55vh; display: flex;
   flex-direction: column; background: var(--surface-1); border-top: 1px solid var(--grid); border-radius: 14px 14px 0 0;
   box-shadow: 0 -8px 28px rgba(0,0,0,0.14); font: 13px/1.45 system-ui, -apple-system, sans-serif; color: var(--ink-1); }
 .hb-ann-panel[hidden] { display: none; }
 .hb-ann-in { overflow: auto; overscroll-behavior: contain; padding: 14px 16px 24px; }
-body.hb-ann-on { padding-bottom: 58vh; }
-@media (min-width: 900px) and (max-width: 1239px) { body.hb-ann-on:not(.hb-no-side) .hb-ann-panel { left: var(--side-w); } }
-@media (min-width: 1240px) {
-  body.hb.hb-has-rail.hb-ann-on { --wide: var(--measure); --rail-w: 360px; padding-bottom: 96px; }
-  .hb-stage > .hb-ann-panel { position: absolute; top: 0; bottom: 0; left: calc(50% + min(var(--wide), 100%) / 2 + var(--gutter));
-    right: auto; width: var(--rail-w); max-height: none; background: none; border: 0; border-radius: 0;
-    box-shadow: none; z-index: 1; }
-  .hb-stage > .hb-ann-panel > .hb-ann-in { position: sticky; top: 16px; max-height: calc(100vh - 32px); box-sizing: border-box;
-    background: var(--surface-1); border: 1px solid var(--grid); border-radius: 12px; box-shadow: var(--shadow); }
-}
+body.hb-ann-on:not(.hb-ann-docked) { padding-bottom: 58vh; }
+/* docked: the Annotations tab of the page panel (lib.js), filling it; its list scrolls, the head stays */
+.hb-ann-pane.hb-panel-pane { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.hb-ann-pane.hb-panel-pane[hidden] { display: none; }
+.hb-ann-pane .hb-ann-panel { position: static; flex: 1; min-height: 0; max-height: none; background: none; border: 0;
+  border-radius: 0; box-shadow: none; z-index: auto; }
+.hb-ann-pane .hb-ann-in { flex: 1; padding: 14px 14px 48px; }
+.hb-ann-toggle { right: calc(var(--hb-r, 0px) + 16px); }
 .hb-ann-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .hb-ann-head { display: flex; align-items: center; gap: 8px; justify-content: space-between;
