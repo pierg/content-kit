@@ -36,6 +36,8 @@ And a library an agent can organise without guessing and without breaking it: wh
 
 18. **The content's type is sized in `rem`** — tables, code, captions, chips, the widget primitives — so it follows the reader's type size; at the default size nothing moves. A page's own widget CSS sized in `px` stays as it is; size it in `rem` or `em` to follow.
 
+19. **The server stays on this machine unless told otherwise.** Its annotation endpoint writes into the repo without authentication, so `ckit serve` and `ckit up` refuse a host that is not a loopback address — from `--host` or kit.json `host` — unless `--expose` is passed; on this machine the server answers only a request that names it by a loopback name (a page that rebinds its own name to 127.0.0.1 is refused), and takes a write only as JSON from a page it served (another site open in the same browser cannot post one). A repo whose kit.json `host` is `0.0.0.0` serves with `ckit up --expose`.
+
 ### Added
 
 - **The library rail** — by topic when pages declare one, by genre otherwise, folding and remembered; at its foot the reader's settings: theme (auto · light · dark), reading face (serif · sans), type size (small · normal · large) and measure (narrow · normal · wide).

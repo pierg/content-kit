@@ -24,6 +24,14 @@ One write endpoint exists, for the annotation layer:
 Reads of a sidecar are plain static GETs of `<page>.annotations.json`; the review page
 (/shell/review.html) reads the generated content/threads.json.
 
+Safety. The write endpoint has no authentication: whoever can reach the port can write
+annotation sidecars into the repo (nothing else — the endpoint writes sidecars only). So the
+server listens on 127.0.0.1, and a host that is not this machine (`--host`, kit.json `host`) is
+refused unless `--expose` says so. On this machine it answers only a request addressed to it
+by a loopback name, so a web page that rebinds its own name to 127.0.0.1 is refused, and it
+takes a write only as JSON from a page it served, so another site open in the same browser
+cannot post one.
+
 An address kit.json `moved` names, where no file answers, is a 301 to where the page lives now
 (`ckit mv`, `ckit rm --to`).
 
@@ -39,6 +47,7 @@ from __future__ import annotations
 import argparse
 import email.utils
 import html as html_mod
+import ipaddress
 import json
 import mimetypes
 import re
@@ -291,7 +300,28 @@ def _dir_listing(repo: Repo, directory: Path) -> bytes | None:
     ).encode("utf-8")
 
 
-def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
+def is_loopback(host: str) -> bool:
+    """A name or address only this machine answers to: localhost, 127.0.0.0/8, ::1."""
+    h = host.strip().strip("[]").lower()
+    if h == "localhost" or h.endswith(".localhost"):
+        return True
+    try:
+        return ipaddress.ip_address(h).is_loopback
+    except ValueError:
+        return False
+
+
+def _host_part(header: str) -> str:
+    """The host of a Host header or an origin's authority: "[::1]:5180" → "::1", "a:1" → "a"."""
+    h = header.strip()
+    if h.startswith("["):
+        return h[1:h.find("]")] if "]" in h else h
+    return h.rsplit(":", 1)[0] if h.count(":") == 1 else h
+
+
+def make_handler(repo: Repo, index: "pagefind.Index | None" = None, *, exposed: bool = False):
+    """`exposed`: the server listens beyond this machine (`--expose`), so a request may name it by
+    any host; otherwise only by a loopback one."""
     shell = repo.shell.resolve()
     root = repo.root.resolve()
     index = index or pagefind.Index(None)
@@ -340,16 +370,38 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
         def _json(self, status: int, obj: object, body: bool = True) -> None:
             self._send(status, json.dumps(obj).encode("utf-8"), "application/json; charset=utf-8", body)
 
+        def _addressed_here(self) -> bool:
+            """Listening only on this machine, answer only a request that names it by a loopback name:
+            a page elsewhere that rebinds its own name to 127.0.0.1 names itself, and is refused."""
+            host = self.headers.get("Host")  # a browser always sends one; a bare HTTP/1.0 client may not
+            if exposed or host is None or is_loopback(_host_part(host)):
+                return True
+            self.send_error(403, "this server answers requests to 127.0.0.1 or localhost only")
+            return False
+
         def do_HEAD(self) -> None:  # noqa: N802
-            self._serve(body=False)
+            if self._addressed_here():
+                self._serve(body=False)
 
         def do_GET(self) -> None:  # noqa: N802
-            self._serve(body=True)
+            if self._addressed_here():
+                self._serve(body=True)
 
         def do_POST(self) -> None:  # noqa: N802
+            if not self._addressed_here():
+                return
             path = unquote(urlparse(self.path).path)
             if path != "/__annotations":
                 self.send_error(404, "Not found")
+                return
+            # a write comes as JSON — which a page on another site can only send after a preflight
+            # this server never answers — and, when the browser names its origin, from a page served here
+            if (self.headers.get("Content-Type") or "").split(";")[0].strip().lower() != "application/json":
+                self._json(415, {"ok": False, "error": "an annotation write is JSON (Content-Type: application/json)"})
+                return
+            origin = self.headers.get("Origin")
+            if origin is not None and urlparse(origin).netloc.lower() != (self.headers.get("Host") or "").lower():
+                self._json(403, {"ok": False, "error": f"a write from {origin} — this server takes one only from its own pages"})
                 return
             n = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(n) if n else b""
@@ -463,19 +515,31 @@ def make_handler(repo: Repo, index: "pagefind.Index | None" = None):
     return Handler
 
 
+def refuse_host(host: str, expose: bool, where: str) -> None:
+    """A host beyond this machine exposes the unauthenticated write endpoint: only on purpose."""
+    if not expose and not is_loopback(host):
+        raise SystemExit(
+            f"{where} is {host!r}, which is not this machine. The annotation endpoint writes into the repo "
+            "without authentication, so anyone who can reach that address could write notes. Pass --expose "
+            "to serve it there anyway, or use 127.0.0.1.")
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="ckit serve", description="Serve a repo's reader pages.")
     ap.add_argument("--root", help="the repo to serve (default: found from the working directory)")
     ap.add_argument("--host")
     ap.add_argument("--port", type=int)
+    ap.add_argument("--expose", action="store_true",
+                    help="allow a host that is not this machine: anyone who reaches it can write annotations")
     args = ap.parse_args(argv)
     repo = load_repo(args.root)
     if not (repo.shell / "lib.css").is_file():
         raise SystemExit(f"no vendored shell at {repo.rel(repo.shell)} — run `ckit init` here first")
     host = args.host or repo.cfg["host"]
+    refuse_host(host, args.expose, "--host" if args.host else "kit.json host")
     port = args.port or int(repo.cfg["port"])
     index = pagefind.Index(pagefind.command())
-    httpd = ThreadingHTTPServer((host, port), make_handler(repo, index))
+    httpd = ThreadingHTTPServer((host, port), make_handler(repo, index, exposed=args.expose))
     print(f"{repo.cfg.get('name', 'library')} at http://{host}:{port}/  (root={repo.root})", flush=True)
     if index.cmd:  # full text, when pagefind is installed: built beside the server, never committed
         threading.Thread(target=index.build, args=(repo,), daemon=True).start()

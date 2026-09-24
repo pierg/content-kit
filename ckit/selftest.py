@@ -119,6 +119,18 @@ def _get(port: int, path: str, headers: dict | None = None) -> tuple[int, dict, 
         conn.close()
 
 
+def _http(port: int, method: str, path: str, headers: dict | None = None, body: bytes | None = None) -> int:
+    """One request with its own method, headers and body — the status it gets."""
+    conn = HTTPConnection("127.0.0.1", port, timeout=5)
+    try:
+        conn.request(method, path, body=body, headers=headers or {})
+        resp = conn.getresponse()
+        resp.read()
+        return resp.status
+    finally:
+        conn.close()
+
+
 # What every page loads before its own content: the shell's stylesheet and script, gzipped, and the
 # two reading faces. A budget nothing checks gets spent; this one is checked on the kit's own shell.
 SHELL_BUDGET = 32 * 1024
@@ -1576,6 +1588,64 @@ def main(argv: list[str]) -> int:
             failures.append("a shell over its size budget must be reported")
         shutil.rmtree(heavy, ignore_errors=True)
         planted += 2
+
+        # --- the unauthenticated write endpoint stays on this machine: a host beyond it is refused
+        #     without --expose (from the command line or kit.json); a request that names the server
+        #     by another name (a page rebinding its own) is refused; a write must be JSON, and not
+        #     from a page another origin served
+        stmp, srepo = _scratch()
+        _write(srepo, "notes/s.html", _page("S"))
+        class Bound(Exception):
+            pass
+
+        def bind(*_a, **_k):  # were the refusal to fail, the server would bind here — and never return
+            raise Bound()
+
+        real_server, serve.ThreadingHTTPServer = serve.ThreadingHTTPServer, bind
+        try:
+            for argv, needle in ((["--host", "0.0.0.0"], "--host is '0.0.0.0'"), ([], "kit.json host is '192.168.0.9'")):
+                srepo.cfg["host"] = "192.168.0.9" if not argv else "127.0.0.1"
+                (srepo.root / "kit.json").write_text(json.dumps(srepo.cfg))
+                try:
+                    serve.main(["--root", str(srepo.root), *argv])
+                except SystemExit as exc:
+                    if needle not in str(exc) or "--expose" not in str(exc):
+                        failures.append(f"the refusal must name the host and --expose: {exc}")
+                except Bound:
+                    failures.append(f"serving on a host beyond this machine must be refused without --expose: {argv}")
+            try:
+                serve.main(["--root", str(srepo.root), "--expose"])
+                failures.append("--expose must let a host beyond this machine through to the bind")
+            except Bound:
+                pass
+        finally:
+            serve.ThreadingHTTPServer = real_server
+        if not all(serve.is_loopback(h) for h in ("127.0.0.1", "localhost", "::1", "[::1]")) \
+                or any(serve.is_loopback(h) for h in ("0.0.0.0", "::", "192.168.0.9", "example.org")):
+            failures.append("is_loopback must accept this machine's names and only those")
+        planted += 4
+        for exposed in (False, True):
+            httpd = ThreadingHTTPServer(("127.0.0.1", 0), serve.make_handler(srepo, exposed=exposed))
+            th = threading.Thread(target=httpd.serve_forever, daemon=True)
+            th.start()
+            try:
+                port = httpd.server_address[1]
+                here, js = f"127.0.0.1:{port}", {"Content-Type": "application/json"}
+                note = json.dumps({"op": "add", "page": "/content/notes/s.html", "author": "t", "body": "x"}).encode()
+                got = {"rebound": _http(port, "GET", "/", {"Host": f"evil.example:{port}"}),
+                       "local": _http(port, "GET", "/", {"Host": f"localhost:{port}"}),
+                       "text/plain": _http(port, "POST", "/__annotations", {"Content-Type": "text/plain"}, note),
+                       "foreign": _http(port, "POST", "/__annotations", {**js, "Origin": "http://evil.example"}, note),
+                       "own": _http(port, "POST", "/__annotations", {**js, "Origin": f"http://{here}"}, note)}
+            finally:
+                httpd.shutdown()
+                httpd.server_close()
+                th.join(timeout=2)
+            want = {"rebound": 200 if exposed else 403, "local": 200, "text/plain": 415, "foreign": 403, "own": 200}
+            if got != want:
+                failures.append(f"the server must refuse what reaches it from elsewhere (exposed={exposed}): {got} vs {want}")
+            planted += 1
+        shutil.rmtree(stmp, ignore_errors=True)
 
         # --- the annotation layer changes no text in <main> and names what it adds hb-ann-*: the kit's
         #     own layer holds, and a planted one that wraps a passage in <mark class="note"> does not

@@ -20,7 +20,7 @@ USAGE = f"""ckit {__version__} — serve, lint, navigate, scaffold and annotate 
   ckit mv <page> <to>                move a page: links rewritten, sidecar and dates kept, redirected
   ckit rm <page> --to <page>         retire a page into another, its links and address with it
   ckit unwrap [paths] [--status]     join hard-wrapped prose; --status drops a stated LIVE (the default)
-  ckit serve [--host --port]         foreground server
+  ckit serve [--host --port --expose] foreground server, on 127.0.0.1 unless --expose
   ckit up | down | status            background server
   ckit export [--out dist] [--base /] the site as static files (--base /<repo>/ for a project site)
   ckit annotations <verb> …          list · show · add · reply · state · relabel · resolve · prune · check

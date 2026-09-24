@@ -31,6 +31,8 @@ td.mono, td code { overflow-wrap: anywhere; }
 
 <p>The button is there only because the engine is serving the page. On load, the shell asks the server a question (<code>/__annotations/ping</code>); the engine answers, and only then does the shell load the annotation layer. A static host answers "not found", so a published copy of the library never grows the button, and no reader of it can annotate by accident.</p>
 
+<p>Nothing authenticates a note: whoever can reach the server can write one into your repository. So the engine serves on this machine only. <code>ckit serve --host</code> with any address but a loopback one is refused unless you add <code>--expose</code>, and even on this machine the server answers only a request that names it as <code>127.0.0.1</code> or <code>localhost</code>, and takes a note only from a page it served itself.</p>
+
 <details class="check">
 <summary>Check-yourself: why can't a reader of the exported, published site leave a note?</summary>
 <div class="ans">There is no engine behind it to write the note down. The ping gets a "not found", so the shell never loads the annotation layer and the button never appears.</div>

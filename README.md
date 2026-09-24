@@ -85,7 +85,7 @@ Python ≥ 3.10, no dependencies; node for book verification. No `uv`? `git clon
 | `ckit topics` · `tags` | the topics (label · hub · pages) and tags; `add` · `rename` · `merge` · `assign` reorganise them |
 | `ckit mv` · `rm --to` | move or retire a page: links rewritten, sidecar and dates carried, the old address redirected |
 | `ckit unwrap [paths]` | join hard-wrapped prose — one paragraph per line |
-| `ckit serve` · `up` · `down` · `status` | the reader, on the repo's port |
+| `ckit serve` · `up` · `down` · `status` | the reader, on the repo's port — on this machine only, since anyone who reaches it can write notes (`--expose` to serve beyond it) |
 | `ckit export [--base /repo/]` | the site as static files, for any static host |
 | `ckit annotations …` | the session-free review loop: list · show · add · reply · state · relabel · resolve · prune · check |
 | `ckit genres` · `where` · `selftest` · `version` | the genre table · the kit source · the engine's own gate |

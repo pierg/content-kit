@@ -130,6 +130,13 @@ json_set "$REPO/kit.json" 'c["ckit"] = "0.0.0"'
 json_set "$REPO/kit.json" "c['ckit'] = '$(ckit version)'"
 echo "pin ok"
 
+echo "--- the server stays on this machine unless told otherwise ---"
+OUT="$(cd "$REPO" && ckit serve --host 0.0.0.0 2>&1)" && fail "serving on 0.0.0.0 without --expose was not refused"
+echo "$OUT" | grep -q -- "--expose" || fail "the refusal must name --expose"
+OUT="$(cd "$REPO" && ckit up --host 0.0.0.0 2>&1)" && fail "ckit up on 0.0.0.0 without --expose was not refused"
+echo "$OUT" | grep -q -- "--expose" || fail "ckit up must refuse before it starts a server, naming --expose"
+echo "host ok"
+
 echo "--- serve, and the annotation round-trip ---"
 ( cd "$REPO" && make docs >/dev/null )
 sleep 0.7
