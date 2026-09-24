@@ -1,7 +1,7 @@
 [
   {
     "title": "Install a library — Running a library",
-    "sub": "Status: LIVE — you leave with the engine on your machine, a repository with the kit in it, a gate that passes, and its pages open in your browser.",
+    "sub": "You leave with the engine on your machine, a repository with the kit in it, a gate that passes, and its pages open in your browser.",
     "defn": "PIN — definition of record A library's pin is two records of what it was checked against: the engine version in kit.json (the \"ckit\" key), which ckit check compares with the engine running it, and a hash of the vendored kit/ in kit/PIN, which make kit-verify recomputes. Either mismatch fails; neither changes except on purpose.",
     "headings": [
       "§1 · The engine",
@@ -21,13 +21,13 @@
   },
   {
     "title": "Genres and voice — Running a library",
-    "sub": "Status: LIVE — you leave able to decide what a page is, scaffold it, write it so it reads like the rest of its kind, and say in its first line whether it is still true.",
+    "sub": "You leave able to decide what a page is, scaffold it, write it so it reads like the rest of its kind, and say in its first line whether it is still true.",
     "defn": "",
     "headings": [
       "§1 · Decide what the page is",
       "§2 · ckit new and the voice card",
       "§3 · Write in the voice",
-      "§4 · Status in the first line",
+      "§4 · Status, when a page is not current",
       "§5 · Promotion, and defining once"
     ],
     "tags": [
@@ -42,7 +42,7 @@
   },
   {
     "title": "The gate — Running a library",
-    "sub": "Status: LIVE — you leave knowing what ckit check runs, in what order, what each failure looks like, and why it never fixes anything for you.",
+    "sub": "You leave knowing what ckit check runs, in what order, what each failure looks like, and why it never fixes anything for you.",
     "defn": "",
     "headings": [
       "§1 · Six stages, in order",
@@ -64,7 +64,7 @@
   },
   {
     "title": "The review loop — Running a library",
-    "sub": "Status: LIVE — you leave able to leave notes on a rendered page, find them from any agent session later, close each one with a reply the reader can check, and read what an agent flagged as written beyond its source without opening a termina",
+    "sub": "You leave able to leave notes on a rendered page, find them from any agent session later, close each one with a reply the reader can check, and read what an agent flagged as written beyond its source without opening a terminal.",
     "defn": "",
     "headings": [
       "§1 · Annotate in the browser",
@@ -87,7 +87,7 @@
   },
   {
     "title": "Extending the kit — Running a library",
-    "sub": "Status: LIVE — you leave able to add a genre, a check, a generated file, a chronicle extractor or a shell page through kit.json; to read how a layer installs itself; to move a 0.3 library across; and to publish a library under a path.",
+    "sub": "You leave able to add a genre, a check, a generated file, a chronicle extractor or a shell page through kit.json; to read how a layer installs itself; to move a 0.3 library across; and to publish a library under a path.",
     "defn": "",
     "headings": [
       "§1 · Ten keys",
@@ -116,13 +116,12 @@
   },
   {
     "title": "Running a library",
-    "sub": "Status: LIVE — five chapters that take a repository from nothing to a gated, reviewable library of pages, for whoever sets one up and keeps it in order, human or agent.",
+    "sub": "Five chapters that take a repository from nothing to a gated, reviewable library of pages, for whoever sets one up and keeps it in order, human or agent.",
     "defn": "",
     "headings": [
       "The chapters",
       "How to read it",
-      "What you need",
-      "Cited by"
+      "What you need"
     ],
     "tags": [
       "guide",
@@ -137,7 +136,7 @@
   },
   {
     "title": "Annotation",
-    "sub": "Status: LIVE — definition of record. A reader's note on a rendered page, kept in a file beside it, so that review needs no session to be open on either side.",
+    "sub": "Definition of record. A reader's note on a rendered page, kept in a file beside it, so that review needs no session to be open on either side.",
     "defn": "ANNOTATION — definition of record An annotation is a thread attached to a rendered page, either to a quoted passage or to the page as a whole. It is stored in a committed sidecar file beside the page, anchored by the quoted text and a little of its surrounding context rather than by the page's markup. It is one of two kinds: a question, which a reader opens and which waits until whoever acts on th",
     "headings": [
       "Why it matters",
@@ -156,7 +155,7 @@
   },
   {
     "title": "Chronicle",
-    "sub": "Status: LIVE — definition of record. The timeline of a repository, generated from its record, so that nobody writes history twice.",
+    "sub": "Definition of record. The timeline of a repository, generated from its record, so that nobody writes history twice.",
     "defn": "CHRONICLE — definition of record The chronicle is a timeline generated from the record. Every heading in a record file that opens with a date becomes an event; a bracketed tag after the date names the event's kind, and an untagged heading is a plain entry. Extractors a repository registers may add events, kinds and a set of cards. The result is written to content/chronicle.json by ckit lint, compa",
     "headings": [
       "Why it matters",
@@ -175,7 +174,7 @@
   },
   {
     "title": "Extension point",
-    "sub": "Status: LIVE — definition of record. A declared place where a repository adds to the engine without changing it, and why each one is checked.",
+    "sub": "Definition of record. A declared place where a repository adds to the engine without changing it, and why each one is checked.",
     "defn": "EXTENSION POINT — definition of record An extension point is one of the ten keys in kit.json through which a repository, or a layer installed into it, adds to what the engine does without changing the engine: genres, checks, generators, chronicle.extractors, shell_pages, links, refs, theme, classes and indices. The gate validates every declaration, and one that is malformed, points at nothing, or ",
     "headings": [
       "Why it matters",
@@ -194,7 +193,7 @@
   },
   {
     "title": "Gate",
-    "sub": "Status: LIVE — definition of record. The one command that decides whether a library may land, and why it reports instead of repairing.",
+    "sub": "Definition of record. The one command that decides whether a library may land, and why it reports instead of repairing.",
     "defn": "GATE — definition of record The gate is the command ckit check, run before anything lands. It fails when the engine version the repository pins differs from the engine running, when the shell is missing, when a kit.json declaration does not hold, when a generated index differs from what the content would generate, when a page breaks its form or its genre's checks, when an open annotation has lost ",
     "headings": [
       "Why it matters",
@@ -213,7 +212,7 @@
   },
   {
     "title": "Genre",
-    "sub": "Status: LIVE — definition of record. The kind of page a page is: where it lives decides how it is built, how it reads, and what the gate checks on it.",
+    "sub": "Definition of record. The kind of page a page is: where it lives decides how it is built, how it reads, and what the gate checks on it.",
     "defn": "GENRE — definition of record A genre is the kind of page a page is, decided by where the page lives in the content tree. It carries a structure (a directory, a layout and a skeleton to start from), a voice (a register, an assumed reader and the moves that are forbidden) and the checks the gate runs on every page of that kind. A page that lives under no genre is an error, not a default.",
     "headings": [
       "Why it matters",
@@ -232,7 +231,7 @@
   },
   {
     "title": "Record",
-    "sub": "Status: LIVE — definition of record. The markdown files that say how the work got where it is, kept apart from the pages that say where it is now.",
+    "sub": "Definition of record. The markdown files that say how the work got where it is, kept apart from the pages that say where it is now.",
     "defn": "RECORD — definition of record The record is the set of markdown files a repository declares in kit.json under record (a field log, a decision log, a changelog): files that grow by appending and say how the work got where it is. The shell renders each one read-only at /shell/record.html?p=<path> and lists it in the sidebar. Pages under the content directory say where the work stands, and link into ",
     "headings": [
       "Why it matters",
@@ -251,8 +250,8 @@
   },
   {
     "title": "Skeleton",
-    "sub": "Status: LIVE — definition of record. The file a page of a genre starts from, so that it starts inside the contract.",
-    "defn": "SKELETON — definition of record A skeleton is the starting file of a genre: an HTML page that already links the shell, carries a status line, holds the genre's parts in their order, and says in placeholder prose what goes in each. ckit new <genre> <slug> copies it to the path the genre names, and the author replaces every placeholder.",
+    "sub": "Definition of record. The file a page of a genre starts from, so that it starts inside the contract.",
+    "defn": "SKELETON — definition of record A skeleton is the starting file of a genre: an HTML page that already links the shell, opens with a one-line lede, holds the genre's parts in their order, and says in placeholder prose what goes in each. ckit new <genre> <slug> copies it to the path the genre names, and the author replaces every placeholder.",
     "headings": [
       "Why it matters",
       "Worked example",
@@ -269,7 +268,7 @@
   },
   {
     "title": "Why hand-authored HTML",
-    "sub": "Status: LIVE — why content-kit pages are written as HTML by whoever writes them, served exactly as written, with no markdown source and no build, and what that costs.",
+    "sub": "Why content-kit pages are written as HTML by whoever writes them, served exactly as written, with no markdown source and no build, and what that costs.",
     "defn": "THE POSITION A page is one HTML file, written directly by its author (usually an agent) against one shared shell of styles and scripts, and served byte for byte as it was written. There is no source format behind it, no generator in front of it, and so no second version of it anywhere.",
     "headings": [
       "No build step",
@@ -278,8 +277,7 @@
       "The shell is the style contract",
       "Quote-anchored review needs stable rendered text",
       "What it costs",
-      "Where this would be the wrong choice",
-      "Cited by"
+      "Where this would be the wrong choice"
     ],
     "tags": [
       "html",
@@ -293,13 +291,12 @@
   },
   {
     "title": "content-kit",
-    "sub": "Status: LIVE — a page contract for agent-written knowledge: where a page goes, how it reads, what checks it, and how a person reviews it in the browser. Start here.",
+    "sub": "A page contract for agent-written knowledge: where a page goes, how it reads, what checks it, and how a person reviews it in the browser. Start here.",
     "defn": "",
     "headings": [
       "Current take",
       "Map",
       "Open questions",
-      "Cited by",
       "Learn it",
       "The vocabulary",
       "The reasoning",
@@ -315,7 +312,7 @@
   },
   {
     "title": "The design law",
-    "sub": "Status: LIVE — a layer without a mechanical check is a suggestion; every check ships with a fixture designed to break it.",
+    "sub": "A layer without a mechanical check is a suggestion; every check ships with a fixture designed to break it.",
     "defn": "",
     "headings": [],
     "tags": [
@@ -329,7 +326,7 @@
   },
   {
     "title": "The placement rule",
-    "sub": "Status: LIVE — mechanisms below, conventions above: if it makes sense in a code repository's docs, it belongs in content-kit; if it only makes sense in a lab or a personal library, it belongs in a layer.",
+    "sub": "Mechanisms below, conventions above: if it makes sense in a code repository's docs, it belongs in content-kit; if it only makes sense in a lab or a personal library, it belongs in a layer.",
     "defn": "",
     "headings": [],
     "tags": [
@@ -344,7 +341,7 @@
   },
   {
     "title": "Twins drift",
-    "sub": "Status: LIVE — a document kept in two formats is two documents, and they drift apart.",
+    "sub": "A document kept in two formats is two documents, and they drift apart.",
     "defn": "",
     "headings": [],
     "tags": [
@@ -358,12 +355,11 @@
   },
   {
     "title": "Prior art",
-    "sub": "Status: LIVE — what others have built or proposed for agent-maintained knowledge, documentation structure, prose checking, publishing notes, and annotating the web, each on its own terms, with our reading kept separate.",
+    "sub": "What others have built or proposed for agent-maintained knowledge, documentation structure, prose checking, publishing notes, and annotating the web, each on its own terms, with our reading kept separate.",
     "defn": "",
     "headings": [
       "The works",
-      "Our reading",
-      "Cited by"
+      "Our reading"
     ],
     "tags": [
       "related-work",

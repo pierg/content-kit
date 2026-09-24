@@ -69,7 +69,7 @@
       ],
       "created": "2026-09-22",
       "updated": "2026-09-24",
-      "sha": "3a4d924074c8"
+      "sha": "3bd39f4205e6"
     }
   ],
   "projects": [],
@@ -85,7 +85,7 @@
       ],
       "created": "2026-09-22",
       "updated": "2026-09-24",
-      "sha": "917689e86bd5"
+      "sha": "c8fa8e74c612"
     }
   ],
   "related": [
@@ -102,8 +102,8 @@
         "web-annotation"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "f77788753ff9"
+      "updated": "2026-09-24",
+      "sha": "9a8bc2eaba67"
     }
   ],
   "entries": [
@@ -119,8 +119,8 @@
         "design-decision"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "f0d1823255a0"
+      "updated": "2026-09-24",
+      "sha": "539e03f0da11"
     }
   ],
   "notes": [
@@ -181,7 +181,7 @@
       ],
       "created": "2026-09-22",
       "updated": "2026-09-24",
-      "sha": "63335ad8afea"
+      "sha": "79549c5f110e"
     },
     {
       "slug": "chronicle",
@@ -194,8 +194,8 @@
         "generated-index"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "5ed46249f69a"
+      "updated": "2026-09-24",
+      "sha": "0f276914c9cc"
     },
     {
       "slug": "extension-point",
@@ -208,8 +208,8 @@
         "plugin"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "e2b44d9e8881"
+      "updated": "2026-09-24",
+      "sha": "02bcbcd2b8aa"
     },
     {
       "slug": "gate",
@@ -222,8 +222,8 @@
         "ci"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-22",
-      "sha": "eb849d855296"
+      "updated": "2026-09-24",
+      "sha": "420b48685cf5"
     },
     {
       "slug": "genre",
@@ -236,8 +236,8 @@
         "taxonomy"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-22",
-      "sha": "54dbde370f8b"
+      "updated": "2026-09-24",
+      "sha": "0f7df2e6e0d4"
     },
     {
       "slug": "record",
@@ -250,8 +250,8 @@
         "markdown"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-22",
-      "sha": "32ac1e4bc5af"
+      "updated": "2026-09-24",
+      "sha": "bf6e36aff595"
     },
     {
       "slug": "skeleton",
@@ -263,8 +263,8 @@
         "ckit-new"
       ],
       "created": "2026-09-22",
-      "updated": "2026-09-23",
-      "sha": "7b2c09122c19"
+      "updated": "2026-09-24",
+      "sha": "951cdd78c457"
     }
   ],
   "record": []
