@@ -2,13 +2,17 @@
 
 Every release names what it breaks and how to move across. A repo pins the engine version it was checked against (`"ckit"` in `kit.json`), so an upgrade is always a deliberate act per repo.
 
-## 0.5.0.dev1 — unreleased
+## 0.5.0 — 2026-09-24
 
-0.5.0.dev0 was this work's prototype, on a branch. The version moved so that a repo pinned to the prototype fails the pin loudly (re-pin with `ckit init .`) instead of meeting the new checks unannounced.
+A shell for reading and finding, a library an agent can reorganise without breaking it, and a review loop that runs both ways from the browser.
 
-A shell for reading and for finding: the library organised by topic, a reading measure, a palette, peeks, a page rail and a generated home page — and the catalog grows what a knowledge base needs (topics by name, tags, dates). Every class and token of 0.4 is kept, the chrome still lives outside `<main>` (wherever `<main>` sits), and the script APIs keep their 0.4 timing — tabs, popovers, backlink lists and `libBook()` set up by a page's own `DOMContentLoaded` handler are wired, and a failure in the chrome cannot take them down.
+**Reading.** The library is organised by topic. The page rail shows a page's outline, its status, when it was created and updated, and the pages it links to and from; the reader sets the theme, the reading face, the type size and the measure. A palette, link peeks and a generated home page help find a page; the catalog carries topics, tags and dates. Every class and token of 0.4 is kept, the chrome still lives outside `<main>`, and the script APIs keep their 0.4 timing.
 
-And a library an agent can organise without guessing and without breaking it: what a topic, a tag and a move are is declared and checked, not inferred from how existing pages look; `ckit topics`, `ckit tags`, `ckit mv` and `ckit rm` reorganise with every link, annotation and date intact; `/curate` is the procedure; and the pages an agent learns from are held to the same rules as the ones it writes (the lint now checks links, prose and tags — the rules existing pages had drifted from).
+**Organising.** What a topic, a tag and a move are is declared and checked, not inferred from how pages look. `ckit topics`, `ckit tags`, `ckit mv` and `ckit rm` reorganise a library with every link, annotation and date intact, and `/curate` is the procedure. The lint now checks links, prose and tags.
+
+**Reviewing.** A served page marks the passages its annotations quote, and the panel sits beside the text. An agent flags what it wrote beyond its source; the reader keeps a flag or asks for a change, and **Review** lists every thread in the library. A page states its status only when it is not current.
+
+0.5.0.dev0 and 0.5.0.dev1 were this release's previews. A repo pinned to either moves across as below.
 
 ### Changes a repo sees
 
@@ -43,17 +47,18 @@ And a library an agent can organise without guessing and without breaking it: wh
 - **The library rail** — by topic when pages declare one, by genre otherwise, folding and remembered; at its foot the reader's settings: theme (auto · light · dark), reading face (serif · sans), type size (small · normal · large) and measure (narrow · normal · wide).
 - **The page rail** — outline with scroll-spy, the page's kind, topic, status, created and updated dates, reading time and tags, *Linked from* (automatic backlinks) and *Links to*; under the top bar's Contents menu where the rail is hidden.
 - **The palette** — ⌘K / Ctrl-K / `/`: pages, topics, tags and the shell's pages; full text when Pagefind answers.
-- **Peeks** on internal links; the status pill on the opening line; a top bar with breadcrumbs or a book's chapters.
+- **Peeks** on internal links; a status pill on the opening line of a page that is not current; a top bar with breadcrumbs or a book's chapters.
 - **Browse** (`/shell/search.html`): multi-word matching, kind / topic / tag filters kept in the URL, newest first.
 - **Full text through Pagefind, optional** (`ckit/pagefind.py`): built in the background by `ckit serve` into a private temporary directory named for its process (rebuilt after `ckit lint`, the previous build kept for pages already open, removed when the server stops — `ckit down` included — and swept by the next server if it was killed) and written by `ckit export`; `/shell/pagefind.json` says whether it answers. Nothing committed, nothing required.
 - **Fonts**: Inter and Source Serif 4, variable, latin, weight axis (SIL OFL), vendored under `shell/vendor/fonts/`.
 - **View transitions and speculation-rules prefetch**, where browsers have them.
-- **A weight budget for the shell**, checked by the selftest: `lib.css` + `lib.js` ≤ 32 KiB gzipped (28.1 KiB now, from 11.8 KiB in 0.4), fonts ≤ 200 KiB (147 KiB).
+- **A weight budget for the shell**, checked by the selftest: `lib.css` + `lib.js` ≤ 32 KiB gzipped (30.7 KiB now, from 11.8 KiB in 0.4), fonts ≤ 200 KiB (147 KiB).
 - `data-hb-app` on the shell's own pages (full width, sans, no page rail).
 - **`ckit topics`**: each topic with its label, hub and page count, pages with no topic, topics no one declared; `add`, `rename` (its hub moves with it), `merge … --into` (the old slugs become tags; the gate names the hubs to fold), `assign` (how a topic is split). **`ckit tags`**: each tag and its pages, spellings that look alike; `rename`.
 - **`ckit mv <page> <to>`**: moves a page, or a folder page with everything in it, rewriting every link to it (and each of its own relative links that would no longer hold), carrying its annotation sidecar (re-addressed) and its created date (its updated date becomes the day of the move), and recording the old address in kit.json `moved`. **`ckit rm <page> --to <page>`** retires a page into another the same way; it deletes only what git can bring back, so it is refused outside a git work tree, for anything untracked, ignored or changed since the last commit, while any page it would retire has an open annotation thread, and for a `--to` inside the folder it retires. `ckit serve` answers a moved address with a 301; `ckit export` leaves a refresh there (never outside `--out`). A malformed `moved` address (a `.` or `..` segment, `//`, a scheme) fails the declarations; an old address a page lives at again, a chain that ends where no page lives, or a cycle is reported with the lint.
 - **`ckit new … --topic <slug> --tags a,b`** writes the page's metas (an undeclared topic or a malformed tag is refused before anything is written); a hub named for a declared topic takes it; a new page at an address kit.json `moved` redirects takes the address back.
 - **`ckit unwrap [paths]`**, the fixer for rule 7; **`--status`** also drops a stated LIVE (rule 14).
+- **`ckit serve --expose`** and **`ckit up --expose`**, to serve beyond this machine on purpose (rule 19).
 - **The generated home page, served, opens with the questions waiting** ("Waiting for you"), each linked to its thread on its page, and names how many passages agents flagged, with a link to the review page. The exported site omits them, and a repo whose kit.json names its own `home` does not get the generated page (`ckit annotations list` works everywhere).
 - **The review loop runs both ways from the browser.** The panel gains a reply composer and role-aware actions — Reply, Keep and Decline on a question; Keep and Ask for a change on a flag; Withdraw on a thread you authored; Reopen on a closed one — so the acting side no longer needs the command line; a flag renders collapsed under its label. `<page>#ann=<id>` opens the panel on that thread. **`/shell/review.html`** lists every thread in the library from `content/threads.json`, grouped by page or by label, filtered by state, each jumping to its passage, with a whole group kept at once. The rail and the palette show *Review* while the engine serves the library. `ckit annotations add --kind flag --label …` leaves a flag; **`relabel`** changes a thread's kind or label (a question made a flag rests as noted; a flag made a question opens); **`resolve`** moves every live thread a filter selects (`--page`, `--kind`, `--label`, `--by author-prefix`) to one state with one reply each; **`prune`** drops closed threads untouched for N days from committed sidecars (git history keeps them), never a live one. The server accepts `relabel` and `resolve` as ops.
 - **`/curate`**, a new skill vendored by `ckit init` beside `/present` and `/address`: topic or tag, opening, renaming, merging and splitting topics, keeping hubs current, reusing tags, promoting, moving and retiring pages, a health pass. `/present` gains two rules: flag what an agent writes beyond its source (a labelled flag per passage, resting as noted, and a question only where the owner's answer changes the page), and organising is `/curate`'s — never `git mv` a page. `/address` acts on open threads only, treats an owner's reply on a reopened flag as the instruction, and leaves noted flags to the owner.
@@ -66,12 +71,26 @@ And a library an agent can organise without guessing and without breaking it: wh
 ### Moving a repo from 0.4
 
 ```bash
-git -C ../content-kit pull                                  # main: the engine and the kit
-ckit init .                                                 # re-vendors kit/ (and links /curate), pins "ckit": "0.5.0.dev1"
-ckit unwrap && ckit lint                                    # one paragraph per line; regenerates the indices
-make check                                                  # then fix what it names — dead links, malformed tags
-git add kit kit.json content .claude && git commit          # the files that changed, reviewed first
+uv tool install --force git+https://github.com/pierg/content-kit@v0.5.0   # the engine (or: git pull in a checkout)
+ckit init .                                   # copies the new kit in, links /curate, pins "ckit": "0.5.0"
+ckit unwrap --status && ckit lint             # one paragraph per line, no stated LIVE; regenerates the indices
+make check                                    # then fix what it names: dead links, malformed tags
+git add kit kit.json content .claude && git commit   # the files that changed, reviewed first
 ```
+
+A repo with a layer runs `make kit-sync` in place of `ckit init .`, so each layer is copied again too. Then delete, from each page the lint names, the in-body backlinks list (`<ul data-backlinks>`) and its heading ("Used in" or "Cited by" in the 0.4 skeletons): the page rail shows it now. A repo whose kit.json `host` is not a loopback address serves with `ckit up --expose`.
+
+### Moving a repo from 0.5.0.dev0 or 0.5.0.dev1
+
+```bash
+uv tool install --force git+https://github.com/pierg/content-kit@v0.5.0   # the engine (or: git pull in a checkout)
+ckit init .                                   # or make kit-sync with a layer; pins "ckit": "0.5.0"
+ckit unwrap --status && ckit lint             # drops each stated LIVE; the catalog takes the new sha, dates kept
+make check
+git add kit kit.json content .claude && git commit
+```
+
+Then delete the in-body backlinks lists the lint names, as above.
 
 ## 0.4.0 — 2026-09-22
 
