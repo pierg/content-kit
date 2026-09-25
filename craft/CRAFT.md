@@ -1,6 +1,6 @@
 # Craft — how to lay a thing out in this shell
 
-The genre says what a page *is*; craft says how a block inside it is *built*. One playbook per kind of block, each written against the shell's own vocabulary (`shell/COMPONENTS.md`) — there is nothing to import and no new CSS to write. Read the matching playbook before writing the block, and read two when the block is two things (a comparison that contains a diagram).
+The genre says what a page *is*; craft says how a block inside it is *built*. One playbook per kind of block, and one for a page that lays itself out, each written against the shell's own vocabulary (`shell/COMPONENTS.md`) — there is nothing to import and no new CSS to write. Read the matching playbook before writing the block, and read two when the block is two things (a comparison that contains a diagram).
 
 Craft is guidance, not a gate: the lint checks that the vocabulary is the shell's, not that it was used well. A reviewer judges that.
 
@@ -12,6 +12,7 @@ Craft is guidance, not a gate: the lint checks that the vocabulary is the shell'
 | what happened when, or what happens in what order | [`timeline.md`](timeline.md) |
 | source, a patch, a listing walked through | [`code.md`](code.md) |
 | a rendered picture from a source outside the page | [`figure.md`](figure.md) |
+| a whole page laid out around what it shows, not a column | [`layout.md`](layout.md) |
 
 ## Rules that apply to every block
 

@@ -200,7 +200,7 @@ Two kinds of thread. A reader's **question** opens and waits; whoever acts on th
 
 ## Craft
 
-How to lay out a comparison, a diagram, a table, a timeline, a code listing or a figure in this vocabulary: `kit/craft/`. One playbook each; read the matching one before writing the block.
+How to lay out a comparison, a diagram, a table, a timeline, a code listing or a figure in this vocabulary, and a whole page that designs its own layout (`layout.md`): `kit/craft/`. One playbook each; read the matching one before writing the block.
 
 ## Promoting patterns
 

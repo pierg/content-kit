@@ -4,6 +4,19 @@ Where a page lives is its genre. A genre is a **structure** (the path, the skele
 
 Every rule below names what checks it. A rule nothing checks is a suggestion, and suggestions drift — this repo's own pages proved it. The machine spec is `genres.json` beside this file (the engine's copy is authoritative; this one is vendored for reading). A repo extends or overrides it under `genres` in `kit.json`, same shape, deep-merged per genre.
 
+**Every genre, every form.** A genre fixes a page's job, not its layout. Each genre below has a default shape, the reading layout its skeleton starts from: prose in a measure, with figures and tables wider. Any page may instead design its own layout (`<body class="hb" data-hb-canvas>`, `kit/craft/layout.md`) when a column would flatten what it shows. What stays binding in either form is what the library reads and what the voice requires:
+
+| Genre | The hooks a designed page keeps |
+|---|---|
+| every genre | an `<h1>`; a first `<p class="sub">` that says what the page is (and its status, when it is not current); `<meta name="topic">` and `tags` where the library uses them; its words written in the markup, not by a script |
+| concept | the `blockquote.defn`, the sentence other pages cite and the popover shows; its word bound |
+| chapter | its number in the book, and no link to a later chapter unless marked `data-fwd` |
+| note | one claim, its word bound, no `<h2>` sections |
+| hub | a link to every page on its topic, each with its reason; its word bound |
+| project | its dated status (`<meta name="status">`) |
+
+The register, the assumed reader and the forbidden moves of each genre hold in either form. So do the rules that cut across genres below: every number carries its source, nulls at equal prominence, codes are links. The default shape (a concept's opening figure then its `defn`, a chapter's check-yourself at each section's end, an entry's `<h2>` sections) is how the reading layout meets the job, and a designed page may meet it another way. *Checked: every check named below runs on either form. The design itself is judged by a reader, not by the gate.*
+
 **Every genre:** a page that is not current says so at the head of its first `<p class="sub">` — `<b>Status: DRAFT</b> —`, or HISTORICAL · PARKED · RETIRED · FROZEN — so a reader can tell in one line; a page that states nothing is LIVE, the default. *Checked: `status` (a stated word is one of these).*
 
 ## note — `content/notes/<slug>.html`

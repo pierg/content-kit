@@ -104,6 +104,18 @@ The vision says each content type has its own language and that assets are share
 
 The shape of the fix is a `paper` genre v2: the genre declares the `index.html` + `main.tex` pair (a declared pair like an entry's `source.json`, not a twin); `ckit check` gains the five checks; the asset conventions become kit skeletons; building the PDF stays out-of-band. The operator chose on 2026-09-11 to record this rather than build it now.
 
+## Form, revised — a genre fixes a page's job, not its layout (2026-09-24)
+
+The Form layer was built as "tokens, components, no per-page reinvention", and the genres' skeletons gave every page one layout: prose in a measure, figures a little wider. It held, and it drifted in a direction nothing checked. Agents reproduced the column even where the material was a system, a flow or a set of tiers, and a library written by them read as markdown set in HTML. The shell never forbade more (chapter-only widgets were always allowed), but the skeletons, the voice cards and a gate that checks prose made the column the path of least resistance.
+
+Settled: a page's genre and its form are independent. The genre fixes the page's job, the hooks the library reads (a concept's `defn`, a chapter's order, a hub's rows, a project's dated status, and on every page a title, a one-line statement, a topic and tags) and the voice rules that are not about layout. The form is the page's own: the reading layout by default, or a layout the page designs on the canvas (`data-hb-canvas`) when a column would flatten what it shows. Three conditions travel with the freedom, each for a reason the design law recognises:
+
+- **The words are in the markup; scripts only arrange and animate them.** The gate anchors annotations and search reads headings and definitions from the page file. Checked indirectly: an annotation on generated text goes stale, and the gate reports it.
+- **The column stays the default, and a design is chosen on purpose.** Checked by nothing, by design: `/present` asks the question and `craft/layout.md` answers it, and a reviewer judges the result.
+- **Consistency moves from the layout to the frame.** The shell's chrome and tokens are the same on every page. Checked: the token lint, and the shell itself.
+
+The shell changed to carry this. Three zones: the library and a page panel the reader can close, around a canvas that is a size container, so a designed page adapts to the room it has, not to the window. The reader's measure, type size and reading face were removed, because a page that sets its own widths makes them meaningless. What the design law still asks of this layer is answered in `GENRES.md` (the hooks, checked in either form) and left open for the design itself, which no gate can judge.
+
 ## What is not decided
 
 - Whether the annotation UI ships as part of the served page (a shell affordance, always available) or as a separate mode. Affects whether readers can annotate accidentally.
