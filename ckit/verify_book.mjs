@@ -55,36 +55,91 @@ const files = process.argv.length > 3
 let problems = 0;
 const say = (f, msg) => { problems++; console.error(`✗ ${f}: ${msg}`); };
 
+/* The stand-in DOM a chapter's inline scripts run against. It answers what a widget builds
+   with — elements (HTML and SVG), text nodes, fragments, classes, attributes, styles, events,
+   observers, timers — with inert stand-ins, so a script that works in a browser runs here too.
+   An element answers any method or property it does not know with another inert stand-in, so a
+   widget is never failed for reaching a corner of the DOM this file does not model. What still
+   fails: a syntax error, a name that is not defined, and an exception the page's own logic
+   throws. */
+function inert() {
+  const handler = {
+    get(target, key) {
+      if (key === Symbol.iterator) return function* () {};
+      if (key === Symbol.toPrimitive) return () => 0;
+      if (key === "length") return 0;
+      if (key === "then") return undefined;  // never mistaken for a promise
+      if (typeof key === "symbol") return undefined;
+      return inert();
+    },
+    apply() { return inert(); },
+    construct() { return inert(); },
+    set() { return true; }
+  };
+  return new Proxy(function () {}, handler);
+}
 function makeEl() {
   const el = {
-    innerHTML: "", textContent: "", value: "0", disabled: false,
-    dataset: new Proxy({}, { get: () => "0" }),
-    style: {}, classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } },
-    setAttribute() {}, getAttribute() { return ""; },
-    addEventListener() {}, appendChild() {}, insertBefore() {},
+    innerHTML: "", textContent: "", value: "0", disabled: false, hidden: false, checked: false,
+    dataset: new Proxy({}, { get: (o, k) => (k in o ? o[k] : "0") }),
+    style: { setProperty() {}, removeProperty() {}, getPropertyValue() { return ""; } },
+    classList: { toggle() {}, add() {}, remove() {}, contains() { return false; }, replace() {} },
+    children: [], childNodes: [],  // parentNode, firstChild, … answer with an inert stand-in
+    setAttribute() {}, getAttribute() { return ""; }, removeAttribute() {}, hasAttribute() { return false; },
+    addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; },
+    appendChild(c) { return c; }, insertBefore(c) { return c; }, removeChild(c) { return c; }, replaceChild(c) { return c; },
+    append() {}, prepend() {}, remove() {}, replaceChildren() {}, before() {}, after() {},
+    insertAdjacentElement(_, c) { return c; }, insertAdjacentHTML() {}, cloneNode() { return makeEl(); },
     querySelector() { return makeEl(); },
-    querySelectorAll() { const a = []; a.forEach = () => {}; return a; },
-    closest() { return null; }
+    querySelectorAll() { return []; },
+    getElementsByTagName() { return []; }, getElementsByClassName() { return []; },
+    closest() { return null; }, matches() { return false; }, contains() { return false; },
+    focus() {}, blur() {}, click() {}, scrollIntoView() {}, scrollTo() {},
+    getBoundingClientRect() { return { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 }; },
+    getBBox() { return { x: 0, y: 0, width: 0, height: 0 }; }, getTotalLength() { return 0; },
+    getPointAtLength() { return { x: 0, y: 0 }; },
+    offsetWidth: 0, offsetHeight: 0, clientWidth: 0, clientHeight: 0, scrollWidth: 0, scrollHeight: 0, scrollTop: 0
   };
-  return el;
+  return new Proxy(el, { get: (o, k) => (k in o || typeof k === "symbol" ? o[k] : inert()) });
 }
 function runScripts(file, html) {
   const scripts = [...html.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   scripts.forEach((src, i) => {
+    const Observer = function () { return { observe() {}, unobserve() {}, disconnect() {}, takeRecords() { return []; } }; };
+    const Event = function (type, init) { return { type, detail: init && init.detail, preventDefault() {}, stopPropagation() {} }; };
     const sandbox = {
-      window: globalThis, NANOLAB: globalThis.NANOLAB, ROTLAB: globalThis.ROTLAB,
-      RECORD: globalThis.RECORD, console,
+      NANOLAB: globalThis.NANOLAB, ROTLAB: globalThis.ROTLAB, RECORD: globalThis.RECORD, console,
       hbStepper: cfg => { cfg.render(0); return { go() {}, get: () => 0 }; },
       document: {
+        readyState: "loading",
         getElementById: () => makeEl(),
         querySelector: () => makeEl(),
-        querySelectorAll: () => { const a = []; a.forEach = () => {}; return a; },
+        querySelectorAll: () => [],
+        getElementsByTagName: () => [], getElementsByClassName: () => [],
         addEventListener: (ev, fn) => { if (ev === "DOMContentLoaded") fn(); },
+        removeEventListener() {}, dispatchEvent() { return true; },
         createElement: () => makeEl(),
-        body: makeEl()
-      }
+        createElementNS: () => makeEl(),
+        createTextNode: () => makeEl(),
+        createDocumentFragment: () => makeEl(),
+        createRange: () => makeEl(),
+        body: makeEl(), head: makeEl(), documentElement: makeEl(), activeElement: null
+      },
+      setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
+      requestAnimationFrame: () => 0, cancelAnimationFrame() {},
+      matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+      getComputedStyle: () => ({ getPropertyValue() { return ""; } }),
+      IntersectionObserver: Observer, ResizeObserver: Observer, MutationObserver: Observer,
+      CustomEvent: Event, Event, KeyboardEvent: Event,
+      addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; },
+      localStorage: { getItem() { return null; }, setItem() {}, removeItem() {} },
+      location: { href: "http://localhost/", pathname: "/", hash: "", search: "" },
+      navigator: { userAgent: "verify_book", platform: "" },
+      innerWidth: 1280, innerHeight: 800, scrollX: 0, scrollY: 0, scrollTo() {}, devicePixelRatio: 1,
+      performance: { now: () => 0 }
     };
-    sandbox.window.hbStepper = sandbox.hbStepper;
+    sandbox.window = sandbox;
+    sandbox.self = sandbox;
     try {
       vm.runInNewContext(src, sandbox, { filename: `${file}#script${i + 1}`, timeout: 30000 });
     } catch (e) {

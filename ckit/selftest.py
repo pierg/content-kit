@@ -696,6 +696,49 @@ def _organise_cases(failures: list[str]) -> int:
     return planted
 
 
+def _book_script_cases(failures: list[str]) -> int:
+    """A chapter's inline script runs against verify_book's stand-in DOM: a widget built the way
+    browsers allow (SVG through createElementNS, text nodes, observers, timers) passes; a name
+    that is not defined, or an exception the page's own logic throws, still fails the book."""
+    node = shutil.which("node")
+    if not node:
+        return 0
+    book = Path(tempfile.mkdtemp(prefix="ckit-selftest-book-"))
+    try:
+        (book / "index.html").write_text(_page("A book"))
+        widget = (
+            'var NS = "http://www.w3.org/2000/svg";\n'
+            'var svg = document.createElementNS(NS, "svg");\n'
+            'var g = document.createElementNS(NS, "g"); g.setAttribute("class", "needle");\n'
+            'g.appendChild(document.createTextNode("safe")); svg.appendChild(g);\n'
+            'document.getElementById("w").replaceChildren(svg);\n'
+            'var box = g.getBBox(); if (typeof box.width !== "number") throw new Error("no box");\n'
+            'document.getElementById("w").dataset.state = "ready";\n'
+            'new IntersectionObserver(function () {}).observe(svg);\n'
+            'setTimeout(function () {}, 10); requestAnimationFrame(function () {});\n'
+            'window.addEventListener("resize", function () {});\n'
+            'document.dispatchEvent(new CustomEvent("x", { detail: 1 }));\n'
+            'for (var c of svg.children) { c.remove(); }\n'
+            'svg.parentNode.removeChild(svg);\n')
+        cases = {
+            "01-widget.html": (widget, True),
+            "02-undefined.html": ("var n = notDefinedAnywhere + 1;", False),
+            "03-throws.html": ('var rows = []; if (rows.length === 0) throw new Error("the page\'s own bug");', False),
+        }
+        for name, (src, ok) in cases.items():
+            (book / name).write_text(_page(name, f'<div id="w"></div>\n<script>\n{src}</script>'))
+        for name, (src, ok) in cases.items():
+            r = subprocess.run([node, str(PACKAGE_DIR / "verify_book.mjs"), str(book), name],
+                               capture_output=True, text=True, env={**os.environ, "CKIT_ROOT": str(book)})
+            if ok and r.returncode != 0:
+                failures.append(f"verify_book must run a widget that builds SVG and uses observers and timers: {r.stderr.strip()}")
+            if not ok and (r.returncode == 0 or "inline script 1 failed" not in r.stderr):
+                failures.append(f"verify_book must still fail {name}: {r.stdout.strip()} {r.stderr.strip()}")
+    finally:
+        shutil.rmtree(book, ignore_errors=True)
+    return len(cases)
+
+
 def _expect(probs: list[str], rel: str, needle: str, failures: list[str]) -> None:
     if not any(rel in p and needle in p for p in probs):
         failures.append(f"planted {rel!r} — expected a problem containing {needle!r}; got: "
@@ -1580,6 +1623,7 @@ def main(argv: list[str]) -> int:
 
         # --- 0.5: links, prose, tags, one report per gate, and reorganising without breaking a link
         planted += _organise_cases(failures)
+        planted += _book_script_cases(failures)
 
         # --- the shell's weight is a budget: the kit's own shell holds it, and a planted shell that
         #     does not is reported by name

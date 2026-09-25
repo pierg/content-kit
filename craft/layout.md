@@ -44,6 +44,6 @@ Keep the page's words in the order a reader would read them without the layout. 
 - **Only the page's own classes.** Prefix them (`.ps-…`, `.fv-…`) and scope every rule under `.hb`.
 - **Nothing overflows.** Use `minmax(0, 1fr)` tracks and `min-width: 0` on grid and flex children.
 - **Motion is optional, never required.** Respect `prefers-reduced-motion`, and make sure the page reads fully with it off.
-- **Keep scripts small and local.** Keep a script beside the markup it drives, in the page, and let it only toggle classes and attributes. A book chapter's inline scripts run in the gate against a small stand-in DOM: build SVG as markup (`innerHTML`) rather than with `createElementNS`.
+- **Keep scripts small and local.** Keep a script beside the markup it drives, in the page, and let it only toggle classes and attributes. A book chapter's inline scripts run in the gate against a stand-in DOM. Ordinary DOM and SVG code runs there; an undefined name or an exception your own logic throws fails the book.
 - **Test controls from the keyboard.** A control is a `<button>`; a picked state is `aria-pressed`; a live readout is `aria-live="polite"`.
 - **The shell draws the chrome.** Don't add a page rail or a table of contents of your own: the page panel shows the outline from the page's headings, and Linked from and Links to.
