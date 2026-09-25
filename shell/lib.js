@@ -815,14 +815,13 @@
     var links = Object.create(null);
     toc.querySelectorAll("a[href^='#']").forEach(function (a) { links[a.getAttribute("href").slice(1)] = a; });
     var els = hs.map(function (h) { return document.getElementById(h.id); }).filter(Boolean);
-    var pinned = null, queued = false, last = null;
+    var pinned = null, last = null;
     function mark(id) {
       if (id === last) return;
       last = id;
       Object.keys(links).forEach(function (k) { links[k].classList.toggle("on", k === id); });
     }
     function update() {
-      queued = false;
       if (pinned) return mark(pinned);
       var line = window.innerHeight / 3, best = null, bestTop = -Infinity;
       els.forEach(function (el) {
@@ -838,7 +837,6 @@
       }
       mark(best ? best.id : null);
     }
-    function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
     toc.addEventListener("click", function (e) {
       var a = e.target.closest("a[href^='#']");
       if (!a) return;
@@ -848,8 +846,8 @@
     ["wheel", "touchmove", "keydown"].forEach(function (ev) {
       window.addEventListener(ev, function () { pinned = null; }, { passive: true });
     });
-    window.addEventListener("scroll", queue, { passive: true });
-    window.addEventListener("resize", queue);
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
     update();
   }
 
