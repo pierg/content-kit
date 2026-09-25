@@ -8,11 +8,9 @@
    its own names maps them in its theme (kit.json "theme", served as theme.css).
    Agents write content HTML; this file is the style contract for the whole repo.
 
-   Three zones: the library on the left and the page panel on the right, each one a reader
-   can close, and between them the canvas, which is the page's own. By default a page lays
-   its prose in a measure a reader can follow (~70 characters a line), with figures, tables
-   and code wider; a page marked data-hb-canvas lays itself out. The chrome is injected by
-   lib.js outside <main>, so the text a reader annotates is exactly the text the page carries.
+   Three zones: the library and the page panel, each one a reader can close, around the
+   canvas, the page's own. A page lays prose in a measure by default; data-hb-canvas lays
+   itself out. The chrome lives outside <main>: the text annotated is the text the page carries.
    ========================================================================== */
 
 /* The repo's own names for these hues and its own widget classes (kit.json "theme"),
@@ -317,18 +315,15 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
   border-top: 1px dashed var(--grid); margin-top: 10px; padding-top: 10px; color: var(--ink-2); font-size: 0.97em; }
 
 /* ======================================================================= chrome
-   All of it is injected by lib.js, outside <main>. Whether each side panel is open is on
-   <html> before the script mounts anything (lib.js applies the reader's choice first), so the
-   width each takes is reserved from the first paint and the page does not jump. --hb-l and
-   --hb-r are the two widths; the body's padding, the top bar and the panels all read them.
+   Injected by lib.js, outside <main>. Each panel's state is on <html> before mount, so its width
+   (--hb-l, --hb-r) is reserved from the first paint.
    ========================================================================== */
 
 /* the library: open on a wide screen unless the reader closed it */
 @media (min-width: 900px) {
   html:not([data-hb-side="closed"]) body.hb:not(.hb-no-side) { --hb-l: var(--side-w); }
 }
-/* the page panel, on every page but the shell's own app pages (marked data-hb-app, or found by
-   lib.js under /shell/) and the generated home page: open by default from 1240px, closed below */
+/* the page panel, on every page but app pages and the home page: open by default from 1240px */
 @media (min-width: 900px) {
   html[data-hb-panel="open"] body.hb:not([data-hb-app]):not(.hb-app):not(.hb-no-panel):not(:has(main.hb-home)) { --hb-r: var(--panel-w); }
 }
@@ -337,14 +332,10 @@ html[data-theme="dark"]:has(> body.hb) { background: #131312; }
 }
 body.hb.hb-panel-shown .hb-top .hb-norail { display: none; }
 
-/* the canvas: what is left between the panels, and a size container, so a page adapts to the
-   room it has (@container hb-canvas (max-width: …)) rather than to the window, which the panels
-   share with it */
+/* the canvas: a size container, so a page adapts to its room (@container hb-canvas), not the window */
 .hb .hb-stage { min-width: 0; position: relative; container: hb-canvas / inline-size; }
 .hb .hb-stage > main { max-width: var(--wide); margin: 0 auto; }
-/* app pages (the shell's own: browse, chronicle, record; a layer's dashboard or revise) are
-   tools, not reading: wide, the sans face, no measure. A canvas page (data-hb-canvas) is a
-   page that designs its own layout: all of the canvas, the sans face, no measure. */
+/* app pages (the shell's tools) are wide and sans; a canvas page (data-hb-canvas) has all of the canvas */
 .hb:is(.hb-app, [data-hb-app]) main { max-width: 72rem; font-family: var(--font-sans); font-size: 1rem; line-height: 1.6; }
 .hb[data-hb-canvas] .hb-stage > main, .hb[data-hb-canvas] main { max-width: none; font-family: var(--font-sans); font-size: 1rem; line-height: 1.6; }
 .hb:is(.hb-app, [data-hb-app], [data-hb-canvas]) main :is(h1, h2, h3, h4, h5, h6, p, ul, ol, dl, blockquote, details, hr, .note, .q, .law, .anchors) {
@@ -463,9 +454,7 @@ body.hb.hb-panel-shown .hb-top .hb-norail { display: none; }
 .hb .hb-book a.hb-planned { opacity: 0.45; cursor: default; }
 
 /* ---------------------------------------------------------- the page panel */
-/* the right-hand panel: a tab for the page (its outline, facts and links) and, when the engine
-   serves annotations, a tab for the threads on it (annotate.js). Fixed at the window's edge,
-   so the canvas never leaves room for it by hand: --hb-r does that. */
+/* the right-hand panel: Page and Annotations tabs, fixed at the edge; --hb-r leaves its room */
 .hb .hb-panel { position: fixed; top: 0; bottom: 0; right: 0; width: var(--panel-w); z-index: 40; box-sizing: border-box;
                 display: flex; flex-direction: column; background: var(--rail-bg); border-left: 1px solid var(--grid);
                 font: 13px/1.45 var(--font-sans); color: var(--ink-3); transform: translateX(104%); transition: transform 180ms ease; }
@@ -492,6 +481,9 @@ body.hb.hb-panel-shown .hb-top .hb-norail { display: none; }
 .hb .hb-toc-list a.hb-l3 { padding-left: 24px; font-size: 12.5px; }
 .hb .hb-toc-list a:hover { color: var(--ink-1); }
 .hb .hb-toc-list a.on { color: var(--ink-1); border-left-color: var(--accent); }
+/* the heading an outline link (or any #link) lands on shows where it is, briefly */
+.hb main :is(h2, h3):target { animation: hb-landed 1.6s ease-out; }
+@keyframes hb-landed { from { background: color-mix(in srgb, var(--accent) 16%, transparent); } to { background: transparent; } }
 .hb .hb-facts { display: grid; gap: 8px; }
 .hb .hb-facts .hb-fact { display: flex; align-items: flex-start; gap: 7px; color: var(--ink-2); }
 .hb .hb-facts .hb-fact > .hb-ico { margin-top: 1px; }
@@ -620,6 +612,7 @@ body.hb.hb-panel-shown .hb-top .hb-norail { display: none; }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .hb .hb-side, .hb .hb-panel { transition: none; }
+  .hb main :target { animation: none; }
 }
 
 @media print {

@@ -45,11 +45,8 @@
   window.hbUrl = hbUrl;
 
   /* ------------------------------------------------------------ preferences
-     The theme (auto · light · dark), and whether the library (left) and the page panel (right)
-     are open on a wide screen, kept in this browser. Applied first, before anything paints that
-     depends on them: the two panels' state sits on <html>, so the page's width is reserved
-     before the shell mounts. A page sets its own widths and faces, so the reader's type size,
-     measure and reading face of 0.5 are gone; their stored values are cleared. */
+     The theme, and whether each side panel is open, kept in this browser and set on <html>
+     before anything paints. 0.5's type size, measure and reading face are cleared. */
   var store = {
     get: function (k) { try { return localStorage.getItem("ckit:" + k); } catch (e) { return null; } },
     set: function (k, v) { try { if (v == null) localStorage.removeItem("ckit:" + k); else localStorage.setItem("ckit:" + k, v); } catch (e) {} }
@@ -811,19 +808,49 @@
       '<div class="hb-rail-sec" data-hb-linked hidden></div><div class="hb-rail-sec" data-hb-out hidden></div>';
   }
 
+  /* the reader's heading: the last past a third of the window (the first of a row); at the foot,
+     the last on screen; after an outline click, that one until the reader scrolls */
   function scrollSpy(toc, hs) {
-    if (!("IntersectionObserver" in window) || !hs.length) return;
+    if (!hs.length) return;
     var links = Object.create(null);
     toc.querySelectorAll("a[href^='#']").forEach(function (a) { links[a.getAttribute("href").slice(1)] = a; });
-    var visible = Object.create(null);
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting; });
-      var first = null;
-      for (var i = 0; i < hs.length; i++) if (visible[hs[i].id]) { first = hs[i].id; break; }
-      if (!first) return;
-      Object.keys(links).forEach(function (id) { links[id].classList.toggle("on", id === first); });
-    }, { rootMargin: "0px 0px -65% 0px" });
-    hs.forEach(function (h) { var el = document.getElementById(h.id); if (el) io.observe(el); });
+    var els = hs.map(function (h) { return document.getElementById(h.id); }).filter(Boolean);
+    var pinned = null, queued = false, last = null;
+    function mark(id) {
+      if (id === last) return;
+      last = id;
+      Object.keys(links).forEach(function (k) { links[k].classList.toggle("on", k === id); });
+    }
+    function update() {
+      queued = false;
+      if (pinned) return mark(pinned);
+      var line = window.innerHeight / 3, best = null, bestTop = -Infinity;
+      els.forEach(function (el) {
+        var top = Math.round(el.getBoundingClientRect().top);
+        if (top <= line && top > bestTop) { best = el; bestTop = top; }
+      });
+      var doc = document.documentElement;
+      if (window.innerHeight + window.scrollY >= doc.scrollHeight - 2) {
+        for (var i = els.length - 1; i >= 0; i--) {
+          var r = els[i].getBoundingClientRect();
+          if (r.top < window.innerHeight && r.bottom > 0) { best = els[i]; break; }
+        }
+      }
+      mark(best ? best.id : null);
+    }
+    function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
+    toc.addEventListener("click", function (e) {
+      var a = e.target.closest("a[href^='#']");
+      if (!a) return;
+      pinned = a.getAttribute("href").slice(1);
+      mark(pinned);
+    });
+    ["wheel", "touchmove", "keydown"].forEach(function (ev) {
+      window.addEventListener(ev, function () { pinned = null; }, { passive: true });
+    });
+    window.addEventListener("scroll", queue, { passive: true });
+    window.addEventListener("resize", queue);
+    update();
   }
 
   /* the status the opening line states as <b>Status: X</b> — "live" when it states none, the default */
@@ -935,9 +962,7 @@
       if (b) toggle(b.dataset.hbToggle);
     });
 
-    /* the page panel: what the page is and what links to it, and — when the engine serves
-       annotations — the threads on it, as a second tab. Its own element, outside <main> and
-       outside the canvas, so the page's layout never has to leave room for it. */
+    /* the page panel: a Page tab, and an Annotations tab when the engine serves them */
     var rail = null;
     if (!app) {
       body.classList.add("hb-has-panel");
@@ -1021,9 +1046,8 @@
     mounted.foot = injectFoot(book.chapters, mounted.main);
   }
 
-  /* the two panels. On a wide screen each is open or closed, remembered in this browser
-     (html[data-hb-side], html[data-hb-panel]); the page panel's default is open from 1240px,
-     closed below. On a narrow screen both are drawers over the page, never remembered. */
+  /* wide: each panel open or closed, remembered (html[data-hb-side|panel]; the page panel opens
+     by default from 1240px). Narrow: both are drawers, never remembered. */
   function narrow() { return !!(window.matchMedia && window.matchMedia("(max-width: 899px)").matches); }
   function panelShown() {
     var b = document.body;
